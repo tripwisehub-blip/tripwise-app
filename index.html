@@ -101,7 +101,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 <div id="app">
 <header>
 <div><div class="t">Tripwise</div><div class="s" id="subtitle"></div></div>
-<button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button>
+<div style="display:flex;gap:6px;flex-shrink:0"><button class="pill" id="langbtn" data-act="langopen" aria-haspopup="listbox"><span id="langcode">EN</span><span class="caret" aria-hidden="true">▼</span></button><button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button></div>
 </header>
 <main id="main"></main>
 <nav id="nav"></nav>
@@ -1253,7 +1253,7 @@ opts[box._act].scrollIntoView({ block: "nearest" });
 function pick(name, v) {
 if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
 else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
-else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); }
+else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); closeSheet(); }
 else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
 haptic();
 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -1380,9 +1380,9 @@ h += '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: w.
 }
 return h + "</div>";
 }
-function openSheet() {
+function openSheet(kind) {
 var sh = document.getElementById("sheet");
-sh.innerHTML = '<button class="bg" data-act="curclose" aria-label="Close"></button><div class="panel"><div class="label">' + esc(t("currency")) + "</div>" + combo("currency", t("typeCurrency")) + "</div>";
+sh.innerHTML = '<button class="bg" data-act="curclose" aria-label="Close"></button><div class="panel"><div class="label">' + esc(t(kind === "lang" ? "language" : "currency")) + "</div>" + (kind === "lang" ? combo("lang", t("typeLang")) : combo("currency", t("typeCurrency"))) + "</div>";
 sh.hidden = false;
 var inp = sh.querySelector("[data-cin]"); inp.value = ""; inp.focus();
 }
@@ -1442,6 +1442,8 @@ function render() {
 document.getElementById("subtitle").textContent = t("sub_" + S.tab);
 document.getElementById("curcode").textContent = curSymbol(S.currency) === S.currency ? S.currency : curSymbol(S.currency) + " " + S.currency;
 document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " + S.currency);
+document.getElementById("langcode").textContent = "🌐 " + S.lang.toUpperCase();
+document.getElementById("langbtn").setAttribute("aria-label", t("language") + ": " + langName(S.lang, S.lang));
 var main = document.getElementById("main"), y = main.scrollTop;
 main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : screenProfile();
 main.scrollTop = y;
@@ -1480,6 +1482,7 @@ render();
 }, 2400);
 return;
 case "curopen": haptic(); openSheet(); return;
+case "langopen": haptic(); openSheet("lang"); return;
 case "curclose": closeSheet(); return;
 case "filter": S.filter = v; break;
 case "deal": S.deal = Number(v); haptic(); break;
