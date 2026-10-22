@@ -1007,7 +1007,8 @@ if (c === "no" || c === "nn") c = "nb";
 if (c === "tl") c = "fil";
 return LANGS.indexOf(c) >= 0 ? c : "en";
 }
-var savedLang = load("lang2", null);
+var savedLang = load("lang3", null); // only a language the user picked in the app
+if (!savedLang) { try { var urlLang = (new URLSearchParams(location.search).get("lang") || "").toLowerCase().slice(0, 2); if (LANGS.indexOf(urlLang) >= 0) savedLang = urlLang; } catch (e) {} }
 var savedOrigin = load("origin", "TLL");
 var S = {
 tab: "search", cat: "flights", origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
@@ -1252,7 +1253,7 @@ opts[box._act].scrollIntoView({ block: "nearest" });
 function pick(name, v) {
 if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
 else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
-else if (name === "lang") { S.lang = v; save("lang2", v); buildDict(v); }
+else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); }
 else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
 haptic();
 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
