@@ -1142,7 +1142,7 @@ return "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(cit
 // Price alert: opens the bot with /start a_ORIG_DEST_YYMMDD_YYMMDD_PAX (saved by the Make scenario)
 function alertLink(dest, dep, ret) {
 function yymmdd(s) { return s.slice(2, 4) + s.slice(5, 7) + s.slice(8, 10); }
-return BOT_LINK + "?start=a_" + S.origin + "_" + dest + "_" + yymmdd(dep) + "_" + yymmdd(ret) + "_" + passengers();
+return BOT_LINK + "?start=a_" + S.origin + "_" + dest + "_" + yymmdd(dep) + "_" + yymmdd(ret) + "_" + passengers() + "_" + S.lang;
 }
 function searchAlert() { var d = tripDates(); return alertLink(S.city, iso(d[0]), iso(d[1])); }
 function tripUrl(trip) {
