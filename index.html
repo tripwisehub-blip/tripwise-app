@@ -20,7 +20,19 @@ button { cursor: pointer; }
 header { padding: 16px 18px 14px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: space-between; }
 header .t { font-size: 22px; font-weight: 900; }
 header .s { font-size: 13px; font-weight: 600; color: #D8ECFB; }
-.pill { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--sun); color: var(--ink); font-size: 13px; font-weight: 800; display: flex; align-items: center; }
+.pill { height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: var(--sun); color: var(--ink); font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+.pill .caret { font-size: 10px; }
+#sheet { position: fixed; inset: 0; z-index: 50; }
+#sheet .bg { position: absolute; inset: 0; border: 0; background: rgba(27,43,58,.35); width: 100%; }
+#sheet .panel { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; width: calc(100% - 24px); max-width: 520px; background: #fff; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 16px 40px rgba(27,43,58,.25); }
+#sheet .dd { position: static; margin-top: 6px; box-shadow: none; max-height: 52vh; }
+.prow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid #E6EEF5; }
+.prow:first-of-type { border-top: 0; }
+.prow b { font-size: 15px; font-weight: 900; }
+.prow .btn { flex: none; min-width: 84px; }
+.price { font-size: 26px; font-weight: 900; color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta span { height: 26px; padding: 0 10px; border-radius: 13px; background: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
 main { flex: 1; overflow-y: auto; padding: 14px 14px 120px; display: flex; flex-direction: column; gap: 14px; }
 .card { background: #fff; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 .h { font-size: 17px; font-weight: 900; }
@@ -88,12 +100,13 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 <div id="app">
 <header>
 <div><div class="t">Tripwise</div><div class="s" id="subtitle"></div></div>
-<div class="pill" id="cur">EUR</div>
+<button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button>
 </header>
 <main id="main"></main>
 <nav id="nav"></nav>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="sheet" hidden></div>
 <script>
 (function () {
 "use strict";
@@ -106,8 +119,30 @@ audio: "https://wegotrip.tpx.lu/PFwel7W8",
 transfer: "https://kiwitaxi.tpx.lu/Z8An788O",
 esim: "https://airalo.tpx.lu/PfdD9FnS",
 flights: "https://aviasales.tpx.lu/sjlt4H8o",
-delay: "https://airhelp.tpx.lu/65MarJSz"
+delay: "https://airhelp.tpx.lu/65MarJSz",
+delay2: "https://compensair.tpx.lu/JhXKalh6",
+esim2: "https://yesim.tpx.lu/YOgFLLlv",
+esim3: "https://drimsim.tpx.lu/kiCCXQLo",
+transfer2: "https://tpx.lu/FaOBSzI1",
+transfer3: "https://gettransfer.tpx.lu/YS8CqrIP",
+transfer4: "https://intui.tpx.lu/lLuiM3YS",
+car3: "https://economybookings.tpx.lu/nln42kEa",
+car4: "https://qeeq.tpx.lu/LP8w8xTP",
+car5: "https://autoeurope.tpx.lu/5SjQDKNW",
+bikes: "https://bikesbooking.tpx.lu/GjfUTTR9",
+luggage: "https://radicalstorage.tpx.lu/ELcf4Zv6",
+tours3: "https://kkday.tpx.lu/cC0bYDSM"
 };
+// Currencies: code -> fallback rate per 1 EUR (approximate; data/rates.json replaces them with fresh rates)
+var CURRENCIES = {
+EUR: 1, USD: 1.08, GBP: 0.85, SEK: 11.4, NOK: 11.7, DKK: 7.46, ISK: 150, PLN: 4.3, CZK: 25.2, HUF: 395, RON: 4.97, BGN: 1.96,
+CHF: 0.95, TRY: 37, UAH: 45, GEL: 2.95, AMD: 420, AZN: 1.84, KZT: 520, AED: 3.97, SAR: 4.05, QAR: 3.93, ILS: 4.0, EGP: 53,
+MAD: 10.8, THB: 37.5, VND: 27500, IDR: 17500, MYR: 4.9, SGD: 1.45, PHP: 62, INR: 91, CNY: 7.8, HKD: 8.4, JPY: 165, KRW: 1500,
+TWD: 35, AUD: 1.65, NZD: 1.8, CAD: 1.5, MXN: 20, BRL: 6.0, ZAR: 20, USDT: 1.08, BTC: 0.000012
+};
+var CRYPTO = { USDT: ["Tether (USDT)", "₮"], BTC: ["Bitcoin", "₿"] };
+var RATES = {}; Object.keys(CURRENCIES).forEach(function (c) { RATES[c] = CURRENCIES[c]; });
+var PRICES = null; // data/prices.json, refreshed by GitHub Actions
 var BOT_LINK = "https://t.me/tripwise_hub_bot";
 
 // ISO|English name|City CODE,City CODE (IATA city or airport codes)
@@ -267,8 +302,33 @@ var KEYS = [
 ["together","togetherText","invite"],
 ["badges","soon"],
 ["b1","b2","b3","b4","b5","b6"],
-["watchToast","voucherToast","datesToast","inviteText"]
+["watchToast","voucherToast","datesToast","inviteText"],
+["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText"]
 ];
+// Texts added later (group 29): currency, live wheel, extra partners
+var TR2 = {
+en: ["Type a currency","{n} trips fit your budget","Nothing from {o} within {b} right now. Cheapest: {c} for {p}.","Direct","With stops","Prices found on Aviasales in recent days and may change.","Live prices are being connected. The wheel picks a city — check prices on the next page.","round trip per person","More options","Open","Scooters and motorbikes","Luggage storage in {c}","Leave your bags near the station or centre"],
+et: ["Sisesta valuuta","{n} reisi mahub eelarvesse","Väljumine {o}: praegu pole midagi kuni {b}. Odavaim: {c} hinnaga {p}.","Otselend","Ümberistumisega","Hinnad on leitud Aviasalesist viimastel päevadel ja võivad muutuda.","Reaalajas hindu ühendatakse. Ratas valib linna — hinnad näed järgmisel lehel.","edasi-tagasi inimese kohta","Veel valikuid","Ava","Rollerid ja mootorrattad","Pagasihoid: {c}","Jäta kotid jaama või kesklinna lähedale"],
+fi: ["Kirjoita valuutta","{n} matkaa mahtuu budjettiin","Lähtö {o}: ei mitään alle {b} juuri nyt. Halvin: {c} hintaan {p}.","Suora","Vaihdollinen","Hinnat on löydetty Aviasalesista viime päivinä ja voivat muuttua.","Reaaliaikaisia hintoja yhdistetään. Kiekko valitsee kaupungin — hinnat näet seuraavalla sivulla.","meno-paluu per henkilö","Lisää vaihtoehtoja","Avaa","Skootterit ja moottoripyörät","Matkatavarasäilytys: {c}","Jätä laukut aseman tai keskustan lähelle"],
+lv: ["Ievadi valūtu","{n} ceļojumi iekļaujas budžetā","Izlidošana {o}: šobrīd nekā līdz {b}. Lētākais: {c} par {p}.","Tiešais","Ar pārsēšanos","Cenas atrastas Aviasales pēdējās dienās un var mainīties.","Tiešsaistes cenas tiek pieslēgtas. Rats izvēlas pilsētu — cenas redzēsi nākamajā lapā.","turp un atpakaļ par personu","Vairāk iespēju","Atvērt","Skrejriteņi un motocikli","Bagāžas glabātuve: {c}","Atstāj somas pie stacijas vai centrā"],
+lt: ["Įvesk valiutą","{n} kelionės telpa į biudžetą","Išvykimas {o}: dabar nieko iki {b}. Pigiausia: {c} už {p}.","Tiesioginis","Su persėdimu","Kainos rastos Aviasales per pastarąsias dienas ir gali keistis.","Realaus laiko kainos jungiamos. Ratas parenka miestą — kainas pamatysi kitame puslapyje.","į abi puses vienam asmeniui","Daugiau pasirinkimų","Atidaryti","Paspirtukai ir motociklai","Bagažo saugykla: {c}","Palik krepšius prie stoties ar centre"],
+pl: ["Wpisz walutę","{n} podróży mieści się w budżecie","Wylot {o}: teraz nic do {b}. Najtaniej: {c} za {p}.","Bezpośredni","Z przesiadką","Ceny znalezione w Aviasales w ostatnich dniach, mogą się zmienić.","Podłączamy ceny na żywo. Koło wybiera miasto — ceny zobaczysz na następnej stronie.","w obie strony za osobę","Więcej opcji","Otwórz","Skutery i motocykle","Przechowalnia bagażu: {c}","Zostaw bagaż przy dworcu lub w centrum"],
+de: ["Währung eingeben","{n} Reisen passen ins Budget","Ab {o} gerade nichts unter {b}. Am günstigsten: {c} für {p}.","Direkt","Mit Umstieg","Preise wurden in den letzten Tagen bei Aviasales gefunden und können sich ändern.","Live-Preise werden angebunden. Das Rad wählt eine Stadt — Preise siehst du auf der nächsten Seite.","hin und zurück pro Person","Weitere Optionen","Öffnen","Roller und Motorräder","Gepäckaufbewahrung in {c}","Lass dein Gepäck nahe Bahnhof oder Zentrum"],
+fr: ["Tapez une devise","{n} voyages dans votre budget","Rien depuis {o} sous {b} pour l'instant. Le moins cher : {c} à {p}.","Direct","Avec escale","Prix trouvés sur Aviasales ces derniers jours, ils peuvent changer.","Les prix en direct arrivent. La roue choisit une ville — les prix sont sur la page suivante.","aller-retour par personne","Plus d'options","Ouvrir","Scooters et motos","Consigne à bagages : {c}","Déposez vos sacs près de la gare ou du centre"],
+es: ["Escribe una moneda","{n} viajes caben en tu presupuesto","Ahora no hay nada desde {o} por menos de {b}. Lo más barato: {c} por {p}.","Directo","Con escala","Precios encontrados en Aviasales en los últimos días; pueden cambiar.","Estamos conectando precios en vivo. La ruleta elige una ciudad — verás los precios en la página siguiente.","ida y vuelta por persona","Más opciones","Abrir","Scooters y motos","Consigna de equipaje en {c}","Deja tus maletas cerca de la estación o del centro"],
+it: ["Scrivi una valuta","{n} viaggi nel tuo budget","Da {o} ora niente sotto {b}. Il più economico: {c} a {p}.","Diretto","Con scalo","Prezzi trovati su Aviasales negli ultimi giorni, possono cambiare.","Stiamo collegando i prezzi live. La ruota sceglie una città — i prezzi sono nella pagina successiva.","andata e ritorno a persona","Altre opzioni","Apri","Scooter e moto","Deposito bagagli a {c}","Lascia i bagagli vicino alla stazione o al centro"],
+ru: ["Введите валюту","В бюджет укладывается поездок: {n}","Вылет: {o} — сейчас нет вариантов до {b}. Дешевле всего: {c} за {p}.","Прямой","С пересадкой","Цены найдены на Aviasales за последние дни и могут измениться.","Живые цены подключаются. Колесо выбирает город — цены увидите на следующей странице.","туда-обратно за человека","Ещё варианты","Открыть","Скутеры и мотоциклы","Камера хранения — {c}","Оставьте багаж у вокзала или в центре"],
+uk: ["Введіть валюту","У бюджет вміщується поїздок: {n}","Виліт: {o} — зараз немає варіантів до {b}. Найдешевше: {c} за {p}.","Прямий","З пересадкою","Ціни знайдено на Aviasales за останні дні, вони можуть змінитися.","Живі ціни підключаються. Колесо обирає місто — ціни побачите на наступній сторінці.","туди й назад за людину","Більше варіантів","Відкрити","Скутери й мотоцикли","Камера схову — {c}","Залиште багаж біля вокзалу чи в центрі"],
+ar: ["اكتب عملة","{n} رحلات ضمن ميزانيتك","لا توجد رحلات من {o} ضمن {b} حاليًا. الأرخص: {c} بسعر {p}.","مباشر","مع توقف","أسعار وجدتها Aviasales في الأيام الأخيرة وقد تتغير.","نعمل على ربط الأسعار المباشرة. العجلة تختار مدينة — الأسعار في الصفحة التالية.","ذهاب وعودة للشخص","خيارات أكثر","فتح","سكوترات ودراجات نارية","تخزين الأمتعة في {c}","اترك حقائبك قرب المحطة أو وسط المدينة"],
+tr: ["Para birimi yaz","Bütçene uyan {n} seyahat","Şu an {o} çıkışlı {b} altında seyahat yok. En ucuz: {c}, {p}.","Direkt","Aktarmalı","Fiyatlar son günlerde Aviasales'te bulundu ve değişebilir.","Canlı fiyatlar bağlanıyor. Çark bir şehir seçer — fiyatları sonraki sayfada görürsün.","kişi başı gidiş-dönüş","Daha fazla seçenek","Aç","Scooter ve motosikletler","Emanet bagaj: {c}","Çantalarını istasyon ya da merkez yakınında bırak"],
+zh: ["输入货币","{n} 个行程符合预算","目前从 {o} 出发没有 {b} 以内的行程。最便宜：{c}，{p}。","直飞","需转机","价格来自 Aviasales 近几天的搜索，可能会变化。","实时价格接入中。转盘会选一个城市——价格请在下一页查看。","每人往返","更多选择","打开","踏板车和摩托车","{c} 行李寄存","把行李寄存在车站或市中心附近"],
+ja: ["通貨を入力","予算内の旅行：{n}件","現在、{o}発で{b}以内の旅行はありません。最安：{c} {p}。","直行便","乗り継ぎあり","価格は直近数日にAviasalesで見つかったもので、変動する場合があります。","リアルタイム価格を接続中です。ルーレットが都市を選びます — 価格は次のページで確認できます。","1人あたり往復","その他の選択肢","開く","スクーター・バイク","{c}の荷物預かり","駅や中心部の近くに荷物を預けられます"],
+ko: ["통화 입력","예산에 맞는 여행 {n}개","지금은 {o} 출발 {b} 이내 여행이 없어요. 최저가: {c} {p}.","직항","경유","가격은 최근 며칠간 Aviasales에서 찾은 것으로 바뀔 수 있어요.","실시간 가격을 연결하는 중이에요. 룰렛이 도시를 고르고, 가격은 다음 페이지에서 확인하세요.","1인 왕복","더 많은 선택","열기","스쿠터 및 오토바이","{c} 짐 보관","역이나 시내 근처에 짐을 맡기세요"],
+th: ["พิมพ์สกุลเงิน","ทริปในงบ {n} รายการ","ตอนนี้ไม่มีทริปจาก {o} ภายใน {b} ถูกที่สุด: {c} ราคา {p}","บินตรง","ต่อเครื่อง","ราคาที่ Aviasales พบในช่วงไม่กี่วันที่ผ่านมา อาจเปลี่ยนแปลงได้","กำลังเชื่อมต่อราคาสด วงล้อจะเลือกเมือง — ดูราคาในหน้าถัดไป","ไป-กลับต่อคน","ตัวเลือกเพิ่มเติม","เปิด","สกู๊ตเตอร์และมอเตอร์ไซค์","รับฝากกระเป๋าใน {c}","ฝากกระเป๋าไว้ใกล้สถานีหรือใจกลางเมือง"],
+vi: ["Nhập tiền tệ","{n} chuyến vừa ngân sách","Hiện chưa có chuyến từ {o} dưới {b}. Rẻ nhất: {c} giá {p}.","Bay thẳng","Có nối chuyến","Giá do Aviasales tìm thấy trong vài ngày qua và có thể thay đổi.","Đang kết nối giá trực tiếp. Vòng quay chọn một thành phố — xem giá ở trang tiếp theo.","khứ hồi mỗi người","Thêm lựa chọn","Mở","Xe tay ga và mô tô","Gửi hành lý tại {c}","Gửi hành lý gần nhà ga hoặc trung tâm"],
+hi: ["मुद्रा लिखें","बजट में {n} यात्राएँ","अभी {o} से {b} के अंदर कोई यात्रा नहीं। सबसे सस्ती: {c}, {p}।","सीधी","रुकावट के साथ","कीमतें हाल के दिनों में Aviasales पर मिलीं और बदल सकती हैं।","लाइव कीमतें जोड़ी जा रही हैं। पहिया एक शहर चुनता है — कीमतें अगले पेज पर देखें।","प्रति व्यक्ति आना-जाना","और विकल्प","खोलें","स्कूटर और मोटरसाइकिल","{c} में सामान घर","स्टेशन या शहर के बीच सामान रखें"],
+id: ["Ketik mata uang","{n} perjalanan sesuai anggaran","Saat ini tidak ada perjalanan dari {o} di bawah {b}. Termurah: {c} seharga {p}.","Langsung","Transit","Harga ditemukan di Aviasales beberapa hari terakhir dan bisa berubah.","Harga langsung sedang dihubungkan. Roda memilih kota — lihat harga di halaman berikutnya.","pulang-pergi per orang","Pilihan lainnya","Buka","Skuter dan motor","Penitipan bagasi di {c}","Titipkan tas dekat stasiun atau pusat kota"]
+};
 var TR = {
 en: [
 ["Where are we going?","Spin, save, go","Deals around your hotel","Your travel profile"],
@@ -902,6 +962,8 @@ id: [
 ]
 };
 
+Object.keys(TR).forEach(function (l) { TR[l].push(TR2[l] || TR2.en); });
+
 function load(key, fallback) {
 try { var v = localStorage.getItem("tw_" + key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
 }
@@ -925,9 +987,9 @@ var savedOrigin = load("origin", "TLL");
 var S = {
 tab: "search", cat: "flights", origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
 when: "weekend", from: "", to: "", adults: 2, kids: [], searched: false,
-budget: 150, rotation: 0, wheelCity: null, filter: "all", deal: 0,
+budget: load("budget", 150), rotation: 0, wheel: null, filter: "all", deal: 0,
 lang: savedLang && LANGS.indexOf(savedLang) >= 0 ? savedLang : detectLang(),
-currency: load("currency", "EUR")
+currency: CURRENCIES[load("currency", "EUR")] ? load("currency", "EUR") : "EUR"
 };
 var D = {};
 function buildDict(lang) {
@@ -1004,7 +1066,24 @@ function svg(path, size) {
 return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"></path></svg>';
 }
 function flagImg(iso) { return '<img class="fl" src="https://flagcdn.com/w40/' + iso + '.png" alt="" loading="lazy">'; }
-function sym() { return { EUR: "€", USD: "$", GBP: "£", USDT: "₮", BTC: "₿" }[S.currency] || "€"; }
+// Money: all prices are kept in EUR and shown in the chosen currency
+function money(eur, code) {
+code = code || S.currency;
+var v = eur * (RATES[code] || 1);
+if (CRYPTO[code]) return CRYPTO[code][1] + (code === "BTC" ? v.toFixed(5) : Math.round(v));
+try { return new Intl.NumberFormat(S.lang, { style: "currency", currency: code, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(v); }
+catch (e) { return Math.round(v) + " " + code; }
+}
+function curName(code) {
+if (CRYPTO[code]) return CRYPTO[code][0];
+var d = dn(S.lang, "currency"), n = null;
+try { n = d && d.of(code); } catch (e) {}
+return n && n !== code ? n.charAt(0).toUpperCase() + n.slice(1) : code;
+}
+function curSymbol(code) {
+if (CRYPTO[code]) return CRYPTO[code][1];
+try { var p = new Intl.NumberFormat("en", { style: "currency", currency: code, currencyDisplay: "narrowSymbol" }).formatToParts(1); return p.filter(function (x) { return x.type === "currency"; })[0].value; } catch (e) { return code; }
+}
 function pad(n) { return (n < 10 ? "0" : "") + n; }
 function ddmm(d) { return pad(d.getDate()) + pad(d.getMonth() + 1); }
 function nextWeekday(day) {
@@ -1024,7 +1103,31 @@ return String(S.adults) + (children || infants ? String(children) + (infants ? S
 function flightUrl(dest, when) {
 var keep = S.when; if (when) S.when = when;
 var d = tripDates(); S.when = keep;
-return "https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?marker=" + MARKER + ".miniapp";
+return "https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?marker=" + MARKER + ".miniapp" + curParam();
+}
+function curParam() { return CRYPTO[S.currency] ? "" : "&currency=" + S.currency.toLowerCase(); }
+function tripUrl(trip) {
+var link = trip.link || ("/search/" + S.origin + trip.dep.slice(8, 10) + trip.dep.slice(5, 7) + trip.d + trip.ret.slice(8, 10) + trip.ret.slice(5, 7) + "1");
+return "https://www.aviasales.com" + link + (link.indexOf("?") >= 0 ? "&" : "?") + "marker=" + MARKER + ".wheel" + curParam();
+}
+function placeName(code) {
+var n = PRICES && PRICES.names && PRICES.names[code];
+if (n) return { name: n[0] || code, iso: n[1] || (CITY[code] && CITY[code].iso) };
+return CITY[code] ? { name: CITY[code].name, iso: CITY[code].iso } : { name: code, iso: null };
+}
+function spinWheel() {
+var today = new Date().toISOString().slice(0, 10);
+var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
+if (!trips.length) {
+var c = WHEEL_CITIES[Math.floor(Math.random() * WHEEL_CITIES.length)];
+return { kind: "nodata", city: c[0], code: c[1] };
+}
+var fit = trips.filter(function (x) { return x.p <= S.budget; });
+if (!fit.length) {
+var cheap = trips.slice().sort(function (a, b) { return a.p - b.p; })[0];
+return { kind: "none", trip: cheap };
+}
+return { kind: "trip", trip: fit[Math.floor(Math.random() * fit.length)], count: fit.length };
 }
 function cityName() {
 var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; })[0];
@@ -1066,12 +1169,18 @@ LANGS.forEach(function (code) {
 var nat = langName(code, code), en = langName(code, "en");
 if (!q || hit(nat, q) || hit(en, q) || norm(code) === q) out.push({ v: code, label: nat, sub: en === nat ? "" : en });
 });
+} else if (name === "currency") {
+Object.keys(CURRENCIES).forEach(function (code) {
+var nm = curName(code), enName = CRYPTO[code] ? CRYPTO[code][0] : (function () { try { return new Intl.DisplayNames(["en"], { type: "currency" }).of(code); } catch (e) { return code; } })();
+if (!q || norm(code).indexOf(q) === 0 || hit(nm, q) || hit(enName, q) || norm(curSymbol(code)) === q) out.push({ v: code, label: code + " · " + nm, sub: curSymbol(code) });
+});
 }
 return out.slice(0, 100);
 }
 function comboLabel(name) {
 if (name === "country") return countryName(S.country);
 if (name === "origin") return originName() + " (" + S.origin + ")";
+if (name === "currency") return S.currency + " · " + curName(S.currency);
 return langName(S.lang, S.lang);
 }
 function comboFlag(name) {
@@ -1104,8 +1213,9 @@ opts[box._act].scrollIntoView({ block: "nearest" });
 }
 function pick(name, v) {
 if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
-else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheelCity = null; }
+else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
 else if (name === "lang") { S.lang = v; save("lang2", v); buildDict(v); }
+else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
 haptic();
 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 render();
@@ -1185,27 +1295,66 @@ h += resultCard("var(--sand)", t("bestValue"), t("carIn", cv), t("carText"), t("
 } else {
 h += resultCard("var(--sky)", t("stayOnline"), t("esimFor", { c: countryName(S.country) }), t("esimText"), t("getEsim"), LINKS.esim);
 }
+var more = MORE[S.cat] || [];
+if (more.length) {
+h += '<div class="card" style="gap:0"><div class="h" style="margin-bottom:4px">' + esc(t("moreOptions")) + "</div>" + more.map(function (m) {
+return '<div class="prow"><div><b>' + esc(m[0]) + '</b><div class="hint">' + esc(t(m[1], cv)) + '</div></div><button class="btn ghost" data-act="open" data-v="' + esc(LINKS[m[2]]) + '">' + esc(t("open")) + "</button></div>";
+}).join("") + "</div>";
+}
 h += '<div class="fine">' + esc(t("affiliate")) + "</div></section>";
 return h;
 }
+// Extra partners per category: [brand, text key, link key]
+var MORE = {
+flights: [["Welcome Pickups", "transferText", "transfer2"], ["Yesim", "esimText", "esim2"], ["Radical Storage", "luggageText", "luggage"]],
+hotels: [["Radical Storage", "luggageText", "luggage"], ["KKday", "toursText", "tours3"]],
+car: [["Economybookings", "compareCars", "car3"], ["QEEQ", "compareCars", "car4"], ["AutoEurope", "carText", "car5"], ["BikesBooking", "bikesText", "bikes"]],
+tours: [["KKday", "toursText", "tours3"], ["Radical Storage", "luggageText", "luggage"]],
+transfer: [["Welcome Pickups", "transferText", "transfer2"], ["GetTransfer", "transferText", "transfer3"], ["intui.travel", "transferText", "transfer4"]],
+esim: [["Yesim", "esimText", "esim2"], ["Drimsim", "esimText", "esim3"]]
+};
+function wheelResult() {
+var w = S.wheel; if (!w) return "";
+var h = '<div class="win"><div style="font-size:12px;font-weight:800;color:#0B6E60">' + esc(t("wheelSays")) + "</div>";
+if (w.kind === "trip") {
+var tr = w.trip, pl = placeName(tr.d);
+h += '<div style="display:flex;align-items:center;gap:8px">' + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: pl.name })) + "</div></div>" +
+'<div><span class="price">' + esc(money(tr.p)) + '</span> <span class="hint">' + esc(t("perPerson")) + "</span></div>" +
+'<div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(originName()) + " → " + esc(pl.name) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
+'<button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
+'<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
+} else if (w.kind === "none") {
+var c = w.trip, cp = placeName(c.d);
+h += '<div style="font-size:15px;font-weight:800">' + esc(t("noneInBudget", { o: originName(), b: money(S.budget), c: cp.name, p: money(c.p) })) + "</div>" +
+'<button class="btn" data-act="open" data-v="' + esc(tripUrl(c)) + '">' + esc(t("flightsTo", { c: cp.name })) + "</button>";
+} else {
+h += '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: w.city })) + "</div>" +
+'<div class="hint" style="color:#3D5568">' + esc(t("noData")) + "</div>" +
+'<button class="btn" data-act="open" data-v="' + esc(flightUrl(w.code, "weekend")) + '">' + esc(t("flightsTo", { c: w.city })) + "</button>";
+}
+return h + "</div>";
+}
+function openSheet() {
+var sh = document.getElementById("sheet");
+sh.innerHTML = '<button class="bg" data-act="curclose" aria-label="Close"></button><div class="panel"><div class="label">' + esc(t("currency")) + "</div>" + combo("currency", t("typeCurrency")) + "</div>";
+sh.hidden = false;
+var inp = sh.querySelector("[data-cin]"); inp.value = ""; inp.focus();
+}
+function closeSheet() { var sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; }
 function screenCoupons() {
 var h = '<section class="card" style="align-items:stretch">';
 h += '<div><div class="h">' + esc(t("wheel")) + '</div><div class="hint">' + esc(t("wheelText")) + "</div></div>";
 h += '<div class="wheel-wrap"><div class="wheel" id="wheel" style="transform:rotate(' + S.rotation + 'deg)"></div><div class="pointer"></div>' +
-'<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + sym() + S.budget + "</b></div></div>";
-h += '<input type="range" min="50" max="500" step="10" value="' + S.budget + '" data-act="budget" aria-label="' + esc(t("budget")) + '">';
+'<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + esc(money(S.budget)) + "</b></div></div>";
+h += '<input type="range" min="30" max="800" step="10" value="' + S.budget + '" data-act="budget" aria-label="' + esc(t("budget")) + '">';
+h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</div>";
 h += '<button class="cta" data-act="spin">' + esc(t("spin")) + "</button>";
-if (S.wheelCity) {
-var w = S.wheelCity;
-h += '<div class="win"><div><div style="font-size:12px;font-weight:800;color:#0B6E60">' + esc(t("wheelSays")) + "</div>" +
-'<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: w[0] })) + '</div><div class="hint" style="color:#3D5568">' + esc(t("wheelHint", { o: originName(), b: sym() + S.budget })) + "</div></div>" +
-'<button class="btn" data-act="open" data-v="' + esc(flightUrl(w[1], "weekend")) + '">' + esc(t("flightsTo", { c: w[0] })) + "</button></div>";
-}
+h += wheelResult();
 h += "</section>";
 h += '<section class="card"><div class="h">' + esc(t("errorFares")) + '</div><div class="soon">' + esc(t("errorSoon")) + "</div>" +
 '<div class="hint">' + esc(t("errorHint")) + "</div></section>";
 h += '<section class="card"><div class="h">' + esc(t("delayed")) + '</div><div class="hint">' + esc(t("delayText")) + "</div>" +
-'<button class="btn" data-act="open" data-v="' + LINKS.delay + '">' + esc(t("checkComp")) + "</button></section>";
+'<div class="grid2"><button class="btn" data-act="open" data-v="' + LINKS.delay + '">AirHelp</button><button class="btn ghost" data-act="open" data-v="' + LINKS.delay2 + '">Compensair</button></div></section>';
 return h;
 }
 function screenMap() {
@@ -1236,8 +1385,7 @@ return h;
 function screenProfile() {
 var h = '<section class="card"><div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("language")) + "</div>" + combo("lang", t("typeLang")) + "</div>";
 if (!TR[S.lang]) h += '<div class="hint">' + esc(t("langNote")) + "</div>";
-h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("currency")) + '</div><div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">' +
-["EUR","USD","GBP","USDT","BTC"].map(function (c) { return '<button class="chip' + (S.currency === c ? " on" : "") + '" style="font-size:12px;padding:0 4px" data-act="currency" data-v="' + c + '">' + c + "</button>"; }).join("") + "</div></div></section>";
+h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("currency")) + "</div>" + combo("currency", t("typeCurrency")) + "</div></section>";
 h += '<section class="card" style="background:var(--blue);color:#fff"><div class="h">' + esc(t("together")) + "</div>" +
 '<div style="font-size:13px;color:#D8ECFB">' + esc(t("togetherText")) + '</div><button class="cta" data-act="invite">' + esc(t("invite")) + "</button></section>";
 h += '<section class="card"><div class="row"><div class="h">' + esc(t("badges")) + '</div><div class="hint" style="font-weight:700">' + esc(t("soon")) + '</div></div><div class="grid3">' +
@@ -1246,7 +1394,8 @@ return h;
 }
 function render() {
 document.getElementById("subtitle").textContent = t("sub_" + S.tab);
-document.getElementById("cur").textContent = S.currency;
+document.getElementById("curcode").textContent = curSymbol(S.currency) === S.currency ? S.currency : curSymbol(S.currency) + " " + S.currency;
+document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " + S.currency);
 var main = document.getElementById("main"), y = main.scrollTop;
 main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : screenProfile();
 main.scrollTop = y;
@@ -1278,11 +1427,13 @@ S.rotation += 1440 + Math.floor(Math.random() * 360);
 var w = document.getElementById("wheel"); if (w) w.style.transform = "rotate(" + S.rotation + "deg)";
 haptic();
 setTimeout(function () {
-S.wheelCity = WHEEL_CITIES[Math.floor(Math.random() * WHEEL_CITIES.length)];
+S.wheel = spinWheel();
 try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
 render();
 }, 2400);
 return;
+case "curopen": haptic(); openSheet(); return;
+case "curclose": closeSheet(); return;
 case "filter": S.filter = v; break;
 case "deal": S.deal = Number(v); haptic(); break;
 case "currency": S.currency = v; save("currency", v); haptic(); break;
@@ -1299,7 +1450,7 @@ if (a === "city") { S.city = el.value; S.searched = false; }
 else if (a === "from") { S.from = el.value; S.searched = false; }
 else if (a === "to") { S.to = el.value; S.searched = false; }
 else if (a === "kidage") { S.kids[Number(el.getAttribute("data-i"))] = Number(el.value); S.searched = false; }
-else if (a === "budget") { S.budget = Number(el.value); S.wheelCity = null; }
+else if (a === "budget") { S.budget = Number(el.value); save("budget", S.budget); S.wheel = null; }
 else return;
 render();
 }
@@ -1324,6 +1475,7 @@ var inp = e.target;
 if (!inp.matches || !inp.matches("[data-cin]")) return;
 setTimeout(function () {
 if (document.activeElement === inp || !inp.isConnected) return;
+if (inp.closest("#sheet")) { closeSheet(); return; }
 var box = inp.closest(".combo"); box.querySelector(".dd").hidden = true;
 inp.value = comboLabel(inp.getAttribute("data-cin"));
 }, 150);
@@ -1348,11 +1500,16 @@ var el = e.target;
 if (el.matches("[data-cin]")) { openDD(el, el.value); return; }
 if (el.matches('input[type=range][data-act="budget"]')) {
 S.budget = Number(el.value);
-var hub = document.querySelector(".hub b"); if (hub) hub.textContent = sym() + S.budget;
+var hub = document.querySelector(".hub b"); if (hub) hub.textContent = money(S.budget);
 }
 });
-window.__tripwise = { state: S, flightUrl: flightUrl, passengers: passengers, tripDates: tripDates, options: options, TR: TR, KEYS: KEYS, COUNTRIES: COUNTRIES };
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !document.getElementById("sheet").hidden) closeSheet(); });
+window.__tripwise = { state: S, flightUrl: flightUrl, passengers: passengers, tripDates: tripDates, options: options, TR: TR, KEYS: KEYS, COUNTRIES: COUNTRIES, money: money, spinWheel: spinWheel, setData: function (p, r) { if (p) PRICES = p; if (r) Object.keys(r).forEach(function (k) { if (CURRENCIES[k] !== undefined) RATES[k] = r[k]; }); render(); } };
 render();
+// Fresh exchange rates and flight prices, updated by GitHub Actions (see .github/workflows/prices.yml)
+function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
+loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
 })();
 </script>
 </body>
