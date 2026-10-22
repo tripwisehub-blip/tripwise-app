@@ -63,3 +63,50 @@ for i in range(0, len(todo), 10):
 os.makedirs("data", exist_ok=True)
 json.dump(dict(sorted(links.items())), open(OUT, "w"), ensure_ascii=False, indent=0)
 print("saved:", len(links))
+
+
+# ---------- Partner home pages in the user's language (English when the site has no such language) ----------
+LR = {"en": "https://www.localrent.com/en/", "de": "https://localrent.de/", "es": "https://localrent.es/", "fr": "https://localrent.fr/",
+      "it": "https://localrent.it/", "pl": "https://localrent.pl/"}
+for l in ["fi", "ja", "ko", "ru", "th", "tr", "vi", "zh"]:
+    LR[l] = "https://www.localrent.com/%s/" % l
+GRC = {"en": "https://getrentacar.com/en-US", "zh": "https://getrentacar.com/zh-CN"}
+for l in ["ru", "de", "fr", "es", "it", "pl", "tr", "ar", "th"]:
+    GRC[l] = "https://getrentacar.com/" + l
+KT = {"en": "https://kiwitaxi.com/en", "uk": "https://kiwitaxi.com/ua"}
+for l in ["fr", "de", "es", "pl", "it"]:
+    KT[l] = "https://kiwitaxi.com/" + l
+TQ = {l: "https://www.tiqets.com/%s/" % l for l in ["en", "de", "es", "fr", "ko", "it", "ja", "pl", "ru", "zh"]}
+PAGES = {
+    "car": LR, "car2": GRC, "transfer": KT, "tours": TQ,
+    "audio": {"en": "https://wegotrip.com/en/"},
+    "delay": {"en": "https://www.airhelp.com/en/"},
+    "tours3": {"en": "https://www.kkday.com/en-us"},
+    "transfer3": {"en": "https://gettransfer.com/en"},
+}
+OUT2 = "data/links.json"
+try:
+    plinks = json.load(open(OUT2))
+except Exception:
+    plinks = {}
+need = [(k, l, u) for k, m in PAGES.items() for l, u in m.items() if (plinks.get(k) or {}).get(l) is None]
+print("partner pages to create:", len(need))
+for i in range(0, len(need), 10):
+    batch = need[i:i + 10]
+    body = {"trs": TRS, "marker": MARKER, "shorten": True, "links": [{"url": u, "sub_id": k + "_" + l} for k, l, u in batch]}
+    req = urllib.request.Request("https://api.travelpayouts.com/links/v1/create", data=json.dumps(body).encode(),
+                                 headers={"X-Access-Token": TOKEN, "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            res = json.load(r)
+    except Exception as e:
+        print("request failed:", e)
+        break
+    for (k, l, u), x in zip(batch, (res.get("result") or {}).get("links") or []):
+        if x.get("code") == "success" and x.get("partner_url"):
+            plinks.setdefault(k, {})[l] = x["partner_url"]
+        else:
+            print("failed:", k, l, x.get("code"))
+    time.sleep(0.8)
+json.dump(plinks, open(OUT2, "w"), ensure_ascii=False, indent=0, sort_keys=True)
+print("partner pages saved:", sum(len(v) for v in plinks.values()))
