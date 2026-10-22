@@ -43,6 +43,20 @@ main { flex: 1; overflow-y: auto; padding: 14px 14px 120px; display: flex; flex-
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .chip { min-height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 13px; font-weight: 800; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.cal { border: 1.5px solid var(--line); border-radius: 16px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; text-transform: capitalize; }
+.cal-nav { width: 36px; height: 36px; border-radius: 18px; border: 0; background: var(--blue-soft); color: var(--blue); font-size: 20px; font-weight: 800; }
+.cal-nav[disabled] { opacity: .35; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; text-align: center; }
+.cal-wd { font-size: 11px; font-weight: 800; color: var(--muted); padding: 4px 0; text-transform: capitalize; }
+.cal-d { height: 38px; border: 0; background: none; font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; justify-content: center; }
+.cal-d.past { color: #B8C6D3; }
+.cal-d.in { background: rgba(10,111,192,.14); }
+.cal-d.start.edge { background: linear-gradient(to right, transparent 50%, rgba(10,111,192,.14) 50%); }
+.cal-d.end.edge { background: linear-gradient(to left, transparent 50%, rgba(10,111,192,.14) 50%); }
+.cal-d.start::before, .cal-d.end::before { content: ""; }
+.cal-d.start, .cal-d.end { position: relative; color: #fff; z-index: 0; }
+.cal-d.start::after, .cal-d.end::after { content: ""; position: absolute; width: 36px; height: 36px; border-radius: 18px; background: var(--blue); z-index: -1; }
 .cat { min-height: 62px; flex-direction: column; gap: 4px; font-size: 12px; }
 .quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .quick .chip { min-height: 34px; font-size: 12px; padding: 0 10px; }
@@ -144,6 +158,8 @@ TWD: 35, AUD: 1.65, NZD: 1.8, CAD: 1.5, MXN: 20, BRL: 6.0, ZAR: 20, USDT: 1.08, 
 var CRYPTO = { USDT: ["Tether (USDT)", "₮"], BTC: ["Bitcoin", "₿"] };
 var RATES = {}; Object.keys(CURRENCIES).forEach(function (c) { RATES[c] = CURRENCIES[c]; });
 var PRICES = null; // data/prices.json, refreshed by GitHub Actions
+var TOURS = {}; // data/tours.json: city -> affiliate link to tours in that city
+function toursUrl(name) { return (name && TOURS[name]) || LINKS.tours; }
 var BOT_LINK = "https://t.me/tripwise_hub_bot";
 
 // ISO|English name|City CODE,City CODE (IATA city or airport codes)
@@ -1007,11 +1023,11 @@ if (c === "no" || c === "nn") c = "nb";
 if (c === "tl") c = "fil";
 return LANGS.indexOf(c) >= 0 ? c : "en";
 }
-var savedLang = load("lang3", null); // only a language the user picked in the app
-if (!savedLang) { try { var urlLang = (new URLSearchParams(location.search).get("lang") || "").toLowerCase().slice(0, 2); if (LANGS.indexOf(urlLang) >= 0) savedLang = urlLang; } catch (e) {} }
+var savedLang = load("lang3", null); // language picked in the app
+try { var urlLang = (new URLSearchParams(location.search).get("lang") || "").toLowerCase(); if (LANGS.indexOf(urlLang) < 0) urlLang = urlLang.slice(0, 2); if (LANGS.indexOf(urlLang) >= 0) { savedLang = urlLang; save("lang3", urlLang); } } catch (e) {} // language chosen in the bot wins
 var savedOrigin = load("origin", "TLL");
 var S = {
-tab: "search", cat: "flights", origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
+tab: "search", cat: "flights", wmode: load("wmode", "flight") === "combo" ? "combo" : "flight", calM: 0, origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
 when: "weekend", from: "", to: "", adults: 2, kids: [], searched: false,
 budget: load("budget", 150), rotation: 0, wheel: null, filter: "all", deal: 0,
 lang: savedLang && LANGS.indexOf(savedLang) >= 0 ? savedLang : detectLang(),
@@ -1173,6 +1189,24 @@ var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; }
 return c ? c[0] : BY_ISO[S.country].cities[0][0];
 }
 function originName() { return CITY[S.origin] ? CITY[S.origin].name : S.origin; }
+function calendar() {
+var now = new Date(), today = iso(now), base = new Date(now.getFullYear(), now.getMonth() + (S.calM || 0), 1);
+var y = base.getFullYear(), m = base.getMonth(), first = (base.getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+var title; try { title = base.toLocaleDateString(S.lang, { month: "long", year: "numeric" }); } catch (e) { title = (m + 1) + "/" + y; }
+var wd = []; for (var i = 0; i < 7; i++) { var d0 = new Date(2024, 0, 1 + i); try { wd.push(d0.toLocaleDateString(S.lang, { weekday: "short" }).slice(0, 2)); } catch (e) { wd.push("·"); } }
+var h = '<div class="cal"><div class="cal-head"><button class="cal-nav" data-act="calnav" data-v="-1"' + ((S.calM || 0) <= 0 ? " disabled" : "") + ' aria-label="Previous month">‹</button><b>' + esc(title) + '</b><button class="cal-nav" data-act="calnav" data-v="1" aria-label="Next month">›</button></div><div class="cal-grid">';
+h += wd.map(function (x) { return '<span class="cal-wd">' + esc(x) + "</span>"; }).join("");
+for (i = 0; i < first; i++) h += "<span></span>";
+for (var dd = 1; dd <= days; dd++) {
+var ds = y + "-" + pad(m + 1) + "-" + pad(dd), cls = "cal-d";
+if (S.from && S.to && ds > S.from && ds < S.to) cls += " in";
+if (ds === S.from) cls += " start" + (S.to ? " edge" : "");
+if (ds === S.to) cls += " end edge";
+h += ds < today ? '<span class="cal-d past">' + dd + "</span>" : '<button class="' + cls + '" data-act="calday" data-v="' + ds + '">' + dd + "</button>";
+}
+h += '</div><div class="hint" style="text-align:center">' + (S.from ? esc(fmt(new Date(S.from + "T12:00:00"))) : esc(t("dfrom"))) + " – " + (S.to ? esc(fmt(new Date(S.to + "T12:00:00"))) : esc(t("dto"))) + "</div></div>";
+return h;
+}
 function fmt(d) {
 try { return d.toLocaleDateString(S.lang, { day: "numeric", month: "short" }); } catch (e) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
 }
@@ -1282,8 +1316,7 @@ var v = w === "nextweek" ? "next" : w;
 return '<button class="chip' + (S.when === v ? " on" : "") + '" data-act="when" data-v="' + v + '">' + esc(t(w)) + "</button>";
 }).join("") + "</div>";
 if (S.when === "pick") {
-h += '<div class="grid2"><label class="label" style="display:flex;flex-direction:column;gap:4px">' + esc(t("dfrom")) + '<input type="date" data-act="from" value="' + S.from + '"></label>' +
-'<label class="label" style="display:flex;flex-direction:column;gap:4px">' + esc(t("dto")) + '<input type="date" data-act="to" value="' + S.to + '"></label></div>';
+h += calendar();
 } else {
 var d = tripDates();
 h += '<div class="hint">' + esc(fmt(d[0])) + " – " + esc(fmt(d[1])) + "</div>";
@@ -1323,12 +1356,12 @@ h += resultCard("#DDF6F1", t("stayOnline"), t("esimFor", { c: countryName(S.coun
 var hd = tripDates();
 h += resultCard("#FFE4DA", t("c_hotels"), t("hotelsIn", cv), fmt(hd[0]) + " – " + fmt(hd[1]), t("c_hotels"), hotelUrl(city, iso(hd[0]), iso(hd[1])));
 h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city), searchAlert());
-h += resultCard("var(--sand)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), LINKS.tours);
+h += resultCard("var(--sand)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), toursUrl(CITY[S.city] && CITY[S.city].name));
 } else if (S.cat === "car") {
 h += resultCard("var(--sky)", t("bestValue"), t("carIn", cv), t("carText"), t("findCar"), LINKS.car);
 h += resultCard("var(--sand)", t("moreChoice"), t("compareCars"), t("carText"), t("compare"), LINKS.car2);
 } else if (S.cat === "tours") {
-h += resultCard("var(--sky)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), LINKS.tours);
+h += resultCard("var(--sky)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), toursUrl(CITY[S.city] && CITY[S.city].name));
 h += resultCard("var(--sand)", t("selfGuided"), t("audioFor", cv), t("audioText"), t("audioTours"), LINKS.audio);
 } else if (S.cat === "transfer") {
 h += resultCard("var(--sky)", t("arrival"), t("transferIn", cv), t("transferText"), t("bookTransfer"), LINKS.transfer);
@@ -1363,10 +1396,11 @@ h += '<div style="display:flex;align-items:center;gap:8px">' + (pl.iso ? flagImg
 '<div><span class="price">' + esc(money(tr.p)) + '</span> <span class="hint">' + esc(t("perPerson")) + "</span></div>" +
 '<div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(originName()) + " → " + esc(pl.name) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
 '<div class="grid2"><button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
-'<button class="btn ghost" data-act="combo">' + esc(t("flightHotel")) + "</button></div>" +
-(w.combo ? '<div class="card" style="gap:8px;padding:12px">' +
+"</div>" +
+(S.wmode === "combo" ? '<div class="card" style="gap:8px;padding:12px">' +
 '<button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">1 · ' + esc(t("c_flights")) + " · " + esc(money(tr.p)) + "</button>" +
-'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">2 · ' + esc(t("hotelsIn", { c: pl.name })) + "</button></div>" : "") +
+'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">2 · ' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
+'<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">3 · ' + esc(t("toursIn", { c: pl.name })) + "</button></div>" : "") +
 '<button class="btn ghost" data-act="watch" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" +
 '<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
 } else if (w.kind === "none") {
@@ -1394,6 +1428,8 @@ h += '<div class="wheel-wrap"><div class="wheel" id="wheel" style="transform:rot
 '<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + esc(money(S.budget)) + "</b></div></div>";
 h += '<input type="range" min="30" max="800" step="10" value="' + S.budget + '" data-act="budget" aria-label="' + esc(t("budget")) + '">';
 h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</div>";
+h += '<div class="grid2">' + [["flight", t("c_flights")], ["combo", t("flightHotel")]].map(function (m) {
+return '<button class="chip' + (S.wmode === m[0] ? " on" : "") + '" data-act="wmode" data-v="' + m[0] + '">' + esc(m[1]) + "</button>"; }).join("") + "</div>";
 h += '<button class="cta" data-act="spin">' + esc(t("spin")) + "</button>";
 h += wheelResult();
 h += "</section>";
@@ -1460,6 +1496,10 @@ case "tab": S.tab = v; haptic(); document.getElementById("main").scrollTop = 0; 
 case "cat": S.cat = v; S.searched = false; haptic(); break;
 case "country": S.country = v; S.city = BY_ISO[v].cities[0][1]; S.searched = false; haptic(); break;
 case "when": S.when = v; S.searched = false; haptic(); break;
+case "calnav": S.calM = (S.calM || 0) + Number(v); break;
+case "calday":
+if (!S.from || S.to || v < S.from) { S.from = v; S.to = ""; } else { S.to = v; }
+S.searched = false; haptic(); break;
 case "adults": S.adults = Math.min(9, Math.max(1, S.adults + Number(v))); haptic(); break;
 case "kids": if (Number(v) > 0 && S.kids.length < 6) S.kids.push(7); else if (Number(v) < 0) S.kids.pop(); haptic(); break;
 case "search":
@@ -1469,7 +1509,7 @@ setTimeout(function () { var r = document.querySelector(".result, .soon"); if (r
 return;
 case "open": openLink(v); return;
 case "watch": toast(t("watchToast2")); setTimeout(function () { openLink(v); }, 700); return;
-case "combo": if (S.wheel) S.wheel.combo = !S.wheel.combo; haptic(); break;
+case "wmode": S.wmode = v; save("wmode", v); haptic(); break;
 case "soon": toast(t("voucherToast")); return;
 case "spin":
 S.rotation += 1440 + Math.floor(Math.random() * 360);
@@ -1560,6 +1600,7 @@ render();
 function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
 loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
 loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
+loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
 })();
 </script>
 </body>
