@@ -1,0 +1,62 @@
+{
+"audio": {
+"en": "https://wegotrip.tpx.lu/f4Drvsqh"
+},
+"car": {
+"de": "https://localrent.tpx.lu/71sFijfq",
+"en": "https://localrent.tpx.lu/Klf8LbHi",
+"fi": "https://localrent.tpx.lu/xIXhk6Xc",
+"fr": "https://localrent.tpx.lu/7UiLsHqu",
+"it": "https://localrent.tpx.lu/43nb07dO",
+"ja": "https://localrent.tpx.lu/U99qzstz",
+"ko": "https://localrent.tpx.lu/hmx3QoDy",
+"pl": "https://localrent.tpx.lu/xwTtFlpJ",
+"th": "https://localrent.tpx.lu/AB1JhCWV",
+"tr": "https://localrent.tpx.lu/3ZBPllZe",
+"vi": "https://localrent.tpx.lu/ODLkwhtx",
+"zh": "https://localrent.tpx.lu/yo7nQvID"
+},
+"car2": {
+"ar": "https://getrentacar.tpx.lu/H7sLzZlg",
+"de": "https://getrentacar.tpx.lu/ZI41Idcg",
+"en": "https://getrentacar.tpx.lu/OmtIazuD",
+"es": "https://getrentacar.tpx.lu/ydyvKCs0",
+"fr": "https://getrentacar.tpx.lu/4FxI9OF2",
+"it": "https://getrentacar.tpx.lu/MWoHilmu",
+"pl": "https://getrentacar.tpx.lu/J3NpX1UP",
+"ru": "https://getrentacar.tpx.lu/DXk79b8E",
+"th": "https://getrentacar.tpx.lu/p3Qw5wU3",
+"tr": "https://getrentacar.tpx.lu/l4cPYEII",
+"zh": "https://getrentacar.tpx.lu/81DCLEDi"
+},
+"delay": {
+"en": "https://airhelp.tpx.lu/CwVLbAbm"
+},
+"tours": {
+"de": "https://tiqets.tpx.lu/CNWWNtLo",
+"en": "https://tiqets.tpx.lu/7fk6Ko83",
+"es": "https://tiqets.tpx.lu/uyrcMqeF",
+"fr": "https://tiqets.tpx.lu/2HWQGC0J",
+"it": "https://tiqets.tpx.lu/NxC4CNm5",
+"ja": "https://tiqets.tpx.lu/BJ2DHgdf",
+"ko": "https://tiqets.tpx.lu/Vxk7C5Xv",
+"pl": "https://tiqets.tpx.lu/2AUjBpJ3",
+"ru": "https://tiqets.tpx.lu/dfi3882a",
+"zh": "https://tiqets.tpx.lu/QKewctOs"
+},
+"tours3": {
+"en": "https://kkday.tpx.lu/PgCiMokr"
+},
+"transfer": {
+"de": "https://kiwitaxi.tpx.lu/M7kiBVvo",
+"en": "https://kiwitaxi.tpx.lu/whmk6puG",
+"es": "https://kiwitaxi.tpx.lu/1nwRZI8Z",
+"fr": "https://kiwitaxi.tpx.lu/FN4reZvH",
+"it": "https://kiwitaxi.tpx.lu/iYxETIis",
+"pl": "https://kiwitaxi.tpx.lu/Qhc448ry",
+"uk": "https://kiwitaxi.tpx.lu/5i0sZR3x"
+},
+"transfer3": {
+"en": "https://gettransfer.tpx.lu/vXKsiVIZ"
+}
+}
