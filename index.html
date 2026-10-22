@@ -303,7 +303,7 @@ var KEYS = [
 ["badges","soon"],
 ["b1","b2","b3","b4","b5","b6"],
 ["watchToast","voucherToast","datesToast","inviteText"],
-["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText"]
+["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText","flightHotel","hotelsIn","watchToast2"]
 ];
 // Texts added later (group 29): currency, live wheel, extra partners
 var TR2 = {
@@ -962,7 +962,31 @@ id: [
 ]
 };
 
-Object.keys(TR).forEach(function (l) { TR[l].push(TR2[l] || TR2.en); });
+// Group 29, part 2: flight + hotel, price alerts
+var TR3 = {
+en: ["Flight + hotel","Hotels in {c}","Opening the bot — press Start to turn on the price alert."],
+et: ["Lend + hotell","Hotellid: {c}","Avan boti — vajuta Start, et hinnateavitus sisse lülitada."],
+fi: ["Lento + hotelli","Hotellit: {c}","Avaan botin — paina Start, niin hintahälytys käynnistyy."],
+lv: ["Lidojums + viesnīca","Viesnīcas: {c}","Atveru botu — nospied Start, lai ieslēgtu cenu paziņojumu."],
+lt: ["Skrydis + viešbutis","Viešbučiai: {c}","Atidarau botą — paspausk Start, kad įjungtum kainų pranešimą."],
+pl: ["Lot + hotel","Hotele: {c}","Otwieram bota — naciśnij Start, aby włączyć alert cenowy."],
+de: ["Flug + Hotel","Hotels in {c}","Ich öffne den Bot — tippe auf Start, um den Preisalarm einzuschalten."],
+fr: ["Vol + hôtel","Hôtels : {c}","J'ouvre le bot — appuyez sur Démarrer pour activer l'alerte prix."],
+es: ["Vuelo + hotel","Hoteles en {c}","Abriendo el bot: pulsa Iniciar para activar la alerta de precio."],
+it: ["Volo + hotel","Hotel a {c}","Apro il bot: premi Avvia per attivare l'avviso di prezzo."],
+ru: ["Перелёт + отель","Отели — {c}","Открываю бота — нажмите «Старт», чтобы включить уведомление о цене."],
+uk: ["Переліт + готель","Готелі — {c}","Відкриваю бота — натисніть «Почати», щоб увімкнути сповіщення про ціну."],
+ar: ["طيران + فندق","فنادق في {c}","سأفتح البوت — اضغط ابدأ لتفعيل تنبيه السعر."],
+tr: ["Uçuş + otel","Oteller: {c}","Bot açılıyor — fiyat alarmını açmak için Başlat'a dokun."],
+zh: ["机票 + 酒店","{c} 酒店","正在打开机器人——点击“开始”即可开启价格提醒。"],
+ja: ["航空券＋ホテル","{c}のホテル","ボットを開きます。「開始」を押すと価格アラートがオンになります。"],
+ko: ["항공 + 호텔","{c} 호텔","봇을 열어요. '시작'을 누르면 가격 알림이 켜져요."],
+th: ["เที่ยวบิน + โรงแรม","โรงแรมใน {c}","กำลังเปิดบอท — กด เริ่ม เพื่อเปิดการแจ้งเตือนราคา"],
+vi: ["Vé bay + khách sạn","Khách sạn tại {c}","Đang mở bot — nhấn Bắt đầu để bật cảnh báo giá."],
+hi: ["फ़्लाइट + होटल","{c} में होटल","बॉट खुल रहा है — कीमत अलर्ट चालू करने के लिए Start दबाएँ।"],
+id: ["Pesawat + hotel","Hotel di {c}","Membuka bot — tekan Mulai untuk menyalakan peringatan harga."]
+};
+Object.keys(TR).forEach(function (l) { TR[l].push((TR2[l] || TR2.en).concat(TR3[l] || TR3.en)); });
 
 function load(key, fallback) {
 try { var v = localStorage.getItem("tw_" + key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
@@ -1106,6 +1130,19 @@ var d = tripDates(); S.when = keep;
 return "https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?marker=" + MARKER + ".miniapp" + curParam();
 }
 function curParam() { return CRYPTO[S.currency] ? "" : "&currency=" + S.currency.toLowerCase(); }
+var HOTEL_AID = ""; // Booking.com affiliate ID: fill in after the partner account is approved
+function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function hotelUrl(city, dep, ret) {
+return "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(city) + "&checkin=" + dep + "&checkout=" + ret +
+"&group_adults=" + S.adults + "&no_rooms=1" + (S.kids.length ? "&group_children=" + S.kids.length + S.kids.map(function (a) { return "&age=" + a; }).join("") : "") +
+"&lang=" + encodeURIComponent(S.lang) + (CRYPTO[S.currency] ? "" : "&selected_currency=" + S.currency) + (HOTEL_AID ? "&aid=" + HOTEL_AID : "");
+}
+// Price alert: opens the bot with /start a_ORIG_DEST_YYMMDD_YYMMDD_PAX (saved by the Make scenario)
+function alertLink(dest, dep, ret) {
+function yymmdd(s) { return s.slice(2, 4) + s.slice(5, 7) + s.slice(8, 10); }
+return BOT_LINK + "?start=a_" + S.origin + "_" + dest + "_" + yymmdd(dep) + "_" + yymmdd(ret) + "_" + passengers();
+}
+function searchAlert() { var d = tripDates(); return alertLink(S.city, iso(d[0]), iso(d[1])); }
 function tripUrl(trip) {
 var link = trip.link || ("/search/" + S.origin + trip.dep.slice(8, 10) + trip.dep.slice(5, 7) + trip.d + trip.ret.slice(8, 10) + trip.ret.slice(5, 7) + "1");
 return "https://www.aviasales.com" + link + (link.indexOf("?") >= 0 ? "&" : "?") + "marker=" + MARKER + ".wheel" + curParam();
@@ -1266,22 +1303,24 @@ h += '<button class="cta" data-act="search">' + esc(t("find")) + "</button></sec
 if (S.searched) h += results();
 return h;
 }
-function resultCard(band, tag, title, text, button, url) {
+function resultCard(band, tag, title, text, button, url, watch) {
+var go = '<button class="btn" data-act="open" data-v="' + esc(url) + '">' + esc(button) + "</button>";
 return '<div class="result"><div class="band" style="background:' + band + '"><span class="tag">' + esc(tag) + '</span></div><div class="body">' +
 '<div><div style="font-size:15px;font-weight:800">' + esc(title) + '</div><div class="hint">' + esc(text) + "</div></div>" +
-'<div class="grid2"><button class="btn ghost" data-act="watch">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" +
-'<button class="btn" data-act="open" data-v="' + esc(url) + '">' + esc(button) + "</button></div></div></div>";
+(watch ? '<div class="grid2"><button class="btn ghost" data-act="watch" data-v="' + esc(watch) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" + go + "</div>" : go) +
+"</div></div>";
 }
 function results() {
 var city = cityName(), cv = { c: city };
 var h = '<section style="display:flex;flex-direction:column;gap:10px"><div class="h">' + esc(t("picks", cv)) + "</div>";
 if (S.cat === "flights") {
-h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city));
+h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city), searchAlert());
 h += resultCard("var(--sand)", t("arrival"), t("transferIn", cv), t("transferText"), t("bookTransfer"), LINKS.transfer);
 h += resultCard("#DDF6F1", t("stayOnline"), t("esimFor", { c: countryName(S.country) }), t("esimText"), t("getEsim"), LINKS.esim);
 } else if (S.cat === "hotels") {
-h += '<div class="soon">' + esc(t("hotelsSoon")) + "</div>";
-h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city));
+var hd = tripDates();
+h += resultCard("#FFE4DA", t("c_hotels"), t("hotelsIn", cv), fmt(hd[0]) + " – " + fmt(hd[1]), t("c_hotels"), hotelUrl(city, iso(hd[0]), iso(hd[1])));
+h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city), searchAlert());
 h += resultCard("var(--sand)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), LINKS.tours);
 } else if (S.cat === "car") {
 h += resultCard("var(--sky)", t("bestValue"), t("carIn", cv), t("carText"), t("findCar"), LINKS.car);
@@ -1321,7 +1360,12 @@ var tr = w.trip, pl = placeName(tr.d);
 h += '<div style="display:flex;align-items:center;gap:8px">' + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: pl.name })) + "</div></div>" +
 '<div><span class="price">' + esc(money(tr.p)) + '</span> <span class="hint">' + esc(t("perPerson")) + "</span></div>" +
 '<div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(originName()) + " → " + esc(pl.name) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
-'<button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
+'<div class="grid2"><button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
+'<button class="btn ghost" data-act="combo">' + esc(t("flightHotel")) + "</button></div>" +
+(w.combo ? '<div class="card" style="gap:8px;padding:12px">' +
+'<button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">1 · ' + esc(t("c_flights")) + " · " + esc(money(tr.p)) + "</button>" +
+'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">2 · ' + esc(t("hotelsIn", { c: pl.name })) + "</button></div>" : "") +
+'<button class="btn ghost" data-act="watch" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" +
 '<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
 } else if (w.kind === "none") {
 var c = w.trip, cp = placeName(c.d);
@@ -1420,7 +1464,8 @@ S.searched = true; haptic(); render();
 setTimeout(function () { var r = document.querySelector(".result, .soon"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
 return;
 case "open": openLink(v); return;
-case "watch": toast(t("watchToast")); return;
+case "watch": toast(t("watchToast2")); setTimeout(function () { openLink(v); }, 700); return;
+case "combo": if (S.wheel) S.wheel.combo = !S.wheel.combo; haptic(); break;
 case "soon": toast(t("voucherToast")); return;
 case "spin":
 S.rotation += 1440 + Math.floor(Math.random() * 360);
