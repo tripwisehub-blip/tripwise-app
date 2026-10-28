@@ -1036,7 +1036,7 @@ var savedLang = load("lang3", null); // language picked in the app
 try { var urlLang = (new URLSearchParams(location.search).get("lang") || "").toLowerCase(); if (LANGS.indexOf(urlLang) < 0) urlLang = urlLang.slice(0, 2); if (LANGS.indexOf(urlLang) >= 0) { savedLang = urlLang; save("lang3", urlLang); } } catch (e) {} // language chosen in the bot wins
 var savedOrigin = load("origin", "TLL");
 var S = {
-tab: "search", cat: "flights", wmode: load("wmode", "flight") === "combo" ? "combo" : "flight", calM: 0, origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
+tab: "search", cat: "flights", wmode: load("wmode", "flight") === "hotel" ? "hotel" : "flight", calM: 0, origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
 when: "weekend", from: "", to: "", adults: 2, kids: [], searched: false,
 budget: load("budget", 150), rotation: 0, wheel: null, filter: "all", deal: 0,
 lang: savedLang && LANGS.indexOf(savedLang) >= 0 ? savedLang : detectLang(),
@@ -1179,19 +1179,31 @@ var n = PRICES && PRICES.names && PRICES.names[code];
 if (n) return { name: n[0] || code, iso: n[1] || (CITY[code] && CITY[code].iso) };
 return CITY[code] ? { name: CITY[code].name, iso: CITY[code].iso } : { name: code, iso: null };
 }
+function pick3(arr) { var a = arr.slice(), out = []; while (a.length && out.length < 3) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]); return out; }
 function spinWheel() {
 var today = new Date().toISOString().slice(0, 10);
 var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
-if (!trips.length) {
-var c = WHEEL_CITIES[Math.floor(Math.random() * WHEEL_CITIES.length)];
-return { kind: "nodata", city: c[0], code: c[1] };
+if (S.wmode === "hotel") {
+var seen = {}, places = [];
+trips.forEach(function (x) { if (!seen[x.d] && x.d !== S.origin) { seen[x.d] = 1; places.push(placeName(x.d)); } });
+if (places.length < 3) WHEEL_CITIES.forEach(function (c) { if (!seen[c[1]]) { seen[c[1]] = 1; places.push(placeName(c[1])); } });
+var f = nextWeekday(5), e = new Date(f); e.setDate(f.getDate() + 2);
+return { kind: "hotels", places: pick3(places), dep: iso(f), ret: iso(e) };
 }
+if (!trips.length) return { kind: "nodata", cities: pick3(WHEEL_CITIES) };
 var fit = trips.filter(function (x) { return x.p <= S.budget; });
 if (!fit.length) {
 var cheap = trips.slice().sort(function (a, b) { return a.p - b.p; })[0];
 return { kind: "none", trip: cheap };
 }
-return { kind: "trip", trip: fit[Math.floor(Math.random() * fit.length)], count: fit.length };
+// One trip per destination: the cheapest one within the budget
+var best = {};
+fit.forEach(function (x) { if (!best[x.d] || x.p < best[x.d].p) best[x.d] = x; });
+var list = Object.keys(best).map(function (k) { return best[k]; });
+return { kind: "trip", trips: pick3(list).sort(function (a, b) { return a.p - b.p; }), count: list.length };
+}
+function cheapHotelUrl(city, dep, ret) {
+return hotelUrl(city, dep, ret) + "&order=price&nflt=" + encodeURIComponent("price=EUR-min-" + S.budget + "-1");
 }
 function cityName() {
 var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; })[0];
@@ -1400,26 +1412,33 @@ function wheelResult() {
 var w = S.wheel; if (!w) return "";
 var h = '<div class="win"><div style="font-size:12px;font-weight:800;color:#0B6E60">' + esc(t("wheelSays")) + "</div>";
 if (w.kind === "trip") {
-var tr = w.trip, pl = placeName(tr.d);
-h += '<div style="display:flex;align-items:center;gap:8px">' + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: pl.name })) + "</div></div>" +
+w.trips.forEach(function (tr, i) {
+var pl = placeName(tr.d);
+h += '<div class="card" style="gap:8px;padding:12px">' +
+'<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">' + (i + 1) + ".</b>" + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:17px;font-weight:900">' + esc(pl.name) + "</div></div>" +
 '<div><span class="price">' + esc(money(tr.p)) + '</span> <span class="hint">' + esc(t("perPerson")) + "</span></div>" +
 '<div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(originName()) + " → " + esc(pl.name) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
 '<div class="grid2"><button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
-"</div>" +
-(S.wmode === "combo" ? '<div class="card" style="gap:8px;padding:12px">' +
-'<button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">1 · ' + esc(t("c_flights")) + " · " + esc(money(tr.p)) + "</button>" +
-'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">2 · ' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
-'<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">3 · ' + esc(t("toursIn", { c: pl.name })) + "</button></div>" : "") +
-'<button class="btn ghost" data-act="watch" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" +
-'<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
+'<button class="btn ghost" data-act="watch" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button></div></div>";
+});
+h += '<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
+} else if (w.kind === "hotels") {
+w.places.forEach(function (pl, i) {
+h += '<div class="card" style="gap:8px;padding:12px">' +
+'<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">' + (i + 1) + ".</b>" + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:17px;font-weight:900">' + esc(pl.name) + "</div></div>" +
+'<div class="meta"><span>' + esc(fmt(new Date(w.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(w.ret + "T12:00:00"))) + "</span><span>≤ " + esc(money(S.budget)) + " / 🌙</span></div>" +
+'<div class="grid2"><button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(cheapHotelUrl(pl.name, w.dep, w.ret)) + '">' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
+'<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">' + esc(t("toursIn", { c: pl.name })) + "</button></div></div>";
+});
 } else if (w.kind === "none") {
 var c = w.trip, cp = placeName(c.d);
 h += '<div style="font-size:15px;font-weight:800">' + esc(t("noneInBudget", { o: originName(), b: money(S.budget), c: cp.name, p: money(c.p) })) + "</div>" +
 '<button class="btn" data-act="open" data-v="' + esc(tripUrl(c)) + '">' + esc(t("flightsTo", { c: cp.name })) + "</button>";
 } else {
-h += '<div style="font-size:18px;font-weight:900">' + esc(t("weekendIn", { c: w.city })) + "</div>" +
-'<div class="hint" style="color:#3D5568">' + esc(t("noData")) + "</div>" +
-'<button class="btn" data-act="open" data-v="' + esc(flightUrl(w.code, "weekend")) + '">' + esc(t("flightsTo", { c: w.city })) + "</button>";
+h += '<div class="hint" style="color:#3D5568">' + esc(t("noData")) + "</div>";
+(w.cities || []).forEach(function (c, i) {
+h += '<button class="btn" data-act="open" data-v="' + esc(flightUrl(c[1], "weekend")) + '">' + (i + 1) + " · " + esc(t("flightsTo", { c: c[0] })) + "</button>";
+});
 }
 return h + "</div>";
 }
@@ -1434,10 +1453,10 @@ function screenCoupons() {
 var h = '<section class="card" style="align-items:stretch">';
 h += '<div><div class="h">' + esc(t("wheel")) + '</div><div class="hint">' + esc(t("wheelText")) + "</div></div>";
 h += '<div class="wheel-wrap"><div class="wheel" id="wheel" style="transform:rotate(' + S.rotation + 'deg)"></div><div class="pointer"></div>' +
-'<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + esc(money(S.budget)) + "</b></div></div>";
+'<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + esc(money(S.budget)) + (S.wmode === "hotel" ? " / 🌙" : "") + "</b></div></div>";
 h += '<input type="range" min="30" max="800" step="10" value="' + S.budget + '" data-act="budget" aria-label="' + esc(t("budget")) + '">';
 h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</div>";
-h += '<div class="grid2">' + [["flight", t("c_flights")], ["combo", t("flightHotel")]].map(function (m) {
+h += '<div class="grid2">' + [["flight", t("c_flights")], ["hotel", t("c_hotels")]].map(function (m) {
 return '<button class="chip' + (S.wmode === m[0] ? " on" : "") + '" data-act="wmode" data-v="' + m[0] + '">' + esc(m[1]) + "</button>"; }).join("") + "</div>";
 h += '<button class="cta" data-act="spin">' + esc(t("spin")) + "</button>";
 h += wheelResult();
@@ -1519,7 +1538,7 @@ setTimeout(function () { var r = document.querySelector(".result, .soon"); if (r
 return;
 case "open": openLink(v); return;
 case "watch": toast(t("watchToast2")); setTimeout(function () { openLink(v); }, 700); return;
-case "wmode": S.wmode = v; save("wmode", v); haptic(); break;
+case "wmode": S.wmode = v; save("wmode", v); S.wheel = null; haptic(); break;
 case "soon": toast(t("voucherToast")); return;
 case "spin":
 S.rotation += 1440 + Math.floor(Math.random() * 360);
