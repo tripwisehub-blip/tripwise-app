@@ -1183,6 +1183,1658 @@ function pick3(arr) { var a = arr.slice(), out = []; while (a.length && out.leng
 function spinWheel() {
 var today = new Date().toISOString().slice(0, 10);
 var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
+if (S.wmode === "hotel" && S.picked) {
+var pk = S.picked, ctry = BY_ISO[pk.iso], others = [];
+if (ctry) ctry.cities.forEach(function (x) { if (x[1] !== pk.d && x[0] !== pk.name) others.push({ name: x[0], iso: pk.iso }); });
+return { kind: "hotels", places: [{ name: pk.name, iso: pk.iso }].concat(pick3(others).slice(0, 2)), dep: pk.dep, ret: pk.ret };
+}
+if (S.wmode === "hotel") {
+var seen = {}, places = [];
+trips.forEach(function (x) { if (!seen[x.d] && x.d !== S.origin) { seen[x.d] = 1; places.push(placeName(x.d)); } });
+if (places.length < 3) WHEEL_CITIES.forEach(function (c) { if (!seen[c[1]]) { seen[c[1]] = 1; places.push(placeName(c[1])); } });
+var f = nextWeekday(5), e = new Date(f); e.setDate(f.getDate() + 2);
+return { kind: "hotels", places: pick3(places), dep: iso(f), ret: iso(e) };
+}
+if (!trips.length) return { kind: "nodata", cities: pick3(WHEEL_CITIES) };
+var fit = trips.filter(function (x) { return x.p <= S.budget; });
+if (!fit.length) {
+var cheap = trips.slice().sort(function (a, b) { return a.p - b.p; })[0];
+return { kind: "none", trip: cheap };
+}
+// One trip per destination: the cheapest one within the budget
+var best = {};
+fit.forEach(function (x) { if (!best[x.d] || x.p < best[x.d].p) best[x.d] = x; });
+var list = Object.keys(best).map(function (k) { return best[k]; });
+return { kind: "trip", trips: pick3(list).sort(function (a, b) { return a.p - b.p; }), count: list.length };
+}
+function choosePick(i) {
+var tr = S.wheel && S.wheel.trips && S.wheel.trips[i]; if (!tr) return;
+var pl = placeName(tr.d); S.picked = { d: tr.d, dep: tr.dep, ret: tr.ret, name: pl.name, iso: pl.iso };
+}
+function isPicked(tr) { return S.picked && S.picked.d === tr.d && S.picked.dep === tr.dep; }
+function cheapHotelUrl(city, dep, ret) {
+return hotelUrl(city, dep, ret) + "&order=price&nflt=" + encodeURIComponent("price=EUR-min-" + S.budget + "-1");
+}
+function cityName() {
+var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; })[0];
+return c ? c[0] : BY_ISO[S.country].cities[0][0];
+}
+function originName() { return CITY[S.origin] ? CITY[S.origin].name : S.origin; }
+function calendar() {
+var now = new Date(), today = iso(now), base = new Date(now.getFullYear(), now.getMonth() + (S.calM || 0), 1);
+var y = base.getFullYear(), m = base.getMonth(), first = (base.getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+var title; try { title = base.toLocaleDateString(S.lang, { month: "long", year: "numeric" }); } catch (e) { title = (m + 1) + "/" + y; }
+var wd = []; for (var i = 0; i < 7; i++) { var d0 = new Date(2024, 0, 1 + i); try { wd.push(d0.toLocaleDateString(S.lang, { weekday: "short" }).slice(0, 2)); } catch (e) { wd.push("·"); } }
+var h = '<div class="cal"><div class="cal-head"><button class="cal-nav" data-act="calnav" data-v="-1"' + ((S.calM || 0) <= 0 ? " disabled" : "") + ' aria-label="Previous month">‹</button><b>' + esc(title) + '</b><button class="cal-nav" data-act="calnav" data-v="1" aria-label="Next month">›</button></div><div class="cal-grid">';
+h += wd.map(function (x) { return '<span class="cal-wd">' + esc(x) + "</span>"; }).join("");
+for (i = 0; i < first; i++) h += "<span></span>";
+for (var dd = 1; dd <= days; dd++) {
+var ds = y + "-" + pad(m + 1) + "-" + pad(dd), cls = "cal-d";
+if (S.from && S.to && ds > S.from && ds < S.to) cls += " in";
+if (ds === S.from) cls += " start" + (S.to ? " edge" : "");
+if (ds === S.to) cls += " end edge";
+h += ds < today ? '<span class="cal-d past">' + dd + "</span>" : '<button class="' + cls + '" data-act="calday" data-v="' + ds + '">' + dd + "</button>";
+}
+h += '</div><div class="hint" style="text-align:center">' + (S.from ? esc(fmt(new Date(S.from + "T12:00:00"))) : esc(t("dfrom"))) + " – " + (S.to ? esc(fmt(new Date(S.to + "T12:00:00"))) : esc(t("dto"))) + "</div></div>";
+return h;
+}
+function fmt(d) {
+try { return d.toLocaleDateString(S.lang, { day: "numeric", month: "short" }); } catch (e) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+}
+
+// ---------- Searchable dropdowns (type the first letters) ----------
+function norm(s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+function hit(name, q) {
+var n = norm(name);
+if (n.indexOf(q) === 0) return true;
+return n.split(/[\s\-()'.,]+/).some(function (w) { return w && w.indexOf(q) === 0; });
+}
+function options(name, raw) {
+var q = norm(String(raw || "").trim()), out = [];
+if (name === "country") {
+COUNTRIES.map(function (c) { return { c: c, n: countryName(c.iso) }; })
+.sort(function (a, b) { return a.n.localeCompare(b.n, S.lang); })
+.forEach(function (x) { if (!q || hit(x.n, q) || hit(x.c.en, q)) out.push({ v: x.c.iso, iso: x.c.iso, label: x.n, sub: "" }); });
+if (q) COUNTRIES.forEach(function (c) {
+c.cities.forEach(function (x) { if (hit(x[0], q) || norm(x[1]) === q) out.push({ v: c.iso + ":" + x[1], iso: c.iso, label: x[0], sub: countryName(c.iso) }); });
+});
+} else if (name === "origin") {
+var codes = ORIGIN_TOP.concat(Object.keys(CITY).filter(function (c) { return ORIGIN_TOP.indexOf(c) < 0; }).sort(function (a, b) { return CITY[a].name.localeCompare(CITY[b].name); }));
+var first = [], rest = [];
+codes.forEach(function (code) {
+var c = CITY[code];
+if (!q) { first.push(c); return; }
+if (hit(c.name, q) || norm(code) === q) first.push(c);
+else if (hit(countryName(c.iso), q) || hit(BY_ISO[c.iso].en, q)) rest.push(c);
+});
+first.concat(rest).forEach(function (c) { out.push({ v: c.code, iso: c.iso, label: c.name, sub: c.code }); });
+} else if (name === "lang") {
+LANGS.forEach(function (code) {
+var nat = langName(code, code), en = langName(code, "en");
+if (!q || hit(nat, q) || hit(en, q) || norm(code) === q) out.push({ v: code, label: nat, sub: en === nat ? "" : en });
+});
+} else if (name === "currency") {
+Object.keys(CURRENCIES).forEach(function (code) {
+var nm = curName(code), enName = CRYPTO[code] ? CRYPTO[code][0] : (function () { try { return new Intl.DisplayNames(["en"], { type: "currency" }).of(code); } catch (e) { return code; } })();
+if (!q || norm(code).indexOf(q) === 0 || hit(nm, q) || hit(enName, q) || norm(curSymbol(code)) === q) out.push({ v: code, label: code + " · " + nm, sub: curSymbol(code) });
+});
+}
+return out.slice(0, 100);
+}
+function comboLabel(name) {
+if (name === "country") return countryName(S.country);
+if (name === "origin") return originName() + " (" + S.origin + ")";
+if (name === "currency") return S.currency + " · " + curName(S.currency);
+return langName(S.lang, S.lang);
+}
+function comboFlag(name) {
+if (name === "country") return S.country;
+if (name === "origin") return CITY[S.origin] && CITY[S.origin].iso;
+return null;
+}
+function combo(name, placeholder) {
+var f = comboFlag(name);
+return '<div class="combo" data-combo="' + name + '"><div class="field">' + (f ? flagImg(f) : svg(ICON.globe, 18)) +
+'<input type="text" data-cin="' + name + '" value="' + esc(comboLabel(name)) + '" placeholder="' + esc(placeholder) +
+'" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" role="combobox" aria-autocomplete="list">' +
+'<span class="caret" aria-hidden="true">▼</span></div><div class="dd" role="listbox" hidden></div></div>';
+}
+function openDD(inp, q) {
+var name = inp.getAttribute("data-cin"), box = inp.closest(".combo"), dd = box.querySelector(".dd");
+var items = options(name, q);
+box._items = items; box._act = String(q || "").trim() ? 0 : -1;
+dd.innerHTML = items.length ? items.map(function (o, i) {
+return '<button type="button" class="opt' + (i === box._act ? " act" : "") + '" data-pick="' + name + '" data-v="' + esc(o.v) + '" role="option">' +
+(o.iso ? flagImg(o.iso) : "") + '<span class="nm">' + esc(o.label) + "</span>" + (o.sub ? "<small>" + esc(o.sub) + "</small>" : "") + "</button>";
+}).join("") : '<div class="empty">' + esc(t("nothing")) + "</div>";
+dd.hidden = false; dd.scrollTop = 0;
+}
+function moveAct(box, step) {
+var opts = box.querySelectorAll(".opt"); if (!opts.length) return;
+box._act = Math.max(0, Math.min(opts.length - 1, (box._act < 0 ? -1 : box._act) + step));
+for (var i = 0; i < opts.length; i++) opts[i].classList.toggle("act", i === box._act);
+opts[box._act].scrollIntoView({ block: "nearest" });
+}
+function pick(name, v) {
+if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
+else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
+else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); applyLinks(); loadToursLang(); closeSheet(); }
+else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
+haptic();
+if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+render();
+}
+
+// ---------- Screens ----------
+function screenSearch() {
+var c = BY_ISO[S.country];
+var h = '<section class="card">';
+h += '<div class="grid3">' + CATS.map(function (x) {
+return '<button class="chip cat' + (S.cat === x ? " on" : "") + '" data-act="cat" data-v="' + x + '">' + svg(ICON[x]) + "<span>" + esc(t("c_" + x)) + "</span></button>";
+}).join("") + "</div>";
+if (S.cat === "flights") {
+h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</div>";
+}
+h += '<div style="display:flex;flex-direction:column;gap:8px"><div class="label">' + esc(t("to")) + "</div>" + combo("country", t("typeCountry"));
+h += '<div class="quick">' + POPULAR.map(function (iso) {
+return '<button class="chip' + (S.country === iso ? " on" : "") + '" data-act="country" data-v="' + iso + '">' + flagImg(iso) + "<span>" + esc(countryName(iso)) + "</span></button>";
+}).join("") + "</div>";
+h += '<label class="label" style="display:flex;align-items:center;gap:10px">' + esc(t("city")) + '<select data-act="city" style="flex:1">' +
+c.cities.map(function (x) { return '<option value="' + x[1] + '"' + (S.city === x[1] ? " selected" : "") + ">" + esc(x[0]) + "</option>"; }).join("") + "</select></label></div>";
+h += '<div style="display:flex;flex-direction:column;gap:8px"><div class="label">' + esc(t("when")) + '</div><div class="grid3">' +
+["weekend","nextweek","pick"].map(function (w) {
+var v = w === "nextweek" ? "next" : w;
+return '<button class="chip' + (S.when === v ? " on" : "") + '" data-act="when" data-v="' + v + '">' + esc(t(w)) + "</button>";
+}).join("") + "</div>";
+if (S.when === "pick") {
+h += calendar();
+} else {
+var d = tripDates();
+h += '<div class="hint">' + esc(fmt(d[0])) + " – " + esc(fmt(d[1])) + "</div>";
+}
+h += "</div>";
+h += '<div style="display:flex;flex-direction:column;gap:10px"><div class="label">' + esc(t("who")) + "</div>";
+h += '<div class="row"><div><div style="font-size:15px;font-weight:800">' + esc(t("adults")) + '</div><div class="hint">18+</div></div><div class="stepper">' +
+'<button data-act="adults" data-v="-1" aria-label="−">−</button><div class="v">' + S.adults + '</div><button class="plus" data-act="adults" data-v="1" aria-label="+">+</button></div></div>';
+h += '<div class="row"><div><div style="font-size:15px;font-weight:800">' + esc(t("children")) + '</div><div class="hint">' + esc(t("years")) + '</div></div><div class="stepper">' +
+'<button data-act="kids" data-v="-1" aria-label="−">−</button><div class="v">' + S.kids.length + '</div><button class="plus" data-act="kids" data-v="1" aria-label="+">+</button></div></div>';
+if (S.kids.length) {
+h += '<div style="display:flex;flex-wrap:wrap;gap:8px">' + S.kids.map(function (age, i) {
+var opts = ""; for (var a = 0; a < 18; a++) opts += '<option value="' + a + '"' + (age === a ? " selected" : "") + ">" + (a === 0 ? esc(t("under1")) : a) + "</option>";
+return '<label class="label" style="display:flex;align-items:center;gap:6px;font-size:12px">' + esc(t("childAge", { n: i + 1 })) + '<select data-act="kidage" data-i="' + i + '" style="width:auto;height:36px;font-size:13px">' + opts + "</select></label>";
+}).join("") + "</div>";
+}
+h += "</div>";
+h += '<button class="cta" data-act="search">' + esc(t("find")) + "</button></section>";
+if (S.searched) h += results();
+return h;
+}
+function resultCard(band, tag, title, text, button, url, watch) {
+var go = '<button class="btn" data-act="open" data-v="' + esc(url) + '">' + esc(button) + "</button>";
+return '<div class="result"><div class="band" style="background:' + band + '"><span class="tag">' + esc(tag) + '</span></div><div class="body">' +
+'<div><div style="font-size:15px;font-weight:800">' + esc(title) + '</div><div class="hint">' + esc(text) + "</div></div>" +
+(watch ? '<div class="grid2"><button class="btn ghost" data-act="watch" data-v="' + esc(watch) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button>" + go + "</div>" : go) +
+"</div></div>";
+}
+function results() {
+var city = cityName(), cv = { c: city };
+var h = '<section style="display:flex;flex-direction:column;gap:10px"><div class="h">' + esc(t("picks", cv)) + "</div>";
+if (S.cat === "flights") {
+h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city), searchAlert());
+h += resultCard("var(--sand)", t("arrival"), t("transferIn", cv), t("transferText"), t("bookTransfer"), LINKS.transfer);
+h += resultCard("#DDF6F1", t("stayOnline"), t("esimFor", { c: countryName(S.country) }), t("esimText"), t("getEsim"), LINKS.esim);
+} else if (S.cat === "hotels") {
+var hd = tripDates();
+h += resultCard("#FFE4DA", t("c_hotels"), t("hotelsIn", cv), fmt(hd[0]) + " – " + fmt(hd[1]), t("c_hotels"), hotelUrl(city, iso(hd[0]), iso(hd[1])));
+h += resultCard("var(--sky)", t("livePrices"), t("flightsTo", cv), t("flightsText"), t("showFlights"), flightUrl(S.city), searchAlert());
+h += resultCard("var(--sand)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), toursUrl(CITY[S.city] && CITY[S.city].name));
+} else if (S.cat === "car") {
+h += resultCard("var(--sky)", t("bestValue"), t("carIn", cv), t("carText"), t("findCar"), LINKS.car);
+h += resultCard("var(--sand)", t("moreChoice"), t("compareCars"), t("carText"), t("compare"), LINKS.car2);
+} else if (S.cat === "tours") {
+h += resultCard("var(--sky)", t("thingsToDo"), t("toursIn", cv), t("toursText"), t("seeTours"), toursUrl(CITY[S.city] && CITY[S.city].name));
+h += resultCard("var(--sand)", t("selfGuided"), t("audioFor", cv), t("audioText"), t("audioTours"), LINKS.audio);
+} else if (S.cat === "transfer") {
+h += resultCard("var(--sky)", t("arrival"), t("transferIn", cv), t("transferText"), t("bookTransfer"), LINKS.transfer);
+h += resultCard("var(--sand)", t("bestValue"), t("carIn", cv), t("carText"), t("findCar"), LINKS.car);
+} else {
+h += resultCard("var(--sky)", t("stayOnline"), t("esimFor", { c: countryName(S.country) }), t("esimText"), t("getEsim"), LINKS.esim);
+}
+var more = MORE[S.cat] || [];
+if (more.length) {
+h += '<div class="card" style="gap:0"><div class="h" style="margin-bottom:4px">' + esc(t("moreOptions")) + "</div>" + more.map(function (m) {
+return '<div class="prow"><div><b>' + esc(m[0]) + '</b><div class="hint">' + esc(t(m[1], cv)) + '</div></div><button class="btn ghost" data-act="open" data-v="' + esc(LINKS[m[2]]) + '">' + esc(t("open")) + "</button></div>";
+}).join("") + "</div>";
+}
+h += '<div class="fine">' + esc(t("affiliate")) + "</div></section>";
+return h;
+}
+// Extra partners per category: [brand, text key, link key]
+var MORE = {
+flights: [["Kiwi.com", "flightsText", "flights2"], ["Welcome Pickups", "transferText", "transfer2"], ["Yesim", "esimText", "esim2"], ["Radical Storage", "luggageText", "luggage"]],
+hotels: [["Radical Storage", "luggageText", "luggage"], ["Klook", "toursText", "tours4"], ["KKday", "toursText", "tours3"]],
+car: [["Economybookings", "compareCars", "car3"], ["QEEQ", "compareCars", "car4"], ["AutoEurope", "carText", "car5"], ["BikesBooking", "bikesText", "bikes"]],
+tours: [["Klook", "toursText", "tours4"], ["Go City", "toursText", "tours5"], ["KKday", "toursText", "tours3"], ["Radical Storage", "luggageText", "luggage"]],
+transfer: [["Welcome Pickups", "transferText", "transfer2"], ["GetTransfer", "transferText", "transfer3"], ["intui.travel", "transferText", "transfer4"]],
+esim: [["Yesim", "esimText", "esim2"], ["Saily", "esimText", "esim5"], ["GigSky", "esimText", "esim4"], ["Drimsim", "esimText", "esim3"]]
+};
+function wheelResult() {
+var w = S.wheel; if (!w) return "";
+var h = '<div class="win"><div style="font-size:12px;font-weight:800;color:#0B6E60">' + esc(t("wheelSays")) + "</div>";
+if (w.kind === "trip") {
+w.trips.forEach(function (tr, i) {
+var pl = placeName(tr.d);
+var on = isPicked(tr);
+h += '<div class="card" style="gap:8px;padding:12px' + (on ? ";box-shadow:0 0 0 2px #0A6FC0" : "") + '">' +
+'<button data-act="tpick" data-v="' + i + '" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:8px"><b style="font-size:15px">' + (on ? "✅" : (i + 1) + ".") + "</b>" + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:17px;font-weight:900">' + esc(pl.name) + "</div></button>" +
+'<div><span class="price">' + esc(money(tr.p)) + '</span> <span class="hint">' + esc(t("perPerson")) + "</span></div>" +
+'<div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(originName()) + " → " + esc(pl.name) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
+'<div class="grid2"><button class="btn" data-act="open" data-tp="' + i + '" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("showFlights")) + "</button>" +
+'<button class="btn ghost" data-act="watch" data-tp="' + i + '" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">' + svg(ICON.bell, 16) + "<span>" + esc(t("watch")) + "</span></button></div></div>";
+});
+h += '<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t("pricesNote")) + "</div>";
+} else if (w.kind === "hotels") {
+w.places.forEach(function (pl, i) {
+h += '<div class="card" style="gap:8px;padding:12px">' +
+'<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">' + (i + 1) + ".</b>" + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:17px;font-weight:900">' + esc(pl.name) + "</div></div>" +
+'<div class="meta"><span>' + esc(fmt(new Date(w.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(w.ret + "T12:00:00"))) + "</span><span>≤ " + esc(money(S.budget)) + " / 🌙</span></div>" +
+'<div class="grid2"><button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(cheapHotelUrl(pl.name, w.dep, w.ret)) + '">' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
+'<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">' + esc(t("toursIn", { c: pl.name })) + "</button></div></div>";
+});
+} else if (w.kind === "none") {
+var c = w.trip, cp = placeName(c.d);
+h += '<div style="font-size:15px;font-weight:800">' + esc(t("noneInBudget", { o: originName(), b: money(S.budget), c: cp.name, p: money(c.p) })) + "</div>" +
+'<button class="btn" data-act="open" data-v="' + esc(tripUrl(c)) + '">' + esc(t("flightsTo", { c: cp.name })) + "</button>";
+} else {
+h += '<div class="hint" style="color:#3D5568">' + esc(t("noData")) + "</div>";
+(w.cities || []).forEach(function (c, i) {
+h += '<button class="btn" data-act="open" data-v="' + esc(flightUrl(c[1], "weekend")) + '">' + (i + 1) + " · " + esc(t("flightsTo", { c: c[0] })) + "</button>";
+});
+}
+return h + "</div>";
+}
+function openSheet(kind) {
+var sh = document.getElementById("sheet");
+sh.innerHTML = '<button class="bg" data-act="curclose" aria-label="Close"></button><div class="panel"><div class="label">' + esc(t(kind === "lang" ? "language" : "currency")) + "</div>" + (kind === "lang" ? combo("lang", t("typeLang")) : combo("currency", t("typeCurrency"))) + "</div>";
+sh.hidden = false;
+var inp = sh.querySelector("[data-cin]"); inp.value = ""; inp.focus();
+}
+function closeSheet() { var sh = document.getElementById("sheet"); sh.hidden = true; sh.innerHTML = ""; }
+function screenCoupons() {
+var h = '<section class="card" style="align-items:stretch">';
+h += '<div><div class="h">' + esc(t("wheel")) + '</div><div class="hint">' + esc(t("wheelText")) + "</div></div>";
+h += '<div class="wheel-wrap"><div class="wheel" id="wheel" style="transform:rotate(' + S.rotation + 'deg)"></div><div class="pointer"></div>' +
+'<div class="hub"><span class="hint" style="font-weight:800">' + esc(t("budget")) + "</span><b>" + esc(money(S.budget)) + (S.wmode === "hotel" ? " / 🌙" : "") + "</b></div></div>";
+h += '<input type="range" min="30" max="800" step="10" value="' + S.budget + '" data-act="budget" aria-label="' + esc(t("budget")) + '">';
+h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</div>";
+h += '<div class="grid2">' + [["flight", t("c_flights")], ["hotel", t("c_hotels")]].map(function (m) {
+return '<button class="chip' + (S.wmode === m[0] ? " on" : "") + '" data-act="wmode" data-v="' + m[0] + '">' + esc(m[1]) + "</button>"; }).join("") + "</div>";
+if (S.wmode === "hotel" && S.picked) h += '<div class="hint" style="display:flex;align-items:center;gap:8px;font-weight:700">✈ ' + (S.picked.iso ? flagImg(S.picked.iso) : "") + esc(S.picked.name) + " · " + esc(fmt(new Date(S.picked.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(S.picked.ret + "T12:00:00"))) + '<button data-act="unpick" aria-label="Clear" style="all:unset;cursor:pointer;margin-left:auto;font-size:18px">✕</button></div>';
+h += '<button class="cta" data-act="spin">' + esc(t("spin")) + "</button>";
+h += wheelResult();
+h += "</section>";
+h += '<section class="card"><div class="h">' + esc(t("errorFares")) + '</div><div class="soon">' + esc(t("errorSoon")) + "</div>" +
+'<div class="hint">' + esc(t("errorHint")) + "</div></section>";
+h += '<section class="card"><div class="h">' + esc(t("delayed")) + '</div><div class="hint">' + esc(t("delayText")) + "</div>" +
+'<div class="grid2"><button class="btn" data-act="open" data-v="' + LINKS.delay + '">AirHelp</button><button class="btn ghost" data-act="open" data-v="' + LINKS.delay2 + '">Compensair</button></div></section>';
+return h;
+}
+function screenMap() {
+var pins = PINS.map(function (p, i) { p.i = i; return p; }).filter(function (p) { return S.filter === "all" || p.cat === S.filter; });
+if (!pins.some(function (p) { return p.i === S.deal; }) && pins[0]) S.deal = pins[0].i;
+var h = '<div style="border-radius:16px;background:var(--ink);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px">' +
+'<span style="color:var(--sun)">' + svg(ICON.bell) + '</span><div style="font-size:13px;font-weight:700">' + esc(t("mapBanner")) + "</div></div>";
+h += '<div style="display:flex;gap:6px;overflow-x:auto">' + ["all","food","spa","beauty","fun"].map(function (f) {
+return '<button class="chip' + (S.filter === f ? " on" : "") + '" style="flex:none;padding:0 14px" data-act="filter" data-v="' + f + '">' + esc(t(f)) + "</button>";
+}).join("") + "</div>";
+h += '<div class="map"><div class="road" style="left:0;top:0;width:140px;height:110px;background:var(--sky)"></div>' +
+'<div class="road" style="left:0;right:0;top:122px;height:16px"></div><div class="road" style="top:0;bottom:0;left:180px;width:14px"></div>' +
+'<div class="road" style="left:0;right:0;top:220px;height:10px"></div>' +
+'<div style="position:absolute;left:162px;top:112px;height:34px;padding:0 10px;border-radius:17px;background:var(--ink);color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;border:3px solid #fff">' + esc(t("yourHotel")) + "</div>" +
+pins.map(function (p) { return '<button class="pin' + (p.i === S.deal ? " on" : "") + '" style="left:' + p.x + "px;top:" + p.y + 'px" data-act="deal" data-v="' + p.i + '" aria-label="' + esc(t(p.tk)) + '">' + p.d + "</button>"; }).join("") +
+'<span class="preview">' + esc(t("preview")) + "</span></div>";
+var d = PINS[S.deal];
+if (d) {
+h += '<div class="card" style="gap:12px"><div style="display:flex;align-items:center;gap:12px"><div style="flex:none;width:56px;height:56px;border-radius:14px;background:#FFE4DA;color:#B23A17;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center">' + d.d + "</div>" +
+'<div><div style="font-size:16px;font-weight:900">' + esc(t(d.tk)) + '</div><div class="hint">' + esc(t(d.mk)) + " · " + d.km + " km</div></div></div>" +
+'<button class="btn ghost" data-act="soon">' + esc(t("vouchersSoon")) + "</button></div>";
+}
+h += '<section class="card"><div class="h">' + esc(t("thingsNow")) + '</div><div class="grid2">' +
+'<button class="btn" data-act="open" data-v="' + LINKS.tours + '">' + esc(t("ticketsTours")) + '</button><button class="btn ghost" data-act="open" data-v="' + LINKS.audio + '">' + esc(t("audioGuides")) + "</button></div></section>";
+h += '<div class="fine">' + esc(t("mapFine")) + "</div>";
+return h;
+}
+function screenProfile() {
+var h = '<section class="card"><div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("language")) + "</div>" + combo("lang", t("typeLang")) + "</div>";
+if (!TR[S.lang]) h += '<div class="hint">' + esc(t("langNote")) + "</div>";
+h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("currency")) + "</div>" + combo("currency", t("typeCurrency")) + "</div></section>";
+h += '<section class="card"><button class="btn ghost" data-act="open" data-v="https://tripwisehub-blip.github.io/tripwise-app/blog/">📖 Tripwise Guides</button></section>';
+h += '<section class="card" style="background:var(--blue);color:#fff"><div class="h">' + esc(t("together")) + "</div>" +
+'<div style="font-size:13px;color:#D8ECFB">' + esc(t("togetherText")) + '</div><button class="cta" data-act="invite">' + esc(t("invite")) + "</button></section>";
+h += '<section class="card"><div class="row"><div class="h">' + esc(t("badges")) + '</div><div class="hint" style="font-weight:700">' + esc(t("soon")) + '</div></div><div class="grid3">' +
+["b1","b2","b3","b4","b5","b6"].map(function (b) { return '<div class="badge"><i></i>' + esc(t(b)) + "</div>"; }).join("") + "</div></section>";
+return h;
+}
+function render() {
+document.getElementById("subtitle").textContent = t("sub_" + S.tab);
+document.getElementById("curcode").textContent = curSymbol(S.currency) === S.currency ? S.currency : curSymbol(S.currency) + " " + S.currency;
+document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " + S.currency);
+document.getElementById("langcode").textContent = "🌐 " + S.lang.toUpperCase();
+document.getElementById("langbtn").setAttribute("aria-label", t("language") + ": " + langName(S.lang, S.lang));
+var main = document.getElementById("main"), y = main.scrollTop;
+main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : screenProfile();
+main.scrollTop = y;
+document.getElementById("nav").innerHTML = TABS.map(function (k) {
+return '<button class="' + (S.tab === k ? "on" : "") + '" data-act="tab" data-v="' + k + '">' + svg(ICON[k], 22) + "<span>" + esc(t("tab_" + k)) + "</span></button>";
+}).join("");
+}
+
+// ---------- Events ----------
+function act(el) {
+var a = el.getAttribute("data-act"), v = el.getAttribute("data-v");
+switch (a) {
+case "tab": S.tab = v; haptic(); document.getElementById("main").scrollTop = 0; break;
+case "cat": S.cat = v; S.searched = false; haptic(); break;
+case "country": S.country = v; S.city = BY_ISO[v].cities[0][1]; S.searched = false; haptic(); break;
+case "when": S.when = v; S.searched = false; haptic(); break;
+case "calnav": S.calM = (S.calM || 0) + Number(v); break;
+case "calday":
+if (!S.from || S.to || v < S.from) { S.from = v; S.to = ""; } else { S.to = v; }
+S.searched = false; haptic(); break;
+case "adults": S.adults = Math.min(9, Math.max(1, S.adults + Number(v))); haptic(); break;
+case "kids": if (Number(v) > 0 && S.kids.length < 6) S.kids.push(7); else if (Number(v) < 0) S.kids.pop(); haptic(); break;
+case "search":
+if (S.when === "pick" && (!S.from || !S.to || S.to < S.from)) { toast(t("datesToast")); return; }
+S.searched = true; haptic(); render();
+setTimeout(function () { var r = document.querySelector(".result, .soon"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
+return;
+case "open": if (el.hasAttribute("data-tp")) { choosePick(+el.getAttribute("data-tp")); setTimeout(render, 300); } openLink(v); return;
+case "tpick": choosePick(+v); haptic(); break;
+case "unpick": S.picked = null; S.wheel = null; haptic(); break;
+case "watch": if (el.hasAttribute("data-tp")) choosePick(+el.getAttribute("data-tp")); toast(t("watchToast2")); setTimeout(function () { openLink(v); }, 700); return;
+case "wmode": S.wmode = v; save("wmode", v); S.wheel = null; haptic(); break;
+case "soon": toast(t("voucherToast")); return;
+case "spin":
+S.rotation += 1440 + Math.floor(Math.random() * 360);
+var w = document.getElementById("wheel"); if (w) w.style.transform = "rotate(" + S.rotation + "deg)";
+haptic();
+setTimeout(function () {
+S.wheel = spinWheel();
+try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+render();
+}, 2400);
+return;
+case "curopen": haptic(); openSheet(); return;
+case "langopen": haptic(); openSheet("lang"); return;
+case "curclose": closeSheet(); return;
+case "filter": S.filter = v; break;
+case "deal": S.deal = Number(v); haptic(); break;
+case "currency": S.currency = v; save("currency", v); haptic(); break;
+case "invite":
+openLink("https://t.me/share/url?url=" + encodeURIComponent(BOT_LINK) + "&text=" + encodeURIComponent(t("inviteText")));
+return;
+default: return;
+}
+render();
+}
+function change(el) {
+var a = el.getAttribute("data-act");
+if (a === "city") { S.city = el.value; S.searched = false; }
+else if (a === "from") { S.from = el.value; S.searched = false; }
+else if (a === "to") { S.to = el.value; S.searched = false; }
+else if (a === "kidage") { S.kids[Number(el.getAttribute("data-i"))] = Number(el.value); S.searched = false; }
+else if (a === "budget") { S.budget = Number(el.value); save("budget", S.budget); S.wheel = null; }
+else return;
+render();
+}
+document.addEventListener("click", function (e) {
+var p = e.target.closest("[data-pick]");
+if (p) { pick(p.getAttribute("data-pick"), p.getAttribute("data-v")); return; }
+var el = e.target.closest("button[data-act]");
+if (el) act(el);
+});
+function keepFocus(e) { if (e.target.closest && e.target.closest(".dd")) e.preventDefault(); }
+document.addEventListener("mousedown", keepFocus);
+document.addEventListener("focusin", function (e) {
+var inp = e.target;
+if (!inp.matches || !inp.matches("[data-cin]")) return;
+openDD(inp, "");
+try { inp.select(); } catch (err) {}
+var box = inp.closest(".combo");
+setTimeout(function () { if (document.activeElement === inp) box.scrollIntoView({ block: "start", behavior: "smooth" }); }, 300);
+});
+document.addEventListener("focusout", function (e) {
+var inp = e.target;
+if (!inp.matches || !inp.matches("[data-cin]")) return;
+setTimeout(function () {
+if (document.activeElement === inp || !inp.isConnected) return;
+if (inp.closest("#sheet")) { closeSheet(); return; }
+var box = inp.closest(".combo"); box.querySelector(".dd").hidden = true;
+inp.value = comboLabel(inp.getAttribute("data-cin"));
+}, 150);
+});
+document.addEventListener("keydown", function (e) {
+var inp = e.target;
+if (!inp.matches || !inp.matches("[data-cin]")) return;
+var box = inp.closest(".combo");
+if (e.key === "ArrowDown") { e.preventDefault(); moveAct(box, 1); }
+else if (e.key === "ArrowUp") { e.preventDefault(); moveAct(box, -1); }
+else if (e.key === "Enter") {
+e.preventDefault();
+var items = box._items || [], i = box._act >= 0 ? box._act : 0;
+if (items[i]) pick(inp.getAttribute("data-cin"), items[i].v);
+} else if (e.key === "Escape") { inp.blur(); }
+});
+document.addEventListener("change", function (e) {
+if (e.target.matches("[data-act]")) change(e.target);
+});
+document.addEventListener("input", function (e) {
+var el = e.target;
+if (el.matches("[data-cin]")) { openDD(el, el.value); return; }
+if (el.matches('input[type=range][data-act="budget"]')) {
+S.budget = Number(el.value);
+var hub = document.querySelector(".hub b"); if (hub) hub.textContent = money(S.budget);
+}
+});
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !document.getElementById("sheet").hidden) closeSheet(); });
+window.__tripwise = { state: S, flightUrl: flightUrl, passengers: passengers, tripDates: tripDates, options: options, TR: TR, KEYS: KEYS, COUNTRIES: COUNTRIES, money: money, spinWheel: spinWheel, setData: function (p, r) { if (p) PRICES = p; if (r) Object.keys(r).forEach(function (k) { if (CURRENCIES[k] !== undefined) RATES[k] = r[k]; }); render(); } };
+render();
+// Fresh exchange rates and flight prices, updated by GitHub Actions (see .github/workflows/prices.yml)
+function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
+loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
+loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
+loadToursLang();
+loadJSON("data/links.json").then(function (d) { PLINKS = d || {}; applyLinks(); render(); }).catch(function () {});
+})();
+</script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="fo-verify" content="ecc3db6a-d085-46d5-a6d7-9ad485111ee6" />
+<title>Tripwise</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+--blue: #0A6FC0; --blue-soft: #E2F0FC; --sun: #FFC845; --coral: #FF7A50; --mint: #2BB79F;
+--sky: #BFE3F7; --sand: #FFE9C2; --ink: #1B2B3A; --muted: #5C7083; --line: #CFE0EF; --bg: #F2F8FE;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: Nunito, system-ui, -apple-system, sans-serif; }
+button, select, input { font-family: inherit; color: inherit; }
+button { cursor: pointer; }
+#app { display: flex; flex-direction: column; height: 100%; max-width: 560px; margin: 0 auto; }
+header { padding: 16px 18px 14px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: space-between; }
+header .t { font-size: 22px; font-weight: 900; }
+header .s { font-size: 13px; font-weight: 600; color: #D8ECFB; }
+.pill { height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: var(--sun); color: var(--ink); font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+.pill .caret { font-size: 10px; }
+#sheet { position: fixed; inset: 0; z-index: 50; }
+#sheet .bg { position: absolute; inset: 0; border: 0; background: rgba(27,43,58,.35); width: 100%; }
+#sheet .panel { position: absolute; left: 50%; transform: translateX(-50%); top: 64px; width: calc(100% - 24px); max-width: 520px; background: #fff; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 16px 40px rgba(27,43,58,.25); }
+#sheet .dd { position: static; margin-top: 6px; box-shadow: none; max-height: 52vh; }
+.prow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid #E6EEF5; }
+.prow:first-of-type { border-top: 0; }
+.prow b { font-size: 15px; font-weight: 900; }
+.prow .btn { flex: none; min-width: 84px; }
+.price { font-size: 26px; font-weight: 900; color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta span { height: 26px; padding: 0 10px; border-radius: 13px; background: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+main { flex: 1; overflow-y: auto; padding: 14px 14px 120px; display: flex; flex-direction: column; gap: 14px; }
+.card { background: #fff; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.h { font-size: 17px; font-weight: 900; }
+.label { font-size: 13px; font-weight: 800; color: #4A5E70; }
+.hint { font-size: 12px; color: var(--muted); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chip { min-height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 13px; font-weight: 800; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.cal { border: 1.5px solid var(--line); border-radius: 16px; padding: 10px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; text-transform: capitalize; }
+.cal-nav { width: 36px; height: 36px; border-radius: 18px; border: 0; background: var(--blue-soft); color: var(--blue); font-size: 20px; font-weight: 800; }
+.cal-nav[disabled] { opacity: .35; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; text-align: center; }
+.cal-wd { font-size: 11px; font-weight: 800; color: var(--muted); padding: 4px 0; text-transform: capitalize; }
+.cal-d { height: 38px; border: 0; background: none; font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; justify-content: center; }
+.cal-d.past { color: #B8C6D3; }
+.cal-d.in { background: rgba(10,111,192,.14); }
+.cal-d.start.edge { background: linear-gradient(to right, transparent 50%, rgba(10,111,192,.14) 50%); }
+.cal-d.end.edge { background: linear-gradient(to left, transparent 50%, rgba(10,111,192,.14) 50%); }
+.cal-d.start::before, .cal-d.end::before { content: ""; }
+.cal-d.start, .cal-d.end { position: relative; color: #fff; z-index: 0; }
+.cal-d.start::after, .cal-d.end::after { content: ""; position: absolute; width: 36px; height: 36px; border-radius: 18px; background: var(--blue); z-index: -1; }
+.cat { min-height: 62px; flex-direction: column; gap: 4px; font-size: 12px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick .chip { min-height: 34px; font-size: 12px; padding: 0 10px; }
+.fl { flex: none; width: 20px; height: 14px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgba(27,43,58,.15); background: #E6EEF5; }
+.combo { position: relative; }
+.field { display: flex; align-items: center; gap: 8px; height: 46px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 12px; background: #fff; color: var(--muted); }
+.field:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font-size: 16px; font-weight: 800; color: var(--ink); }
+.field input::placeholder { color: #93A5B5; font-weight: 700; }
+.field .caret { font-size: 11px; }
+.dd { position: absolute; left: 0; right: 0; top: 50px; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 30px rgba(27,43,58,.18); max-height: 264px; overflow-y: auto; padding: 4px; }
+.opt { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; text-align: start; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 700; }
+.opt .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt small { margin-inline-start: auto; padding-inline-start: 8px; color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.opt.act { background: var(--blue-soft); }
+@media (hover: hover) { .opt:hover { background: var(--blue-soft); } }
+.dd .empty { padding: 12px; color: var(--muted); font-size: 14px; }
+select, input[type=date] { width: 100%; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); padding: 0 10px; font-size: 15px; font-weight: 700; background: #fff; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button { width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid var(--line); background: #fff; font-size: 20px; font-weight: 800; color: var(--blue); }
+.stepper button.plus { border: 0; background: var(--blue-soft); }
+.stepper .v { width: 22px; text-align: center; font-size: 17px; font-weight: 900; }
+.cta { height: 54px; border: 0; border-radius: 16px; background: var(--sun); font-size: 17px; font-weight: 900; color: var(--ink); width: 100%; }
+.btn { min-height: 42px; border-radius: 12px; border: 0; background: var(--blue); color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; text-align: center; }
+.btn.ghost { background: #fff; border: 1.5px solid var(--line); color: var(--blue); }
+.result { background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
+.result .band { height: 52px; padding: 10px 12px; display: flex; align-items: flex-start; }
+.tag { height: 24px; padding: 0 10px; border-radius: 12px; background: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; }
+.result .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.soon { border-radius: 16px; background: var(--sand); padding: 12px 14px; font-size: 13px; font-weight: 700; color: #6B4A00; }
+nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #fff; border-top: 1px solid #DCE8F3; padding: 6px 6px calc(10px + env(safe-area-inset-bottom)); }
+nav button { border: 0; border-radius: 14px; min-height: 52px; background: transparent; color: #62778A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 800; }
+nav button.on { background: var(--blue-soft); color: var(--blue); }
+.wheel-wrap { position: relative; width: 230px; height: 230px; align-self: center; }
+.wheel { position: absolute; inset: 0; border-radius: 50%; border: 6px solid #fff; box-shadow: 0 0 0 2px var(--blue-soft); transition: transform 2.4s cubic-bezier(.15,.8,.15,1);
+background: conic-gradient(var(--blue) 0 60deg, var(--sun) 60deg 120deg, var(--coral) 120deg 180deg, var(--mint) 180deg 240deg, var(--sky) 240deg 300deg, var(--sand) 300deg 360deg); }
+.pointer { position: absolute; left: 106px; top: -8px; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 20px solid var(--ink); }
+.hub { position: absolute; left: 70px; top: 70px; width: 90px; height: 90px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.hub b { font-size: 22px; font-weight: 900; }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+.win { border-radius: 16px; background: #DDF6F1; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.map { position: relative; height: 280px; border-radius: 20px; overflow: hidden; background: #DCEFE4; }
+.map .road { position: absolute; background: #fff; }
+.pin { position: absolute; height: 32px; padding: 0 10px; border-radius: 16px; border: 3px solid #fff; font-size: 13px; font-weight: 900; background: var(--sun); color: var(--ink); }
+.pin.on { background: #D9481F; color: #fff; }
+.preview { position: absolute; right: 10px; top: 10px; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; }
+.badge { border-radius: 14px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: #F2F6FA; color: #62778A; font-size: 12px; font-weight: 800; }
+.badge i { width: 34px; height: 34px; border-radius: 50%; background: #DCE5EE; }
+.toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); max-width: 340px; width: calc(100% - 40px); background: var(--ink); color: #fff; padding: 12px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity .2s; pointer-events: none; text-align: center; }
+.toast.show { opacity: 1; }
+.fine { font-size: 11px; color: var(--muted); padding: 0 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+<div><div class="t">Tripwise</div><div class="s" id="subtitle"></div></div>
+<div style="display:flex;gap:6px;flex-shrink:0"><button class="pill" id="langbtn" data-act="langopen" aria-haspopup="listbox"><span id="langcode">EN</span><span class="caret" aria-hidden="true">▼</span></button><button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button></div>
+</header>
+<main id="main"></main>
+<nav id="nav"></nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="sheet" hidden></div>
+<script>
+(function () {
+"use strict";
+var MARKER = "793212"; // Travelpayouts partner ID
+var LINKS = {
+car: "https://localrent.tpx.lu/EfbBHrJ5",
+car2: "https://getrentacar.tpx.lu/iwSAxi5F",
+tours: "https://tiqets.tpx.lu/AT5p2SuI",
+audio: "https://wegotrip.tpx.lu/PFwel7W8",
+transfer: "https://kiwitaxi.tpx.lu/Z8An788O",
+esim: "https://airalo.tpx.lu/PfdD9FnS",
+flights: "https://aviasales.tpx.lu/sjlt4H8o",
+delay: "https://airhelp.tpx.lu/65MarJSz",
+delay2: "https://compensair.tpx.lu/JhXKalh6",
+esim2: "https://yesim.tpx.lu/YOgFLLlv",
+esim3: "https://drimsim.tpx.lu/kiCCXQLo",
+transfer2: "https://tpx.lu/FaOBSzI1",
+transfer3: "https://gettransfer.tpx.lu/YS8CqrIP",
+transfer4: "https://intui.tpx.lu/lLuiM3YS",
+car3: "https://economybookings.tpx.lu/nln42kEa",
+car4: "https://qeeq.tpx.lu/LP8w8xTP",
+car5: "https://autoeurope.tpx.lu/5SjQDKNW",
+bikes: "https://bikesbooking.tpx.lu/GjfUTTR9",
+luggage: "https://radicalstorage.tpx.lu/ELcf4Zv6",
+tours3: "https://kkday.tpx.lu/cC0bYDSM",
+tours4: "https://www.klook.com/en-US/",
+tours5: "https://gocity.com/en",
+esim4: "https://www.gigsky.com/",
+esim5: "https://saily.com/",
+flights2: "https://www.kiwi.com/en/"
+};
+// Currencies: code -> fallback rate per 1 EUR (approximate; data/rates.json replaces them with fresh rates)
+var CURRENCIES = {
+EUR: 1, USD: 1.08, GBP: 0.85, SEK: 11.4, NOK: 11.7, DKK: 7.46, ISK: 150, PLN: 4.3, CZK: 25.2, HUF: 395, RON: 4.97, BGN: 1.96,
+CHF: 0.95, TRY: 37, UAH: 45, GEL: 2.95, AMD: 420, AZN: 1.84, KZT: 520, AED: 3.97, SAR: 4.05, QAR: 3.93, ILS: 4.0, EGP: 53,
+MAD: 10.8, THB: 37.5, VND: 27500, IDR: 17500, MYR: 4.9, SGD: 1.45, PHP: 62, INR: 91, CNY: 7.8, HKD: 8.4, JPY: 165, KRW: 1500,
+TWD: 35, AUD: 1.65, NZD: 1.8, CAD: 1.5, MXN: 20, BRL: 6.0, ZAR: 20, USDT: 1.08, BTC: 0.000012
+};
+var CRYPTO = { USDT: ["Tether (USDT)", "₮"], BTC: ["Bitcoin", "₿"] };
+var RATES = {}; Object.keys(CURRENCIES).forEach(function (c) { RATES[c] = CURRENCIES[c]; });
+var PRICES = null; // data/prices.json, refreshed by GitHub Actions
+var TOURS = {}; // data/tours.json: city -> affiliate link to tours in that city
+var TOURS_L = {}, TOURS_LANGS = ["de", "es", "fr", "it", "ru", "pl", "ja", "ko", "zh"]; // data/tours_<lang>.json
+function loadToursLang() { var l = S.lang; if (TOURS_LANGS.indexOf(l) < 0 || TOURS_L[l]) return; TOURS_L[l] = {}; loadJSON("data/tours_" + l + ".json").then(function (d) { TOURS_L[l] = d || {}; }).catch(function () {}); }
+function toursUrl(name) { return (name && ((TOURS_L[S.lang] || {})[name] || TOURS[name])) || LINKS.tours; }
+var LINKS0 = Object.assign({}, LINKS), PLINKS = {}; // data/links.json: partner pages in each language
+function applyLinks() { Object.keys(LINKS0).forEach(function (k) { var m = PLINKS[k]; LINKS[k] = (m && (m[S.lang] || m.en)) || LINKS0[k]; }); }
+var BOT_LINK = "https://t.me/tripwise_hub_bot";
+
+// ISO|English name|City CODE,City CODE (IATA city or airport codes)
+var DATA = [
+"ee|Estonia|Tallinn TLL,Tartu TAY",
+"fi|Finland|Helsinki HEL,Rovaniemi RVN,Oulu OUL,Turku TKU",
+"lv|Latvia|Riga RIX",
+"lt|Lithuania|Vilnius VNO,Kaunas KUN,Palanga PLQ",
+"se|Sweden|Stockholm STO,Gothenburg GOT,Malmo MMX",
+"no|Norway|Oslo OSL,Bergen BGO,Tromso TOS",
+"dk|Denmark|Copenhagen CPH,Billund BLL,Aarhus AAR",
+"is|Iceland|Reykjavik REK",
+"pl|Poland|Warsaw WAW,Krakow KRK,Gdansk GDN,Wroclaw WRO",
+"de|Germany|Berlin BER,Munich MUC,Hamburg HAM,Frankfurt FRA,Cologne CGN",
+"nl|Netherlands|Amsterdam AMS,Eindhoven EIN,Rotterdam RTM",
+"be|Belgium|Brussels BRU",
+"lu|Luxembourg|Luxembourg LUX",
+"fr|France|Paris PAR,Nice NCE,Lyon LYS,Marseille MRS,Bordeaux BOD",
+"es|Spain|Barcelona BCN,Madrid MAD,Malaga AGP,Alicante ALC,Palma de Mallorca PMI,Tenerife TCI,Valencia VLC,Seville SVQ",
+"pt|Portugal|Lisbon LIS,Porto OPO,Faro FAO,Madeira FNC",
+"it|Italy|Rome ROM,Milan MIL,Venice VCE,Florence FLR,Naples NAP,Catania CTA",
+"mt|Malta|Malta MLA",
+"gr|Greece|Athens ATH,Thessaloniki SKG,Heraklion HER,Rhodes RHO,Corfu CFU",
+"cy|Cyprus|Larnaca LCA,Paphos PFO",
+"at|Austria|Vienna VIE,Salzburg SZG,Innsbruck INN",
+"ch|Switzerland|Zurich ZRH,Geneva GVA,Basel BSL",
+"cz|Czechia|Prague PRG",
+"sk|Slovakia|Bratislava BTS",
+"hu|Hungary|Budapest BUD",
+"si|Slovenia|Ljubljana LJU",
+"hr|Croatia|Zagreb ZAG,Split SPU,Dubrovnik DBV",
+"rs|Serbia|Belgrade BEG",
+"me|Montenegro|Podgorica TGD,Tivat TIV",
+"al|Albania|Tirana TIA",
+"ba|Bosnia and Herzegovina|Sarajevo SJJ",
+"mk|North Macedonia|Skopje SKP",
+"bg|Bulgaria|Sofia SOF,Varna VAR,Burgas BOJ",
+"ro|Romania|Bucharest BUH,Cluj-Napoca CLJ",
+"gb|United Kingdom|London LON,Manchester MAN,Edinburgh EDI",
+"ie|Ireland|Dublin DUB",
+"ge|Georgia|Tbilisi TBS,Batumi BUS,Kutaisi KUT",
+"am|Armenia|Yerevan EVN",
+"az|Azerbaijan|Baku BAK",
+"tr|Turkey|Istanbul IST,Antalya AYT,Izmir IZM,Dalaman DLM,Bodrum BJV",
+"ae|United Arab Emirates|Dubai DXB,Abu Dhabi AUH,Sharjah SHJ,Ras Al Khaimah RKT",
+"qa|Qatar|Doha DOH",
+"om|Oman|Muscat MCT,Salalah SLL",
+"sa|Saudi Arabia|Riyadh RUH,Jeddah JED,Medina MED",
+"bh|Bahrain|Bahrain BAH",
+"kw|Kuwait|Kuwait City KWI",
+"jo|Jordan|Amman AMM,Aqaba AQJ",
+"lb|Lebanon|Beirut BEY",
+"iq|Iraq|Erbil EBL,Baghdad BGW",
+"il|Israel|Tel Aviv TLV",
+"eg|Egypt|Hurghada HRG,Sharm el-Sheikh SSH,Cairo CAI,Luxor LXR",
+"ma|Morocco|Marrakech RAK,Agadir AGA,Casablanca CAS",
+"tn|Tunisia|Tunis TUN,Enfidha NBE,Djerba DJE",
+"dz|Algeria|Algiers ALG",
+"za|South Africa|Cape Town CPT,Johannesburg JNB",
+"ke|Kenya|Nairobi NBO,Mombasa MBA",
+"tz|Tanzania|Zanzibar ZNZ,Dar es Salaam DAR,Kilimanjaro JRO",
+"mu|Mauritius|Mauritius MRU",
+"sc|Seychelles|Mahe SEZ",
+"cv|Cape Verde|Sal SID",
+"et|Ethiopia|Addis Ababa ADD",
+"ng|Nigeria|Lagos LOS",
+"gh|Ghana|Accra ACC",
+"sn|Senegal|Dakar DKR",
+"na|Namibia|Windhoek WDH",
+"th|Thailand|Bangkok BKK,Phuket HKT,Chiang Mai CNX,Krabi KBV,Koh Samui USM",
+"vn|Vietnam|Hanoi HAN,Ho Chi Minh City SGN,Da Nang DAD,Nha Trang CXR,Phu Quoc PQC",
+"id|Indonesia|Bali DPS,Jakarta JKT,Lombok LOP",
+"bn|Brunei|Bandar Seri Begawan BWN",
+"my|Malaysia|Kuala Lumpur KUL,Penang PEN,Langkawi LGK",
+"sg|Singapore|Singapore SIN",
+"ph|Philippines|Manila MNL,Cebu CEB",
+"kh|Cambodia|Phnom Penh PNH,Siem Reap SAI",
+"la|Laos|Vientiane VTE,Luang Prabang LPQ",
+"lk|Sri Lanka|Colombo CMB",
+"mv|Maldives|Male MLE",
+"in|India|Delhi DEL,Mumbai BOM,Goa GOI,Bangalore BLR,Jaipur JAI",
+"pk|Pakistan|Islamabad ISB,Lahore LHE,Karachi KHI",
+"bd|Bangladesh|Dhaka DAC",
+"np|Nepal|Kathmandu KTM",
+"bt|Bhutan|Paro PBH",
+"cn|China|Beijing BJS,Shanghai SHA,Guangzhou CAN,Chengdu CTU,Sanya SYX",
+"hk|Hong Kong|Hong Kong HKG",
+"mo|Macao|Macao MFM",
+"tw|Taiwan|Taipei TPE",
+"jp|Japan|Tokyo TYO,Osaka OSA,Sapporo SPK,Fukuoka FUK,Okinawa OKA",
+"kr|South Korea|Seoul SEL,Busan PUS,Jeju CJU",
+"mn|Mongolia|Ulaanbaatar UBN",
+"kz|Kazakhstan|Almaty ALA,Astana NQZ",
+"uz|Uzbekistan|Tashkent TAS,Samarkand SKD",
+"kg|Kyrgyzstan|Bishkek FRU",
+"us|United States|New York NYC,Los Angeles LAX,Miami MIA,San Francisco SFO,Las Vegas LAS,Chicago CHI,Orlando MCO",
+"ca|Canada|Toronto YTO,Vancouver YVR,Montreal YMQ",
+"mx|Mexico|Cancun CUN,Mexico City MEX",
+"cu|Cuba|Havana HAV,Varadero VRA",
+"do|Dominican Republic|Punta Cana PUJ,Santo Domingo SDQ",
+"jm|Jamaica|Montego Bay MBJ",
+"bs|Bahamas|Nassau NAS",
+"pa|Panama|Panama City PTY",
+"cr|Costa Rica|San Jose SJO",
+"co|Colombia|Bogota BOG,Cartagena CTG,Medellin MDE",
+"pe|Peru|Lima LIM,Cusco CUZ",
+"ec|Ecuador|Quito UIO",
+"cl|Chile|Santiago SCL",
+"ar|Argentina|Buenos Aires BUE",
+"uy|Uruguay|Montevideo MVD",
+"br|Brazil|Rio de Janeiro RIO,Sao Paulo SAO",
+"au|Australia|Sydney SYD,Melbourne MEL,Brisbane BNE,Perth PER",
+"nz|New Zealand|Auckland AKL,Queenstown ZQN",
+"fj|Fiji|Nadi NAN",
+"pf|French Polynesia|Tahiti PPT"
+];
+var COUNTRIES = DATA.map(function (r) {
+var p = r.split("|");
+return { iso: p[0], en: p[1], cities: p[2].split(",").map(function (c) { var i = c.lastIndexOf(" "); return [c.slice(0, i), c.slice(i + 1)]; }) };
+});
+var BY_ISO = {}, CITY = {};
+COUNTRIES.forEach(function (c) {
+BY_ISO[c.iso] = c;
+c.cities.forEach(function (x) { if (!CITY[x[1]]) CITY[x[1]] = { name: x[0], code: x[1], iso: c.iso }; });
+});
+var ORIGIN_TOP = ["TLL","HEL","RIX","VNO","STO","OSL","CPH","WAW","BER","MUC","FRA","AMS","LON","PAR","VIE","PRG","BCN","MAD","ROM","MIL"];
+var POPULAR = ["es","it","gr","tr","th","ae"];
+var RTL = ["ar","he","fa"];
+var LANGS = "en,et,fi,lv,lt,pl,de,fr,es,it,ru,uk,ar,tr,zh,ja,ko,th,vi,hi,id,pt,nl,sv,nb,da,is,cs,sk,hu,ro,bg,el,hr,sr,sl,sq,mk,ka,hy,az,kk,uz,ky,he,fa,ur,bn,ne,ms,fil,km,lo,my,mn,sw".split(",");
+
+// ---------- Interface texts. Each language: 28 groups in the order of KEYS. ----------
+var KEYS = [
+["sub_search","sub_coupons","sub_map","sub_profile"],
+["tab_search","tab_coupons","tab_map","tab_profile"],
+["c_flights","c_hotels","c_car","c_tours","c_transfer","c_esim"],
+["from","to","typeCountry","typeCity","city","nothing","popular"],
+["when","weekend","nextweek","pick","dfrom","dto"],
+["who","adults","children","years","childAge","under1"],
+["find","picks","watch"],
+["livePrices","flightsTo","flightsText","showFlights"],
+["arrival","transferIn","transferText","bookTransfer"],
+["stayOnline","esimFor","esimText","getEsim"],
+["hotelsSoon","thingsToDo","toursIn","toursText","seeTours"],
+["bestValue","carIn","carText","findCar"],
+["moreChoice","compareCars","compare"],
+["selfGuided","audioFor","audioText","audioTours"],
+["affiliate"],
+["wheel","wheelText","budget","spin","wheelSays","weekendIn","wheelHint"],
+["errorFares","errorSoon","errorHint"],
+["delayed","delayText","checkComp"],
+["mapBanner"],
+["all","food","spa","beauty","fun"],
+["yourHotel","preview","vouchersSoon","thingsNow","ticketsTours","audioGuides","mapFine"],
+["d1","d2","d3","d4","d5"],
+["restaurant","cafe","beautySalon","entertainment"],
+["language","typeLang","langNote","currency"],
+["together","togetherText","invite"],
+["badges","soon"],
+["b1","b2","b3","b4","b5","b6"],
+["watchToast","voucherToast","datesToast","inviteText"],
+["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText","flightHotel","hotelsIn","watchToast2"]
+];
+// Texts added later (group 29): currency, live wheel, extra partners
+var TR2 = {
+en: ["Type a currency","{n} trips fit your budget","Nothing from {o} within {b} right now. Cheapest: {c} for {p}.","Direct","With stops","Prices found on Aviasales in recent days and may change.","Live prices are being connected. The wheel picks a city — check prices on the next page.","round trip per person","More options","Open","Scooters and motorbikes","Luggage storage in {c}","Leave your bags near the station or centre"],
+et: ["Sisesta valuuta","{n} reisi mahub eelarvesse","Väljumine {o}: praegu pole midagi kuni {b}. Odavaim: {c} hinnaga {p}.","Otselend","Ümberistumisega","Hinnad on leitud Aviasalesist viimastel päevadel ja võivad muutuda.","Reaalajas hindu ühendatakse. Ratas valib linna — hinnad näed järgmisel lehel.","edasi-tagasi inimese kohta","Veel valikuid","Ava","Rollerid ja mootorrattad","Pagasihoid: {c}","Jäta kotid jaama või kesklinna lähedale"],
+fi: ["Kirjoita valuutta","{n} matkaa mahtuu budjettiin","Lähtö {o}: ei mitään alle {b} juuri nyt. Halvin: {c} hintaan {p}.","Suora","Vaihdollinen","Hinnat on löydetty Aviasalesista viime päivinä ja voivat muuttua.","Reaaliaikaisia hintoja yhdistetään. Kiekko valitsee kaupungin — hinnat näet seuraavalla sivulla.","meno-paluu per henkilö","Lisää vaihtoehtoja","Avaa","Skootterit ja moottoripyörät","Matkatavarasäilytys: {c}","Jätä laukut aseman tai keskustan lähelle"],
+lv: ["Ievadi valūtu","{n} ceļojumi iekļaujas budžetā","Izlidošana {o}: šobrīd nekā līdz {b}. Lētākais: {c} par {p}.","Tiešais","Ar pārsēšanos","Cenas atrastas Aviasales pēdējās dienās un var mainīties.","Tiešsaistes cenas tiek pieslēgtas. Rats izvēlas pilsētu — cenas redzēsi nākamajā lapā.","turp un atpakaļ par personu","Vairāk iespēju","Atvērt","Skrejriteņi un motocikli","Bagāžas glabātuve: {c}","Atstāj somas pie stacijas vai centrā"],
+lt: ["Įvesk valiutą","{n} kelionės telpa į biudžetą","Išvykimas {o}: dabar nieko iki {b}. Pigiausia: {c} už {p}.","Tiesioginis","Su persėdimu","Kainos rastos Aviasales per pastarąsias dienas ir gali keistis.","Realaus laiko kainos jungiamos. Ratas parenka miestą — kainas pamatysi kitame puslapyje.","į abi puses vienam asmeniui","Daugiau pasirinkimų","Atidaryti","Paspirtukai ir motociklai","Bagažo saugykla: {c}","Palik krepšius prie stoties ar centre"],
+pl: ["Wpisz walutę","{n} podróży mieści się w budżecie","Wylot {o}: teraz nic do {b}. Najtaniej: {c} za {p}.","Bezpośredni","Z przesiadką","Ceny znalezione w Aviasales w ostatnich dniach, mogą się zmienić.","Podłączamy ceny na żywo. Koło wybiera miasto — ceny zobaczysz na następnej stronie.","w obie strony za osobę","Więcej opcji","Otwórz","Skutery i motocykle","Przechowalnia bagażu: {c}","Zostaw bagaż przy dworcu lub w centrum"],
+de: ["Währung eingeben","{n} Reisen passen ins Budget","Ab {o} gerade nichts unter {b}. Am günstigsten: {c} für {p}.","Direkt","Mit Umstieg","Preise wurden in den letzten Tagen bei Aviasales gefunden und können sich ändern.","Live-Preise werden angebunden. Das Rad wählt eine Stadt — Preise siehst du auf der nächsten Seite.","hin und zurück pro Person","Weitere Optionen","Öffnen","Roller und Motorräder","Gepäckaufbewahrung in {c}","Lass dein Gepäck nahe Bahnhof oder Zentrum"],
+fr: ["Tapez une devise","{n} voyages dans votre budget","Rien depuis {o} sous {b} pour l'instant. Le moins cher : {c} à {p}.","Direct","Avec escale","Prix trouvés sur Aviasales ces derniers jours, ils peuvent changer.","Les prix en direct arrivent. La roue choisit une ville — les prix sont sur la page suivante.","aller-retour par personne","Plus d'options","Ouvrir","Scooters et motos","Consigne à bagages : {c}","Déposez vos sacs près de la gare ou du centre"],
+es: ["Escribe una moneda","{n} viajes caben en tu presupuesto","Ahora no hay nada desde {o} por menos de {b}. Lo más barato: {c} por {p}.","Directo","Con escala","Precios encontrados en Aviasales en los últimos días; pueden cambiar.","Estamos conectando precios en vivo. La ruleta elige una ciudad — verás los precios en la página siguiente.","ida y vuelta por persona","Más opciones","Abrir","Scooters y motos","Consigna de equipaje en {c}","Deja tus maletas cerca de la estación o del centro"],
+it: ["Scrivi una valuta","{n} viaggi nel tuo budget","Da {o} ora niente sotto {b}. Il più economico: {c} a {p}.","Diretto","Con scalo","Prezzi trovati su Aviasales negli ultimi giorni, possono cambiare.","Stiamo collegando i prezzi live. La ruota sceglie una città — i prezzi sono nella pagina successiva.","andata e ritorno a persona","Altre opzioni","Apri","Scooter e moto","Deposito bagagli a {c}","Lascia i bagagli vicino alla stazione o al centro"],
+ru: ["Введите валюту","В бюджет укладывается поездок: {n}","Вылет: {o} — сейчас нет вариантов до {b}. Дешевле всего: {c} за {p}.","Прямой","С пересадкой","Цены найдены на Aviasales за последние дни и могут измениться.","Живые цены подключаются. Колесо выбирает город — цены увидите на следующей странице.","туда-обратно за человека","Ещё варианты","Открыть","Скутеры и мотоциклы","Камера хранения — {c}","Оставьте багаж у вокзала или в центре"],
+uk: ["Введіть валюту","У бюджет вміщується поїздок: {n}","Виліт: {o} — зараз немає варіантів до {b}. Найдешевше: {c} за {p}.","Прямий","З пересадкою","Ціни знайдено на Aviasales за останні дні, вони можуть змінитися.","Живі ціни підключаються. Колесо обирає місто — ціни побачите на наступній сторінці.","туди й назад за людину","Більше варіантів","Відкрити","Скутери й мотоцикли","Камера схову — {c}","Залиште багаж біля вокзалу чи в центрі"],
+ar: ["اكتب عملة","{n} رحلات ضمن ميزانيتك","لا توجد رحلات من {o} ضمن {b} حاليًا. الأرخص: {c} بسعر {p}.","مباشر","مع توقف","أسعار وجدتها Aviasales في الأيام الأخيرة وقد تتغير.","نعمل على ربط الأسعار المباشرة. العجلة تختار مدينة — الأسعار في الصفحة التالية.","ذهاب وعودة للشخص","خيارات أكثر","فتح","سكوترات ودراجات نارية","تخزين الأمتعة في {c}","اترك حقائبك قرب المحطة أو وسط المدينة"],
+tr: ["Para birimi yaz","Bütçene uyan {n} seyahat","Şu an {o} çıkışlı {b} altında seyahat yok. En ucuz: {c}, {p}.","Direkt","Aktarmalı","Fiyatlar son günlerde Aviasales'te bulundu ve değişebilir.","Canlı fiyatlar bağlanıyor. Çark bir şehir seçer — fiyatları sonraki sayfada görürsün.","kişi başı gidiş-dönüş","Daha fazla seçenek","Aç","Scooter ve motosikletler","Emanet bagaj: {c}","Çantalarını istasyon ya da merkez yakınında bırak"],
+zh: ["输入货币","{n} 个行程符合预算","目前从 {o} 出发没有 {b} 以内的行程。最便宜：{c}，{p}。","直飞","需转机","价格来自 Aviasales 近几天的搜索，可能会变化。","实时价格接入中。转盘会选一个城市——价格请在下一页查看。","每人往返","更多选择","打开","踏板车和摩托车","{c} 行李寄存","把行李寄存在车站或市中心附近"],
+ja: ["通貨を入力","予算内の旅行：{n}件","現在、{o}発で{b}以内の旅行はありません。最安：{c} {p}。","直行便","乗り継ぎあり","価格は直近数日にAviasalesで見つかったもので、変動する場合があります。","リアルタイム価格を接続中です。ルーレットが都市を選びます — 価格は次のページで確認できます。","1人あたり往復","その他の選択肢","開く","スクーター・バイク","{c}の荷物預かり","駅や中心部の近くに荷物を預けられます"],
+ko: ["통화 입력","예산에 맞는 여행 {n}개","지금은 {o} 출발 {b} 이내 여행이 없어요. 최저가: {c} {p}.","직항","경유","가격은 최근 며칠간 Aviasales에서 찾은 것으로 바뀔 수 있어요.","실시간 가격을 연결하는 중이에요. 룰렛이 도시를 고르고, 가격은 다음 페이지에서 확인하세요.","1인 왕복","더 많은 선택","열기","스쿠터 및 오토바이","{c} 짐 보관","역이나 시내 근처에 짐을 맡기세요"],
+th: ["พิมพ์สกุลเงิน","ทริปในงบ {n} รายการ","ตอนนี้ไม่มีทริปจาก {o} ภายใน {b} ถูกที่สุด: {c} ราคา {p}","บินตรง","ต่อเครื่อง","ราคาที่ Aviasales พบในช่วงไม่กี่วันที่ผ่านมา อาจเปลี่ยนแปลงได้","กำลังเชื่อมต่อราคาสด วงล้อจะเลือกเมือง — ดูราคาในหน้าถัดไป","ไป-กลับต่อคน","ตัวเลือกเพิ่มเติม","เปิด","สกู๊ตเตอร์และมอเตอร์ไซค์","รับฝากกระเป๋าใน {c}","ฝากกระเป๋าไว้ใกล้สถานีหรือใจกลางเมือง"],
+vi: ["Nhập tiền tệ","{n} chuyến vừa ngân sách","Hiện chưa có chuyến từ {o} dưới {b}. Rẻ nhất: {c} giá {p}.","Bay thẳng","Có nối chuyến","Giá do Aviasales tìm thấy trong vài ngày qua và có thể thay đổi.","Đang kết nối giá trực tiếp. Vòng quay chọn một thành phố — xem giá ở trang tiếp theo.","khứ hồi mỗi người","Thêm lựa chọn","Mở","Xe tay ga và mô tô","Gửi hành lý tại {c}","Gửi hành lý gần nhà ga hoặc trung tâm"],
+hi: ["मुद्रा लिखें","बजट में {n} यात्राएँ","अभी {o} से {b} के अंदर कोई यात्रा नहीं। सबसे सस्ती: {c}, {p}।","सीधी","रुकावट के साथ","कीमतें हाल के दिनों में Aviasales पर मिलीं और बदल सकती हैं।","लाइव कीमतें जोड़ी जा रही हैं। पहिया एक शहर चुनता है — कीमतें अगले पेज पर देखें।","प्रति व्यक्ति आना-जाना","और विकल्प","खोलें","स्कूटर और मोटरसाइकिल","{c} में सामान घर","स्टेशन या शहर के बीच सामान रखें"],
+id: ["Ketik mata uang","{n} perjalanan sesuai anggaran","Saat ini tidak ada perjalanan dari {o} di bawah {b}. Termurah: {c} seharga {p}.","Langsung","Transit","Harga ditemukan di Aviasales beberapa hari terakhir dan bisa berubah.","Harga langsung sedang dihubungkan. Roda memilih kota — lihat harga di halaman berikutnya.","pulang-pergi per orang","Pilihan lainnya","Buka","Skuter dan motor","Penitipan bagasi di {c}","Titipkan tas dekat stasiun atau pusat kota"]
+};
+var TR = {
+en: [
+["Where are we going?","Spin, save, go","Deals around your hotel","Your travel profile"],
+["Search","Coupons","Map","Profile"],
+["Flights","Hotels","Cars","Tours","Transfers","eSIM"],
+["Flying from","Where to?","Type a country or city","Type a city","City","Nothing found","Popular"],
+["When","Weekend","Next week","Pick dates","From","To"],
+["Who's travelling","Adults","Children","0–17 years","Child {n}, age","under 1"],
+["Find the best deals","Top picks for {c}","Watch price"],
+["Live prices","Flights to {c}","All airlines compared, your dates and travellers filled in","Show flights"],
+["Arrival","Airport transfer in {c}","Fixed price, the driver meets you","Book transfer"],
+["Stay online","eSIM for {c}","Internet from the moment you land","Get eSIM"],
+["Hotel booking opens soon — we are connecting hotel partners. Meanwhile, plan the rest of your trip:","Things to do","Tickets and tours in {c}","Museums, attractions, day trips","See tours"],
+["Best value","Car rental in {c}","Local companies, free cancellation on many cars","Find a car"],
+["More choice","Compare more rental companies","Compare"],
+["Self-guided","Audio guides for {c}","Explore at your own pace","Audio tours"],
+["Some links are affiliate links — your price stays the same."],
+["Stingy Traveller wheel","Set a budget and spin — we pick a weekend city and open live flight prices.","budget","Spin the wheel","The wheel says…","Weekend in {c}","Flights from {o} this weekend. Pick the ones within {b}."],
+["Error fares feed","Coming soon: airline pricing mistakes and flash deals, caught for you in real time.","Want to be first? Keep the bot chat open — we will message you when it launches."],
+["Flight delayed or cancelled?","You may be owed up to €600 under EU rules.","Check compensation"],
+["After you book a hotel, I activate a discount map around it."],
+["All","Food","Spa","Beauty","Fun"],
+["Your hotel","Preview","Vouchers coming soon","Things to do there now","Tickets & tours","Audio guides","The map shows a preview. Live coupons arrive with partner networks."],
+["Dinner for two","Brunch & coffee","Day spa with sauna","Manicure + massage","Escape room for 4"],
+["Restaurant","Cafe","Beauty salon","Entertainment"],
+["Language","Type a language","App screens are in English for this language for now. The bot chat answers in any language.","Currency"],
+["Travel together","Invite friends to Tripwise and plan the trip together.","Invite friends"],
+["Badges","coming soon"],
+["First trip","Deal hunter","Asia explorer","Bug hunter","5 countries","Night owl"],
+["Price alerts are coming soon — we'll message you in the chat.","Vouchers are coming soon.","Please pick valid travel dates","Planning a trip? Tripwise finds good-value flights, cars, tours and more."]
+],
+et: [
+["Kuhu me läheme?","Keeruta, säästa, reisi","Pakkumised hotelli lähedal","Sinu reisiprofiil"],
+["Otsing","Kupongid","Kaart","Profiil"],
+["Lennud","Hotellid","Autod","Ekskursioonid","Transfeerid","eSIM"],
+["Kust lendame","Kuhu?","Sisesta riik või linn","Sisesta linn","Linn","Midagi ei leitud","Populaarsed"],
+["Millal","Nädalavahetus","Järgmine nädal","Vali kuupäevad","Alates","Kuni"],
+["Kes reisivad","Täiskasvanud","Lapsed","0–17 aastat","Laps {n}, vanus","alla 1"],
+["Leia parimad pakkumised","Parimad valikud: {c}","Jälgi hinda"],
+["Hinnad reaalajas","Lennud: {c}","Kõik lennufirmad võrdluses, sinu kuupäevad ja reisijad on täidetud","Näita lende"],
+["Saabumine","Lennujaamatransfeer: {c}","Fikseeritud hind, juht tuleb vastu","Broneeri transfeer"],
+["Ole ühenduses","eSIM: {c}","Internet kohe pärast maandumist","Osta eSIM"],
+["Hotellide broneerimine avaneb peagi — ühendame partnereid. Seniks planeeri ülejäänud reis:","Mida teha","Piletid ja ekskursioonid: {c}","Muuseumid, vaatamisväärsused, päevareisid","Vaata ekskursioone"],
+["Parim hind","Autorent: {c}","Kohalikud firmad, paljudel autodel tasuta tühistamine","Leia auto"],
+["Rohkem valikut","Võrdle teisi rendifirmasid","Võrdle"],
+["Omal käel","Audiogiidid: {c}","Avasta omas tempos","Audiotuurid"],
+["Mõned lingid on partnerlingid — sinu hind jääb samaks."],
+["Kokkuhoidliku reisija ratas","Määra eelarve ja keeruta — valime nädalavahetuse linna ja avame lennuhinnad.","eelarve","Keeruta ratast","Ratas ütleb…","Nädalavahetus: {c}","Väljumine: {o}, sel nädalavahetusel. Vali pakkumised kuni {b}."],
+["Veahindade voog","Peagi: lennufirmade hinnavead ja kiirpakkumised reaalajas.","Tahad olla esimene? Hoia boti vestlus avatuna — anname teada, kui see käivitub."],
+["Lend hilines või tühistati?","EL-i reeglite järgi võid saada kuni 600 €.","Kontrolli hüvitist"],
+["Kui broneerid hotelli, aktiveerin selle ümber soodustuste kaardi."],
+["Kõik","Toit","Spaa","Ilu","Meelelahutus"],
+["Sinu hotell","Eelvaade","Vautšerid tulekul","Mida seal praegu teha","Piletid ja tuurid","Audiogiidid","Kaart on eelvaade. Päris kupongid tulevad partnervõrgustikega."],
+["Õhtusöök kahele","Brunch ja kohv","Spaapäev saunaga","Maniküür + massaaž","Põgenemistuba neljale"],
+["Restoran","Kohvik","Ilusalong","Meelelahutus"],
+["Keel","Sisesta keel","","Valuuta"],
+["Reisige koos","Kutsu sõbrad Tripwise'i ja planeerige reis koos.","Kutsu sõpru"],
+["Märgid","tulekul"],
+["Esimene reis","Pakkumiste kütt","Aasia avastaja","Vigade kütt","5 riiki","Öökull"],
+["Hinnateavitused on tulekul — kirjutame sulle vestlusesse.","Vautšerid on tulekul.","Palun vali kehtivad reisikuupäevad","Planeerid reisi? Tripwise leiab soodsad lennud, autod, ekskursioonid ja muud."]
+],
+fi: [
+["Minne mennään?","Pyöräytä, säästä, lähde","Tarjoukset hotellisi lähellä","Matkaprofiilisi"],
+["Haku","Kupongit","Kartta","Profiili"],
+["Lennot","Hotellit","Autot","Retket","Kuljetukset","eSIM"],
+["Lähtö","Minne?","Kirjoita maa tai kaupunki","Kirjoita kaupunki","Kaupunki","Ei tuloksia","Suositut"],
+["Milloin","Viikonloppu","Ensi viikko","Valitse päivät","Alkaen","Asti"],
+["Ketkä matkustavat","Aikuiset","Lapset","0–17 v","Lapsi {n}, ikä","alle 1"],
+["Etsi parhaat tarjoukset","Parhaat valinnat: {c}","Seuraa hintaa"],
+["Hinnat nyt","Lennot: {c}","Kaikki lentoyhtiöt vertailussa, päivät ja matkustajat valmiina","Näytä lennot"],
+["Saapuminen","Lentokenttäkuljetus: {c}","Kiinteä hinta, kuljettaja on vastassa","Varaa kuljetus"],
+["Pysy yhteydessä","eSIM: {c}","Netti heti laskeutumisesta","Hanki eSIM"],
+["Hotellivaraukset avautuvat pian — liitämme hotellikumppaneita. Suunnittele sillä välin muu matka:","Tekemistä","Liput ja retket: {c}","Museot, nähtävyydet, päiväretket","Katso retket"],
+["Edullisin","Autonvuokraus: {c}","Paikalliset yhtiöt, monissa autoissa ilmainen peruutus","Etsi auto"],
+["Lisää vaihtoehtoja","Vertaa muita vuokraamoja","Vertaa"],
+["Omatoiminen","Ääniopastukset: {c}","Tutki omaan tahtiin","Äänikierrokset"],
+["Osa linkeistä on kumppanilinkkejä — hintasi pysyy samana."],
+["Säästäväisen matkaajan kiekko","Aseta budjetti ja pyöräytä — valitsemme viikonloppukaupungin ja avaamme lentohinnat.","budjetti","Pyöräytä","Kiekko sanoo…","Viikonloppu: {c}","Lähtö: {o}, tänä viikonloppuna. Valitse lennot alle {b}."],
+["Virhehinnat","Tulossa: lentoyhtiöiden hintavirheet ja salamatarjoukset reaaliajassa.","Haluatko olla ensimmäinen? Pidä bottikeskustelu auki — kerromme, kun tämä avautuu."],
+["Lento myöhässä tai peruttu?","EU-sääntöjen mukaan voit saada jopa 600 €.","Tarkista korvaus"],
+["Kun varaat hotellin, avaan sen ympärille alennuskartan."],
+["Kaikki","Ruoka","Kylpylä","Kauneus","Hauskaa"],
+["Hotellisi","Esikatselu","Lahjakortit tulossa","Tekemistä nyt","Liput ja retket","Ääniopastukset","Kartta on esikatselu. Oikeat kupongit tulevat kumppaniverkostoista."],
+["Illallinen kahdelle","Brunssi ja kahvi","Kylpyläpäivä ja sauna","Manikyyri + hieronta","Pakohuone neljälle"],
+["Ravintola","Kahvila","Kauneushoitola","Viihde"],
+["Kieli","Kirjoita kieli","","Valuutta"],
+["Matkustakaa yhdessä","Kutsu ystäväsi Tripwiseen ja suunnitelkaa matka yhdessä.","Kutsu ystäviä"],
+["Merkit","tulossa"],
+["Ensimmäinen matka","Tarjousmetsästäjä","Aasian tutkija","Bugimetsästäjä","5 maata","Yökyöpeli"],
+["Hintahälytykset tulossa — viestimme sinulle chatissa.","Lahjakortit tulossa pian.","Valitse kelvolliset matkapäivät","Suunnitteletko matkaa? Tripwise löytää edulliset lennot, autot, retket ja paljon muuta."]
+],
+lv: [
+["Kurp dodamies?","Griez, ietaupi, ceļo","Atlaides pie viesnīcas","Tavs ceļotāja profils"],
+["Meklēt","Kuponi","Karte","Profils"],
+["Lidojumi","Viesnīcas","Auto","Ekskursijas","Transfēri","eSIM"],
+["Izlidošana no","Uz kurieni?","Ievadi valsti vai pilsētu","Ievadi pilsētu","Pilsēta","Nekas nav atrasts","Populāri"],
+["Kad","Brīvdienas","Nākamnedēļ","Izvēlēties datumus","No","Līdz"],
+["Kas ceļo","Pieaugušie","Bērni","0–17 gadi","Bērns {n}, vecums","līdz 1"],
+["Atrast labākos piedāvājumus","Labākais: {c}","Sekot cenai"],
+["Cenas tiešsaistē","Lidojumi: {c}","Visas aviokompānijas, tavi datumi un ceļotāji jau aizpildīti","Rādīt lidojumus"],
+["Ierašanās","Lidostas transfērs: {c}","Fiksēta cena, šoferis sagaida","Rezervēt transfēru"],
+["Esi tiešsaistē","eSIM: {c}","Internets uzreiz pēc nolaišanās","Iegādāties eSIM"],
+["Viesnīcu rezervēšana drīz — pieslēdzam partnerus. Pagaidām plāno pārējo ceļojumu:","Ko darīt","Biļetes un ekskursijas: {c}","Muzeji, apskates objekti, dienas braucieni","Skatīt ekskursijas"],
+["Izdevīgi","Auto noma: {c}","Vietējie uzņēmumi, daudziem auto bezmaksas atcelšana","Atrast auto"],
+["Vairāk izvēles","Salīdzināt citus nomas uzņēmumus","Salīdzināt"],
+["Patstāvīgi","Audiogidi: {c}","Izzini savā tempā","Audiotūres"],
+["Dažas saites ir partneru saites — tava cena nemainās."],
+["Taupīgā ceļotāja rats","Iestati budžetu un griez — izvēlēsimies brīvdienu pilsētu un atvērsim lidojumu cenas.","budžets","Griezt ratu","Rats saka…","Brīvdienas: {c}","Izlidošana: {o}, šajās brīvdienās. Izvēlies līdz {b}."],
+["Kļūdaino cenu plūsma","Drīzumā: aviokompāniju cenu kļūdas un zibakcijas reāllaikā.","Gribi būt pirmais? Turi čatu ar botu atvērtu — paziņosim, kad sāksim."],
+["Lidojums kavējas vai atcelts?","Saskaņā ar ES noteikumiem tev var pienākties līdz 600 €.","Pārbaudīt kompensāciju"],
+["Kad rezervēsi viesnīcu, es aktivizēšu atlaižu karti ap to."],
+["Visi","Ēdiens","Spa","Skaistums","Izklaide"],
+["Tava viesnīca","Priekšskatījums","Vaučeri drīzumā","Ko darīt tur tagad","Biļetes un ekskursijas","Audiogidi","Karte ir priekšskatījums. Īstie kuponi nāks ar partneru tīkliem."],
+["Vakariņas diviem","Brančs un kafija","Spa diena ar saunu","Manikīrs + masāža","Bēgšanas istaba četriem"],
+["Restorāns","Kafejnīca","Skaistumkopšanas salons","Izklaide"],
+["Valoda","Ievadi valodu","","Valūta"],
+["Ceļojiet kopā","Uzaicini draugus uz Tripwise un plānojiet ceļojumu kopā.","Uzaicināt draugus"],
+["Nozīmītes","drīzumā"],
+["Pirmais ceļojums","Atlaižu mednieks","Āzijas pētnieks","Kļūdu mednieks","5 valstis","Naktspūce"],
+["Cenu paziņojumi drīzumā — rakstīsim tev čatā.","Vaučeri drīzumā.","Lūdzu, izvēlies derīgus datumus","Plāno ceļojumu? Tripwise atrod izdevīgus lidojumus, auto, ekskursijas un vēl."]
+],
+lt: [
+["Kur keliaujame?","Suk, taupyk, keliauk","Pasiūlymai prie viešbučio","Tavo keliautojo profilis"],
+["Paieška","Kuponai","Žemėlapis","Profilis"],
+["Skrydžiai","Viešbučiai","Automobiliai","Ekskursijos","Pervežimai","eSIM"],
+["Išvykimas iš","Kur?","Įvesk šalį ar miestą","Įvesk miestą","Miestas","Nieko nerasta","Populiaru"],
+["Kada","Savaitgalis","Kita savaitė","Pasirinkti datas","Nuo","Iki"],
+["Kas keliauja","Suaugusieji","Vaikai","0–17 metų","Vaikas {n}, amžius","iki 1"],
+["Rasti geriausius pasiūlymus","Geriausi pasirinkimai: {c}","Stebėti kainą"],
+["Kainos realiu laiku","Skrydžiai: {c}","Visos aviakompanijos, tavo datos ir keleiviai jau įrašyti","Rodyti skrydžius"],
+["Atvykimas","Pervežimas iš oro uosto: {c}","Fiksuota kaina, vairuotojas pasitiks","Užsakyti pervežimą"],
+["Būk prisijungęs","eSIM: {c}","Internetas iškart nusileidus","Įsigyti eSIM"],
+["Viešbučių užsakymas netrukus — jungiame partnerius. Kol kas suplanuok likusią kelionės dalį:","Ką veikti","Bilietai ir ekskursijos: {c}","Muziejai, lankytinos vietos, dienos išvykos","Žiūrėti ekskursijas"],
+["Geriausia kaina","Automobilių nuoma: {c}","Vietinės įmonės, daugeliui automobilių nemokamas atšaukimas","Rasti automobilį"],
+["Daugiau pasirinkimo","Palyginti kitas nuomos įmones","Palyginti"],
+["Savarankiškai","Audiogidai: {c}","Tyrinėk savo tempu","Audioturai"],
+["Kai kurios nuorodos yra partnerių — tavo kaina nesikeičia."],
+["Taupaus keliautojo ratas","Nustatyk biudžetą ir suk — parinksime savaitgalio miestą ir atversime skrydžių kainas.","biudžetas","Sukti ratą","Ratas sako…","Savaitgalis: {c}","Išvykimas: {o}, šį savaitgalį. Rinkis iki {b}."],
+["Klaidingų kainų srautas","Netrukus: aviakompanijų kainų klaidos ir žaibiški pasiūlymai realiu laiku.","Nori būti pirmas? Laikyk pokalbį su botu atidarytą — pranešime, kai paleisime."],
+["Skrydis vėluoja ar atšauktas?","Pagal ES taisykles gali priklausyti iki 600 €.","Patikrinti kompensaciją"],
+["Kai užsisakysi viešbutį, aktyvuosiu nuolaidų žemėlapį aplink jį."],
+["Visi","Maistas","SPA","Grožis","Pramogos"],
+["Tavo viešbutis","Peržiūra","Kuponai netrukus","Ką ten veikti dabar","Bilietai ir ekskursijos","Audiogidai","Žemėlapis yra peržiūra. Tikri kuponai atsiras su partnerių tinklais."],
+["Vakarienė dviem","Branšas ir kava","SPA diena su pirtimi","Manikiūras + masažas","Pabėgimo kambarys keturiems"],
+["Restoranas","Kavinė","Grožio salonas","Pramogos"],
+["Kalba","Įvesk kalbą","","Valiuta"],
+["Keliaukite kartu","Pakviesk draugus į Tripwise ir planuokite kelionę kartu.","Pakviesti draugus"],
+["Ženkliukai","netrukus"],
+["Pirmoji kelionė","Pasiūlymų medžiotojas","Azijos tyrinėtojas","Klaidų medžiotojas","5 šalys","Naktinė pelėda"],
+["Kainų pranešimai netrukus — parašysime tau pokalbyje.","Kuponai netrukus.","Pasirink tinkamas kelionės datas","Planuoji kelionę? Tripwise randa naudingus skrydžius, automobilius, ekskursijas ir dar daugiau."]
+],
+pl: [
+["Dokąd jedziemy?","Kręć, oszczędzaj, podróżuj","Okazje w pobliżu hotelu","Twój profil podróżnika"],
+["Szukaj","Kupony","Mapa","Profil"],
+["Loty","Hotele","Auta","Wycieczki","Transfery","eSIM"],
+["Wylot z","Dokąd?","Wpisz kraj lub miasto","Wpisz miasto","Miasto","Nic nie znaleziono","Popularne"],
+["Kiedy","Weekend","Przyszły tydzień","Wybierz daty","Od","Do"],
+["Kto podróżuje","Dorośli","Dzieci","0–17 lat","Dziecko {n}, wiek","poniżej 1"],
+["Znajdź najlepsze oferty","Najlepsze: {c}","Śledź cenę"],
+["Ceny na żywo","Loty: {c}","Wszystkie linie porównane, Twoje daty i podróżni już wpisani","Pokaż loty"],
+["Przylot","Transfer z lotniska: {c}","Stała cena, kierowca czeka na Ciebie","Zarezerwuj transfer"],
+["Bądź online","eSIM: {c}","Internet od chwili lądowania","Kup eSIM"],
+["Rezerwacja hoteli wkrótce — podłączamy partnerów. Tymczasem zaplanuj resztę podróży:","Co robić","Bilety i wycieczki: {c}","Muzea, atrakcje, wycieczki jednodniowe","Zobacz wycieczki"],
+["Najtaniej","Wynajem auta: {c}","Lokalne firmy, darmowa rezygnacja dla wielu aut","Znajdź auto"],
+["Większy wybór","Porównaj inne wypożyczalnie","Porównaj"],
+["Na własną rękę","Audioprzewodniki: {c}","Zwiedzaj we własnym tempie","Audiowycieczki"],
+["Niektóre linki są partnerskie — Twoja cena się nie zmienia."],
+["Koło oszczędnego podróżnika","Ustaw budżet i zakręć — wybierzemy miasto na weekend i pokażemy ceny lotów.","budżet","Zakręć kołem","Koło mówi…","Weekend: {c}","Wylot: {o}, ten weekend. Wybierz loty do {b}."],
+["Błędne taryfy","Wkrótce: błędy cenowe linii lotniczych i błyskawiczne okazje w czasie rzeczywistym.","Chcesz być pierwszy? Nie zamykaj czatu z botem — damy znać przy starcie."],
+["Lot opóźniony lub odwołany?","Zgodnie z przepisami UE możesz dostać do 600 €.","Sprawdź odszkodowanie"],
+["Gdy zarezerwujesz hotel, włączę mapę zniżek wokół niego."],
+["Wszystko","Jedzenie","Spa","Uroda","Rozrywka"],
+["Twój hotel","Podgląd","Vouchery wkrótce","Co tam teraz robić","Bilety i wycieczki","Audioprzewodniki","Mapa to podgląd. Prawdziwe kupony pojawią się z sieciami partnerów."],
+["Kolacja dla dwojga","Brunch i kawa","Dzień w spa z sauną","Manicure + masaż","Escape room dla 4"],
+["Restauracja","Kawiarnia","Salon urody","Rozrywka"],
+["Język","Wpisz język","","Waluta"],
+["Podróżujcie razem","Zaproś znajomych do Tripwise i planujcie podróż razem.","Zaproś znajomych"],
+["Odznaki","wkrótce"],
+["Pierwsza podróż","Łowca okazji","Odkrywca Azji","Łowca błędów","5 krajów","Nocny marek"],
+["Alerty cenowe wkrótce — napiszemy do Ciebie na czacie.","Vouchery już wkrótce.","Wybierz poprawne daty podróży","Planujesz podróż? Tripwise znajduje tanie loty, auta, wycieczki i nie tylko."]
+],
+de: [
+["Wohin geht's?","Drehen, sparen, los","Angebote rund um dein Hotel","Dein Reiseprofil"],
+["Suche","Gutscheine","Karte","Profil"],
+["Flüge","Hotels","Mietwagen","Touren","Transfers","eSIM"],
+["Abflug von","Wohin?","Land oder Stadt eingeben","Stadt eingeben","Stadt","Nichts gefunden","Beliebt"],
+["Wann","Wochenende","Nächste Woche","Daten wählen","Von","Bis"],
+["Wer reist","Erwachsene","Kinder","0–17 Jahre","Kind {n}, Alter","unter 1"],
+["Beste Angebote finden","Top-Tipps für {c}","Preis beobachten"],
+["Live-Preise","Flüge nach {c}","Alle Airlines im Vergleich, Daten und Reisende schon eingetragen","Flüge anzeigen"],
+["Ankunft","Flughafentransfer in {c}","Festpreis, der Fahrer holt dich ab","Transfer buchen"],
+["Online bleiben","eSIM für {c}","Internet ab der Landung","eSIM holen"],
+["Hotelbuchung kommt bald — wir binden Hotelpartner an. Plane inzwischen den Rest deiner Reise:","Erlebnisse","Tickets und Touren in {c}","Museen, Sehenswürdigkeiten, Tagesausflüge","Touren ansehen"],
+["Günstig","Mietwagen in {c}","Lokale Anbieter, bei vielen Autos kostenlose Stornierung","Auto finden"],
+["Mehr Auswahl","Weitere Vermieter vergleichen","Vergleichen"],
+["Auf eigene Faust","Audioguides für {c}","Entdecke in deinem Tempo","Audiotouren"],
+["Einige Links sind Partnerlinks — dein Preis bleibt gleich."],
+["Sparfuchs-Glücksrad","Budget festlegen und drehen — wir wählen eine Wochenendstadt und öffnen Live-Flugpreise.","Budget","Rad drehen","Das Rad sagt…","Wochenende in {c}","Flüge ab {o} an diesem Wochenende. Wähle die unter {b}."],
+["Fehlerpreise","Bald: Preisfehler der Airlines und Blitzangebote in Echtzeit.","Willst du der Erste sein? Lass den Bot-Chat offen — wir melden uns zum Start."],
+["Flug verspätet oder annulliert?","Nach EU-Recht stehen dir bis zu 600 € zu.","Entschädigung prüfen"],
+["Sobald du ein Hotel buchst, aktiviere ich eine Rabattkarte rundherum."],
+["Alle","Essen","Spa","Beauty","Freizeit"],
+["Dein Hotel","Vorschau","Gutscheine bald","Jetzt vor Ort erleben","Tickets & Touren","Audioguides","Die Karte ist eine Vorschau. Echte Gutscheine kommen mit Partnernetzwerken."],
+["Abendessen für zwei","Brunch & Kaffee","Spa-Tag mit Sauna","Maniküre + Massage","Escape Room für 4"],
+["Restaurant","Café","Kosmetiksalon","Unterhaltung"],
+["Sprache","Sprache eingeben","","Währung"],
+["Gemeinsam reisen","Lade Freunde zu Tripwise ein und plant die Reise zusammen.","Freunde einladen"],
+["Abzeichen","bald"],
+["Erste Reise","Schnäppchenjäger","Asien-Entdecker","Bug-Jäger","5 Länder","Nachteule"],
+["Preisalarme kommen bald — wir schreiben dir im Chat.","Gutscheine kommen bald.","Bitte gültige Reisedaten wählen","Reise geplant? Tripwise findet günstige Flüge, Mietwagen, Touren und mehr."]
+],
+fr: [
+["On part où ?","Tournez, économisez, partez","Bons plans près de votre hôtel","Votre profil voyageur"],
+["Recherche","Coupons","Carte","Profil"],
+["Vols","Hôtels","Voitures","Visites","Transferts","eSIM"],
+["Départ de","Où aller ?","Tapez un pays ou une ville","Tapez une ville","Ville","Aucun résultat","Populaires"],
+["Quand","Week-end","Semaine pro","Choisir les dates","Du","Au"],
+["Qui voyage","Adultes","Enfants","0–17 ans","Enfant {n}, âge","moins d'1 an"],
+["Trouver les meilleures offres","Meilleurs choix : {c}","Suivre le prix"],
+["Prix en direct","Vols : {c}","Toutes les compagnies comparées, vos dates et voyageurs déjà remplis","Voir les vols"],
+["Arrivée","Transfert aéroport : {c}","Prix fixe, le chauffeur vous attend","Réserver le transfert"],
+["Restez connecté","eSIM : {c}","Internet dès l'atterrissage","Obtenir une eSIM"],
+["La réservation d'hôtels arrive bientôt — nous connectons nos partenaires. En attendant, préparez le reste du voyage :","À faire","Billets et visites : {c}","Musées, attractions, excursions","Voir les visites"],
+["Meilleur prix","Location de voiture : {c}","Loueurs locaux, annulation gratuite sur beaucoup de voitures","Trouver une voiture"],
+["Plus de choix","Comparer d'autres loueurs","Comparer"],
+["En autonomie","Audioguides : {c}","Explorez à votre rythme","Visites audio"],
+["Certains liens sont affiliés — votre prix reste le même."],
+["La roue du voyageur malin","Fixez un budget et tournez — on choisit une ville pour le week-end et on ouvre les prix des vols.","budget","Tourner la roue","La roue dit…","Week-end à {c}","Vols depuis {o} ce week-end. Choisissez ceux sous {b}."],
+["Tarifs erronés","Bientôt : erreurs de prix des compagnies et ventes flash en temps réel.","Envie d'être le premier ? Gardez le chat du bot ouvert — on vous prévient au lancement."],
+["Vol retardé ou annulé ?","Selon les règles de l'UE, vous pourriez toucher jusqu'à 600 €.","Vérifier l'indemnisation"],
+["Dès que vous réservez un hôtel, j'active une carte de réductions autour."],
+["Tout","Restos","Spa","Beauté","Loisirs"],
+["Votre hôtel","Aperçu","Bons bientôt","À faire sur place","Billets et visites","Audioguides","La carte est un aperçu. Les vrais coupons arriveront avec les réseaux partenaires."],
+["Dîner pour deux","Brunch et café","Journée spa avec sauna","Manucure + massage","Escape game pour 4"],
+["Restaurant","Café","Institut de beauté","Loisirs"],
+["Langue","Tapez une langue","","Devise"],
+["Voyagez ensemble","Invitez vos amis sur Tripwise et préparez le voyage ensemble.","Inviter des amis"],
+["Badges","bientôt"],
+["Premier voyage","Chasseur de bons plans","Explorateur d'Asie","Chasseur de bugs","5 pays","Oiseau de nuit"],
+["Les alertes prix arrivent bientôt — on vous écrira dans le chat.","Les bons arrivent bientôt.","Choisissez des dates valides","Un voyage en vue ? Tripwise trouve des vols, voitures, visites et plus à bon prix."]
+],
+es: [
+["¿A dónde vamos?","Gira, ahorra, viaja","Ofertas cerca de tu hotel","Tu perfil de viajero"],
+["Buscar","Cupones","Mapa","Perfil"],
+["Vuelos","Hoteles","Coches","Tours","Traslados","eSIM"],
+["Salida desde","¿A dónde?","Escribe un país o ciudad","Escribe una ciudad","Ciudad","No hay resultados","Populares"],
+["Cuándo","Finde","Próxima semana","Elegir fechas","Desde","Hasta"],
+["Quién viaja","Adultos","Niños","0–17 años","Niño {n}, edad","menos de 1"],
+["Buscar las mejores ofertas","Lo mejor en {c}","Seguir precio"],
+["Precios en vivo","Vuelos a {c}","Todas las aerolíneas comparadas, tus fechas y viajeros ya puestos","Ver vuelos"],
+["Llegada","Traslado al aeropuerto en {c}","Precio fijo, el conductor te espera","Reservar traslado"],
+["Siempre conectado","eSIM para {c}","Internet desde que aterrizas","Conseguir eSIM"],
+["La reserva de hoteles llega pronto — estamos conectando socios. Mientras, planea el resto del viaje:","Qué hacer","Entradas y tours en {c}","Museos, atracciones, excursiones","Ver tours"],
+["Mejor precio","Alquiler de coches en {c}","Empresas locales, cancelación gratis en muchos coches","Buscar coche"],
+["Más opciones","Comparar más empresas de alquiler","Comparar"],
+["Por tu cuenta","Audioguías de {c}","Explora a tu ritmo","Tours de audio"],
+["Algunos enlaces son de afiliados — tu precio no cambia."],
+["La ruleta del viajero ahorrador","Pon un presupuesto y gira — elegimos una ciudad para el finde y abrimos precios de vuelos.","presupuesto","Girar la ruleta","La ruleta dice…","Finde en {c}","Vuelos desde {o} este finde. Elige los de menos de {b}."],
+["Tarifas error","Muy pronto: errores de precio de aerolíneas y ofertas flash en tiempo real.","¿Quieres ser el primero? Deja abierto el chat del bot — te avisaremos al lanzarlo."],
+["¿Vuelo retrasado o cancelado?","Según las normas de la UE podrías recibir hasta 600 €.","Comprobar compensación"],
+["Cuando reserves un hotel, activaré un mapa de descuentos a su alrededor."],
+["Todo","Comida","Spa","Belleza","Ocio"],
+["Tu hotel","Vista previa","Vales pronto","Qué hacer allí ahora","Entradas y tours","Audioguías","El mapa es una vista previa. Los cupones reales llegarán con las redes de socios."],
+["Cena para dos","Brunch y café","Día de spa con sauna","Manicura + masaje","Escape room para 4"],
+["Restaurante","Cafetería","Salón de belleza","Ocio"],
+["Idioma","Escribe un idioma","","Moneda"],
+["Viaja en grupo","Invita a tus amigos a Tripwise para planear el viaje juntos.","Invitar amigos"],
+["Insignias","pronto"],
+["Primer viaje","Cazaofertas","Explorador de Asia","Cazabugs","5 países","Búho nocturno"],
+["Las alertas de precio llegan pronto — te escribiremos en el chat.","Los vales llegan pronto.","Elige fechas de viaje válidas","¿Planeas un viaje? Tripwise encuentra vuelos, coches, tours y más a buen precio."]
+],
+it: [
+["Dove andiamo?","Gira, risparmia, parti","Offerte vicino al tuo hotel","Il tuo profilo di viaggio"],
+["Cerca","Coupon","Mappa","Profilo"],
+["Voli","Hotel","Auto","Tour","Transfer","eSIM"],
+["Partenza da","Dove?","Scrivi un paese o una città","Scrivi una città","Città","Nessun risultato","Popolari"],
+["Quando","Weekend","Settimana prossima","Scegli le date","Dal","Al"],
+["Chi viaggia","Adulti","Bambini","0–17 anni","Bambino {n}, età","meno di 1"],
+["Trova le offerte migliori","Il meglio a {c}","Segui il prezzo"],
+["Prezzi live","Voli per {c}","Tutte le compagnie a confronto, date e viaggiatori già inseriti","Mostra voli"],
+["Arrivo","Transfer aeroporto a {c}","Prezzo fisso, l'autista ti aspetta","Prenota transfer"],
+["Resta connesso","eSIM per {c}","Internet dall'atterraggio","Prendi eSIM"],
+["La prenotazione hotel arriva presto — stiamo collegando i partner. Intanto pianifica il resto del viaggio:","Cosa fare","Biglietti e tour a {c}","Musei, attrazioni, gite di un giorno","Vedi tour"],
+["Miglior prezzo","Noleggio auto a {c}","Aziende locali, cancellazione gratuita su molte auto","Trova un'auto"],
+["Più scelta","Confronta altri noleggi","Confronta"],
+["In autonomia","Audioguide per {c}","Esplora al tuo ritmo","Tour audio"],
+["Alcuni link sono di affiliazione — il tuo prezzo non cambia."],
+["La ruota del viaggiatore parsimonioso","Imposta un budget e gira — scegliamo una città per il weekend e apriamo i prezzi dei voli.","budget","Gira la ruota","La ruota dice…","Weekend a {c}","Voli da {o} questo weekend. Scegli quelli sotto {b}."],
+["Tariffe errore","Presto: errori di prezzo delle compagnie e offerte lampo in tempo reale.","Vuoi essere il primo? Tieni aperta la chat del bot — ti avviseremo al lancio."],
+["Volo in ritardo o cancellato?","Secondo le norme UE potresti ricevere fino a 600 €.","Verifica il rimborso"],
+["Quando prenoti un hotel, attivo una mappa di sconti intorno."],
+["Tutti","Cibo","Spa","Bellezza","Svago"],
+["Il tuo hotel","Anteprima","Voucher in arrivo","Cosa fare lì adesso","Biglietti e tour","Audioguide","La mappa è un'anteprima. I coupon veri arriveranno con le reti partner."],
+["Cena per due","Brunch e caffè","Giornata spa con sauna","Manicure + massaggio","Escape room per 4"],
+["Ristorante","Caffè","Centro estetico","Intrattenimento"],
+["Lingua","Scrivi una lingua","","Valuta"],
+["Viaggiate insieme","Invita gli amici su Tripwise e pianificate il viaggio insieme.","Invita amici"],
+["Badge","presto"],
+["Primo viaggio","Cacciatore di offerte","Esploratore d'Asia","Cacciatore di bug","5 paesi","Nottambulo"],
+["Gli avvisi di prezzo arrivano presto — ti scriveremo in chat.","I voucher arrivano presto.","Scegli date di viaggio valide","Pianifichi un viaggio? Tripwise trova voli, auto, tour e altro a buon prezzo."]
+],
+ru: [
+["Куда отправимся?","Крути, экономь, путешествуй","Скидки рядом с отелем","Ваш профиль путешественника"],
+["Поиск","Купоны","Карта","Профиль"],
+["Авиабилеты","Отели","Авто","Экскурсии","Трансферы","eSIM"],
+["Откуда летим","Куда?","Введите страну или город","Введите город","Город","Ничего не найдено","Популярное"],
+["Когда","Выходные","След. неделя","Выбрать даты","С","По"],
+["Кто едет","Взрослые","Дети","0–17 лет","Ребёнок {n}, возраст","до 1 года"],
+["Найти лучшие варианты","Лучшее: {c}","Следить за ценой"],
+["Цены онлайн","Авиабилеты — {c}","Все авиакомпании, ваши даты и пассажиры уже заполнены","Показать рейсы"],
+["Прилёт","Трансфер из аэропорта — {c}","Фиксированная цена, водитель встретит","Заказать трансфер"],
+["Будьте на связи","eSIM — {c}","Интернет сразу после посадки","Купить eSIM"],
+["Бронирование отелей скоро — подключаем партнёров. А пока спланируйте остальное:","Чем заняться","Билеты и экскурсии — {c}","Музеи, достопримечательности, поездки на день","Смотреть экскурсии"],
+["Выгодно","Аренда авто — {c}","Местные компании, бесплатная отмена для многих авто","Найти авто"],
+["Больше выбора","Сравнить другие прокаты","Сравнить"],
+["Самостоятельно","Аудиогиды — {c}","Гуляйте в своём темпе","Аудиоэкскурсии"],
+["Некоторые ссылки партнёрские — ваша цена не меняется."],
+["Колесо скупого путешественника","Задайте бюджет и крутите — выберем город на выходные и покажем цены на рейсы.","бюджет","Крутить колесо","Колесо выбрало…","Выходные: {c}","Вылет: {o}, эти выходные. Выбирайте варианты до {b}."],
+["Ошибочные тарифы","Скоро: ошибки в ценах авиакомпаний и горящие предложения в реальном времени.","Хотите быть первым? Не закрывайте чат с ботом — мы напишем, когда запустим."],
+["Рейс задержан или отменён?","Вам могут выплатить до 600 € по правилам ЕС.","Проверить компенсацию"],
+["После бронирования отеля я включу карту скидок вокруг него."],
+["Все","Еда","Спа","Красота","Досуг"],
+["Ваш отель","Превью","Ваучеры скоро","Чем заняться рядом","Билеты и экскурсии","Аудиогиды","Карта — это превью. Реальные купоны появятся с партнёрскими сетями."],
+["Ужин на двоих","Бранч и кофе","Спа-день с сауной","Маникюр + массаж","Квест-комната на 4"],
+["Ресторан","Кафе","Салон красоты","Развлечения"],
+["Язык","Введите язык","","Валюта"],
+["Путешествуйте вместе","Пригласите друзей в Tripwise и планируйте поездку вместе.","Пригласить друзей"],
+["Значки","скоро"],
+["Первая поездка","Охотник за скидками","Исследователь Азии","Охотник за багами","5 стран","Сова"],
+["Уведомления о ценах скоро — мы напишем вам в чат.","Ваучеры скоро появятся.","Выберите корректные даты","Планируете поездку? Tripwise находит выгодные билеты, авто, экскурсии и многое другое."]
+],
+uk: [
+["Куди вирушаємо?","Крути, заощаджуй, мандруй","Знижки біля готелю","Ваш профіль мандрівника"],
+["Пошук","Купони","Мапа","Профіль"],
+["Авіаквитки","Готелі","Авто","Екскурсії","Трансфери","eSIM"],
+["Звідки летимо","Куди?","Введіть країну або місто","Введіть місто","Місто","Нічого не знайдено","Популярне"],
+["Коли","Вихідні","Наст. тиждень","Обрати дати","З","По"],
+["Хто їде","Дорослі","Діти","0–17 років","Дитина {n}, вік","до 1 року"],
+["Знайти найкращі варіанти","Найкраще: {c}","Стежити за ціною"],
+["Ціни онлайн","Авіаквитки — {c}","Усі авіакомпанії, ваші дати й пасажири вже заповнені","Показати рейси"],
+["Приліт","Трансфер з аеропорту — {c}","Фіксована ціна, водій зустріне","Замовити трансфер"],
+["Будьте на зв'язку","eSIM — {c}","Інтернет одразу після посадки","Купити eSIM"],
+["Бронювання готелів скоро — підключаємо партнерів. А поки сплануйте решту:","Чим зайнятися","Квитки та екскурсії — {c}","Музеї, пам'ятки, поїздки на день","Дивитися екскурсії"],
+["Вигідно","Оренда авто — {c}","Місцеві компанії, безкоштовне скасування для багатьох авто","Знайти авто"],
+["Більше вибору","Порівняти інші прокати","Порівняти"],
+["Самостійно","Аудіогіди — {c}","Гуляйте у своєму темпі","Аудіоекскурсії"],
+["Деякі посилання партнерські — ваша ціна не змінюється."],
+["Колесо ощадливого мандрівника","Задайте бюджет і крутіть — оберемо місто на вихідні й покажемо ціни на рейси.","бюджет","Крутити колесо","Колесо обрало…","Вихідні: {c}","Виліт: {o}, ці вихідні. Обирайте варіанти до {b}."],
+["Помилкові тарифи","Скоро: помилки в цінах авіакомпаній і гарячі пропозиції в реальному часі.","Хочете бути першим? Не закривайте чат із ботом — ми напишемо, коли запустимо."],
+["Рейс затримано чи скасовано?","Вам можуть виплатити до 600 € за правилами ЄС.","Перевірити компенсацію"],
+["Після бронювання готелю я ввімкну мапу знижок навколо нього."],
+["Усі","Їжа","Спа","Краса","Дозвілля"],
+["Ваш готель","Превʼю","Ваучери скоро","Чим зайнятися поруч","Квитки та екскурсії","Аудіогіди","Мапа — це превʼю. Справжні купони з'являться з партнерськими мережами."],
+["Вечеря на двох","Бранч і кава","Спа-день із сауною","Манікюр + масаж","Квест-кімната на 4"],
+["Ресторан","Кафе","Салон краси","Розваги"],
+["Мова","Введіть мову","","Валюта"],
+["Подорожуйте разом","Запросіть друзів у Tripwise і плануйте подорож разом.","Запросити друзів"],
+["Значки","скоро"],
+["Перша подорож","Мисливець за знижками","Дослідник Азії","Мисливець за багами","5 країн","Сова"],
+["Сповіщення про ціни скоро — ми напишемо вам у чат.","Ваучери скоро з'являться.","Оберіть коректні дати","Плануєте подорож? Tripwise знаходить вигідні квитки, авто, екскурсії та багато іншого."]
+],
+ar: [
+["إلى أين نذهب؟","أدر، وفّر، سافر","عروض قرب فندقك","ملفك السياحي"],
+["بحث","كوبونات","الخريطة","الملف"],
+["طيران","فنادق","سيارات","جولات","نقل","eSIM"],
+["السفر من","إلى أين؟","اكتب دولة أو مدينة","اكتب مدينة","المدينة","لا توجد نتائج","الأكثر شيوعًا"],
+["متى","نهاية الأسبوع","الأسبوع القادم","اختر التواريخ","من","إلى"],
+["المسافرون","بالغون","أطفال","0–17 سنة","الطفل {n}، العمر","أقل من سنة"],
+["اعثر على أفضل العروض","أفضل الخيارات: {c}","تتبّع السعر"],
+["أسعار مباشرة","رحلات إلى {c}","مقارنة جميع شركات الطيران، مع تواريخك وعدد المسافرين","عرض الرحلات"],
+["الوصول","النقل من المطار في {c}","سعر ثابت، والسائق في استقبالك","احجز النقل"],
+["ابقَ متصلًا","eSIM لـ {c}","إنترنت منذ لحظة الهبوط","احصل على eSIM"],
+["حجز الفنادق قريبًا — نعمل على ربط شركاء الفنادق. في الأثناء، خطط لبقية رحلتك:","أنشطة","تذاكر وجولات في {c}","متاحف، معالم، رحلات يومية","عرض الجولات"],
+["أفضل قيمة","تأجير سيارات في {c}","شركات محلية، إلغاء مجاني لكثير من السيارات","ابحث عن سيارة"],
+["خيارات أكثر","قارن شركات تأجير أخرى","قارن"],
+["بنفسك","أدلة صوتية لـ {c}","استكشف على راحتك","جولات صوتية"],
+["بعض الروابط روابط شراكة — سعرك لا يتغير."],
+["عجلة المسافر المقتصد","حدد ميزانية وأدر العجلة — نختار مدينة لعطلة نهاية الأسبوع ونعرض أسعار الرحلات.","الميزانية","أدر العجلة","العجلة تقول…","عطلة في {c}","رحلات من {o} هذه العطلة. اختر ما هو ضمن {b}."],
+["أسعار خاطئة","قريبًا: أخطاء أسعار شركات الطيران والعروض الخاطفة لحظة بلحظة.","تريد أن تكون الأول؟ أبقِ محادثة البوت مفتوحة — سنراسلك عند الإطلاق."],
+["رحلتك تأخرت أو أُلغيت؟","قد يحق لك تعويض يصل إلى 600 € وفق قواعد الاتحاد الأوروبي.","تحقق من التعويض"],
+["بعد حجز فندقك، أفعّل خريطة خصومات حوله."],
+["الكل","طعام","سبا","تجميل","ترفيه"],
+["فندقك","معاينة","القسائم قريبًا","أنشطة هناك الآن","تذاكر وجولات","أدلة صوتية","الخريطة معاينة. الكوبونات الحقيقية تأتي مع شبكات الشركاء."],
+["عشاء لشخصين","برانش وقهوة","يوم سبا مع ساونا","مانيكير + مساج","غرفة هروب لـ 4"],
+["مطعم","مقهى","صالون تجميل","ترفيه"],
+["اللغة","اكتب لغة","","العملة"],
+["سافروا معًا","ادعُ أصدقاءك إلى Tripwise وخططوا للرحلة معًا.","ادعُ أصدقاءك"],
+["الشارات","قريبًا"],
+["أول رحلة","صياد العروض","مستكشف آسيا","صياد الأخطاء","5 دول","بومة الليل"],
+["تنبيهات الأسعار قريبًا — سنراسلك في المحادثة.","القسائم قريبًا.","يرجى اختيار تواريخ سفر صحيحة","تخطط لرحلة؟ Tripwise يجد رحلات طيران وسيارات وجولات بأسعار جيدة والمزيد."]
+],
+tr: [
+["Nereye gidiyoruz?","Çevir, kazan, gez","Otelinin yakınındaki fırsatlar","Seyahat profilin"],
+["Ara","Kuponlar","Harita","Profil"],
+["Uçuşlar","Oteller","Araçlar","Turlar","Transferler","eSIM"],
+["Kalkış","Nereye?","Ülke veya şehir yaz","Şehir yaz","Şehir","Sonuç yok","Popüler"],
+["Ne zaman","Hafta sonu","Gelecek hafta","Tarih seç","Başlangıç","Bitiş"],
+["Kimler seyahat ediyor","Yetişkin","Çocuk","0–17 yaş","{n}. çocuk, yaş","1 yaş altı"],
+["En iyi fırsatları bul","En iyi seçimler: {c}","Fiyatı takip et"],
+["Canlı fiyatlar","Uçuşlar: {c}","Tüm havayolları karşılaştırıldı, tarihlerin ve yolcuların hazır","Uçuşları göster"],
+["Varış","Havalimanı transferi: {c}","Sabit fiyat, şoför seni karşılar","Transfer ayırt"],
+["Bağlı kal","eSIM: {c}","İner inmez internet","eSIM al"],
+["Otel rezervasyonu yakında — otel ortaklarını bağlıyoruz. Bu arada seyahatin geri kalanını planla:","Yapılacaklar","Biletler ve turlar: {c}","Müzeler, gezilecek yerler, günübirlik turlar","Turları gör"],
+["En uygun","Araç kiralama: {c}","Yerel firmalar, birçok araçta ücretsiz iptal","Araç bul"],
+["Daha fazla seçenek","Diğer kiralama firmalarını karşılaştır","Karşılaştır"],
+["Kendi başına","Sesli rehberler: {c}","Kendi hızında keşfet","Sesli turlar"],
+["Bazı bağlantılar ortaklık bağlantısıdır — fiyatın değişmez."],
+["Tutumlu gezgin çarkı","Bütçeni belirle ve çevir — hafta sonu için bir şehir seçip uçuş fiyatlarını açalım.","bütçe","Çarkı çevir","Çark diyor ki…","Hafta sonu: {c}","Kalkış: {o}, bu hafta sonu. {b} altındakileri seç."],
+["Hatalı fiyatlar","Yakında: havayolu fiyat hataları ve flaş fırsatlar anlık olarak.","İlk sen mi olmak istiyorsun? Bot sohbetini açık tut — başladığında haber vereceğiz."],
+["Uçuşun gecikti mi, iptal mi oldu?","AB kurallarına göre 600 €'ya kadar tazminat alabilirsin.","Tazminatı kontrol et"],
+["Otel ayırttığında çevresinde bir indirim haritası açarım."],
+["Tümü","Yemek","Spa","Güzellik","Eğlence"],
+["Otelin","Önizleme","Kuponlar yakında","Orada şimdi ne yapılır","Biletler ve turlar","Sesli rehberler","Harita bir önizleme. Gerçek kuponlar ortak ağlarla gelecek."],
+["İki kişilik akşam yemeği","Brunch ve kahve","Saunalı spa günü","Manikür + masaj","4 kişilik kaçış odası"],
+["Restoran","Kafe","Güzellik salonu","Eğlence"],
+["Dil","Dil yaz","","Para birimi"],
+["Birlikte gezin","Arkadaşlarını Tripwise'a davet et, seyahati birlikte planlayın.","Arkadaş davet et"],
+["Rozetler","yakında"],
+["İlk seyahat","Fırsat avcısı","Asya kâşifi","Hata avcısı","5 ülke","Gece kuşu"],
+["Fiyat alarmları yakında — sana sohbette yazacağız.","Kuponlar yakında.","Lütfen geçerli tarihler seç","Seyahat mi planlıyorsun? Tripwise uygun uçuş, araç, tur ve daha fazlasını bulur."]
+],
+zh: [
+["我们去哪儿？","转一转，省一省，出发","酒店附近优惠","你的旅行档案"],
+["搜索","优惠券","地图","我的"],
+["机票","酒店","租车","游览","接送","eSIM"],
+["出发地","去哪儿？","输入国家或城市","输入城市","城市","未找到结果","热门"],
+["何时","周末","下周","选择日期","开始","结束"],
+["出行人","成人","儿童","0–17 岁","儿童 {n}，年龄","不满 1 岁"],
+["查找最佳优惠","{c} 精选","关注价格"],
+["实时价格","飞往 {c} 的航班","比较所有航空公司，已填好日期和人数","查看航班"],
+["抵达","{c} 机场接送","固定价格，司机接机","预订接送"],
+["保持在线","{c} eSIM","落地即可上网","获取 eSIM"],
+["酒店预订即将开放——我们正在接入酒店合作伙伴。现在先规划其他行程：","玩什么","{c} 门票和游览","博物馆、景点、一日游","查看游览"],
+["最划算","{c} 租车","本地公司，许多车型可免费取消","找车"],
+["更多选择","比较更多租车公司","比较"],
+["自助游","{c} 语音导览","按自己的节奏探索","语音游览"],
+["部分链接为联盟链接——你的价格不变。"],
+["省钱旅行转盘","设定预算并转动——我们选一个周末城市并打开实时机票价格。","预算","转动转盘","转盘选中…","{c} 周末游","本周末从 {o} 出发。选择 {b} 以内的航班。"],
+["错误票价","即将推出：实时捕捉航空公司错价和限时特价。","想第一个知道？保持机器人聊天打开——上线时我们会通知你。"],
+["航班延误或取消？","根据欧盟规定，你可能获得最高 600 € 赔偿。","查询赔偿"],
+["预订酒店后，我会为你开启周边优惠地图。"],
+["全部","美食","水疗","美容","娱乐"],
+["你的酒店","预览","代金券即将推出","附近现在可玩","门票和游览","语音导览","地图为预览。真实优惠券将随合作网络上线。"],
+["双人晚餐","早午餐和咖啡","桑拿水疗一日","美甲 + 按摩","4 人密室逃脱"],
+["餐厅","咖啡馆","美容院","娱乐"],
+["语言","输入语言","","货币"],
+["结伴出行","邀请朋友加入 Tripwise，一起规划旅行。","邀请朋友"],
+["徽章","即将推出"],
+["第一次旅行","优惠猎人","亚洲探险家","Bug 猎人","5 个国家","夜猫子"],
+["价格提醒即将推出——我们会在聊天中通知你。","代金券即将推出。","请选择有效的出行日期","计划旅行？Tripwise 帮你找到超值机票、租车、游览等。"]
+],
+ja: [
+["どこへ行く？","回して、節約して、出発","ホテル周辺のお得情報","あなたの旅プロフィール"],
+["検索","クーポン","マップ","プロフィール"],
+["航空券","ホテル","レンタカー","ツアー","送迎","eSIM"],
+["出発地","行き先は？","国名または都市名を入力","都市名を入力","都市","見つかりません","人気"],
+["いつ","週末","来週","日付を選択","開始","終了"],
+["旅行者","大人","子ども","0〜17歳","子ども{n}の年齢","1歳未満"],
+["お得なプランを探す","{c}のおすすめ","価格をウォッチ"],
+["リアルタイム価格","{c}行きの航空券","全航空会社を比較、日付と人数は入力済み","航空券を見る"],
+["到着","{c}の空港送迎","定額料金、ドライバーがお出迎え","送迎を予約"],
+["つながる","{c}のeSIM","着陸した瞬間からネット","eSIMを入手"],
+["ホテル予約はまもなく開始 — ホテルパートナーと接続中です。その間に旅の他の部分を計画しましょう:","アクティビティ","{c}のチケットとツアー","美術館、観光名所、日帰り旅行","ツアーを見る"],
+["お得","{c}のレンタカー","地元の会社、多くの車で無料キャンセル","車を探す"],
+["もっと選ぶ","他のレンタカー会社と比較","比較する"],
+["セルフガイド","{c}の音声ガイド","自分のペースで散策","音声ツアー"],
+["一部のリンクはアフィリエイトリンクです — 価格は変わりません。"],
+["節約旅ルーレット","予算を決めて回すと、週末の行き先を選んで航空券の価格を表示します。","予算","ルーレットを回す","ルーレットの結果…","{c}で週末","今週末、{o}発の航空券。{b}以内を選びましょう。"],
+["エラー運賃","近日公開：航空会社の価格ミスやタイムセールをリアルタイムでお届け。","いち早く知りたい？ボットのチャットを開いたままに — 開始時にお知らせします。"],
+["フライトの遅延・欠航？","EU規則により最大600 €の補償を受けられる場合があります。","補償を確認"],
+["ホテルを予約すると、周辺の割引マップを有効にします。"],
+["すべて","グルメ","スパ","美容","遊び"],
+["あなたのホテル","プレビュー","バウチャーは近日公開","今そこでできること","チケットとツアー","音声ガイド","マップはプレビューです。実際のクーポンはパートナーネットワークと共に登場します。"],
+["2名様ディナー","ブランチ＆コーヒー","サウナ付きスパ1日","ネイル + マッサージ","4人用脱出ゲーム"],
+["レストラン","カフェ","美容サロン","エンタメ"],
+["言語","言語を入力","","通貨"],
+["一緒に旅しよう","友達をTripwiseに招待して、一緒に旅を計画しましょう。","友達を招待"],
+["バッジ","近日公開"],
+["初めての旅","お得ハンター","アジア探検家","バグハンター","5か国","夜ふかし"],
+["価格アラートは近日公開 — チャットでお知らせします。","バウチャーは近日公開です。","正しい旅行日を選んでください","旅行の計画中？Tripwiseがお得な航空券、レンタカー、ツアーなどを見つけます。"]
+],
+ko: [
+["어디로 갈까요?","돌리고, 아끼고, 떠나요","호텔 주변 할인","나의 여행 프로필"],
+["검색","쿠폰","지도","프로필"],
+["항공권","호텔","렌터카","투어","픽업","eSIM"],
+["출발지","어디로?","국가 또는 도시 입력","도시 입력","도시","결과 없음","인기"],
+["언제","주말","다음 주","날짜 선택","시작","종료"],
+["여행자","성인","어린이","0–17세","어린이 {n} 나이","1세 미만"],
+["최저가 찾기","{c} 추천","가격 알림"],
+["실시간 가격","{c} 항공권","모든 항공사 비교, 날짜와 인원 입력 완료","항공권 보기"],
+["도착","{c} 공항 픽업","고정 요금, 기사님이 마중 나와요","픽업 예약"],
+["언제나 온라인","{c} eSIM","착륙하자마자 인터넷","eSIM 받기"],
+["호텔 예약은 곧 열려요 — 호텔 파트너를 연결하는 중입니다. 그동안 나머지 여행을 계획하세요:","즐길 거리","{c} 티켓 및 투어","박물관, 명소, 당일 여행","투어 보기"],
+["최고 가성비","{c} 렌터카","현지 업체, 많은 차량 무료 취소","차 찾기"],
+["더 많은 선택","다른 렌터카 업체 비교","비교"],
+["자유 여행","{c} 오디오 가이드","나만의 속도로 탐험","오디오 투어"],
+["일부 링크는 제휴 링크입니다 — 가격은 동일합니다."],
+["알뜰 여행자 룰렛","예산을 정하고 돌리면 주말 여행 도시를 골라 항공권 가격을 보여드려요.","예산","룰렛 돌리기","룰렛 결과…","{c} 주말 여행","이번 주말 {o} 출발 항공권. {b} 이내로 골라보세요."],
+["오류 운임","곧 출시: 항공사 가격 오류와 깜짝 특가를 실시간으로.","가장 먼저 알고 싶나요? 봇 채팅을 열어 두세요 — 출시되면 알려드릴게요."],
+["항공편 지연 또는 결항?","EU 규정에 따라 최대 600 €를 받을 수 있어요.","보상 확인"],
+["호텔을 예약하면 주변 할인 지도를 켜드려요."],
+["전체","맛집","스파","뷰티","놀거리"],
+["내 호텔","미리보기","바우처 곧 출시","지금 근처에서 할 일","티켓 및 투어","오디오 가이드","지도는 미리보기입니다. 실제 쿠폰은 파트너 네트워크와 함께 제공됩니다."],
+["2인 저녁 식사","브런치 & 커피","사우나 포함 스파 데이","네일 + 마사지","4인 방탈출"],
+["레스토랑","카페","뷰티 살롱","엔터테인먼트"],
+["언어","언어 입력","","통화"],
+["함께 여행해요","친구를 Tripwise에 초대해 함께 여행을 계획하세요.","친구 초대"],
+["배지","곧 출시"],
+["첫 여행","특가 헌터","아시아 탐험가","버그 헌터","5개국","올빼미"],
+["가격 알림이 곧 출시돼요 — 채팅으로 알려드릴게요.","바우처가 곧 출시돼요.","올바른 여행 날짜를 선택하세요","여행 계획 중인가요? Tripwise가 합리적인 항공권, 렌터카, 투어 등을 찾아드려요."]
+],
+th: [
+["ไปไหนดี?","หมุน ประหยัด ออกเดินทาง","ดีลใกล้โรงแรมของคุณ","โปรไฟล์การเดินทางของคุณ"],
+["ค้นหา","คูปอง","แผนที่","โปรไฟล์"],
+["เที่ยวบิน","โรงแรม","รถเช่า","ทัวร์","รถรับส่ง","eSIM"],
+["บินจาก","ไปที่ไหน?","พิมพ์ประเทศหรือเมือง","พิมพ์เมือง","เมือง","ไม่พบผลลัพธ์","ยอดนิยม"],
+["เมื่อไร","สุดสัปดาห์","สัปดาห์หน้า","เลือกวันที่","ตั้งแต่","ถึง"],
+["ผู้เดินทาง","ผู้ใหญ่","เด็ก","0–17 ปี","เด็กคนที่ {n} อายุ","ต่ำกว่า 1"],
+["ค้นหาดีลที่ดีที่สุด","แนะนำสำหรับ {c}","ติดตามราคา"],
+["ราคาสด","เที่ยวบินไป {c}","เปรียบเทียบทุกสายการบิน กรอกวันที่และผู้เดินทางให้แล้ว","ดูเที่ยวบิน"],
+["ขาเข้า","รถรับส่งสนามบินใน {c}","ราคาคงที่ คนขับรอรับ","จองรถรับส่ง"],
+["ออนไลน์ตลอด","eSIM สำหรับ {c}","มีเน็ตทันทีที่ลงจอด","รับ eSIM"],
+["การจองโรงแรมเปิดเร็วๆ นี้ — เรากำลังเชื่อมต่อพาร์ทเนอร์โรงแรม ระหว่างนี้วางแผนส่วนอื่นของทริปก่อน:","กิจกรรม","ตั๋วและทัวร์ใน {c}","พิพิธภัณฑ์ สถานที่ท่องเที่ยว ทริปไปกลับ","ดูทัวร์"],
+["คุ้มที่สุด","รถเช่าใน {c}","บริษัทท้องถิ่น ยกเลิกฟรีสำหรับรถหลายคัน","หารถ"],
+["ตัวเลือกเพิ่มเติม","เปรียบเทียบบริษัทรถเช่าอื่น","เปรียบเทียบ"],
+["เที่ยวเอง","ไกด์เสียงสำหรับ {c}","สำรวจตามจังหวะของคุณ","ทัวร์เสียง"],
+["บางลิงก์เป็นลิงก์พันธมิตร — ราคาของคุณเท่าเดิม"],
+["วงล้อนักเดินทางสายประหยัด","ตั้งงบแล้วหมุน — เราจะเลือกเมืองสำหรับสุดสัปดาห์และเปิดราคาตั๋วเครื่องบิน","งบ","หมุนวงล้อ","วงล้อเลือก…","สุดสัปดาห์ที่ {c}","เที่ยวบินจาก {o} สุดสัปดาห์นี้ เลือกที่ไม่เกิน {b}"],
+["ตั๋วราคาผิดพลาด","เร็วๆ นี้: ราคาผิดพลาดของสายการบินและดีลแฟลชแบบเรียลไทม์","อยากรู้ก่อนใคร? เปิดแชทกับบอทไว้ — เราจะแจ้งเมื่อเปิดตัว"],
+["เที่ยวบินล่าช้าหรือยกเลิก?","ตามกฎ EU คุณอาจได้รับเงินชดเชยสูงสุด 600 €","ตรวจสอบค่าชดเชย"],
+["เมื่อคุณจองโรงแรม ฉันจะเปิดแผนที่ส่วนลดรอบๆ ให้"],
+["ทั้งหมด","อาหาร","สปา","ความงาม","สนุก"],
+["โรงแรมของคุณ","ตัวอย่าง","บัตรกำนัลเร็วๆ นี้","ทำอะไรที่นั่นตอนนี้","ตั๋วและทัวร์","ไกด์เสียง","แผนที่นี้เป็นตัวอย่าง คูปองจริงจะมาพร้อมเครือข่ายพาร์ทเนอร์"],
+["ดินเนอร์สำหรับสองคน","บรันช์และกาแฟ","สปาหนึ่งวันพร้อมซาวน่า","ทำเล็บ + นวด","ห้องหลบหนีสำหรับ 4 คน"],
+["ร้านอาหาร","คาเฟ่","ร้านเสริมสวย","บันเทิง"],
+["ภาษา","พิมพ์ภาษา","","สกุลเงิน"],
+["เที่ยวด้วยกัน","ชวนเพื่อนมาใช้ Tripwise แล้ววางแผนทริปด้วยกัน","ชวนเพื่อน"],
+["เหรียญตรา","เร็วๆ นี้"],
+["ทริปแรก","นักล่าดีล","นักสำรวจเอเชีย","นักล่าบั๊ก","5 ประเทศ","นกฮูกกลางคืน"],
+["การแจ้งเตือนราคาเร็วๆ นี้ — เราจะส่งข้อความในแชท","บัตรกำนัลเร็วๆ นี้","กรุณาเลือกวันเดินทางที่ถูกต้อง","กำลังวางแผนทริป? Tripwise หาตั๋วเครื่องบิน รถเช่า ทัวร์ และอื่นๆ ในราคาคุ้มค่า"]
+],
+vi: [
+["Mình đi đâu đây?","Quay, tiết kiệm, lên đường","Ưu đãi quanh khách sạn","Hồ sơ du lịch của bạn"],
+["Tìm kiếm","Ưu đãi","Bản đồ","Hồ sơ"],
+["Chuyến bay","Khách sạn","Thuê xe","Tour","Đưa đón","eSIM"],
+["Bay từ","Đi đâu?","Nhập quốc gia hoặc thành phố","Nhập thành phố","Thành phố","Không tìm thấy","Phổ biến"],
+["Khi nào","Cuối tuần","Tuần sau","Chọn ngày","Từ","Đến"],
+["Ai đi","Người lớn","Trẻ em","0–17 tuổi","Trẻ {n}, tuổi","dưới 1"],
+["Tìm ưu đãi tốt nhất","Gợi ý cho {c}","Theo dõi giá"],
+["Giá trực tiếp","Chuyến bay đến {c}","So sánh mọi hãng bay, đã điền ngày và số khách","Xem chuyến bay"],
+["Đến nơi","Đưa đón sân bay tại {c}","Giá cố định, tài xế đón bạn","Đặt xe đưa đón"],
+["Luôn kết nối","eSIM cho {c}","Có mạng ngay khi hạ cánh","Mua eSIM"],
+["Đặt khách sạn sắp ra mắt — chúng tôi đang kết nối đối tác. Trong lúc đó, hãy lên kế hoạch phần còn lại:","Hoạt động","Vé và tour tại {c}","Bảo tàng, điểm tham quan, tour trong ngày","Xem tour"],
+["Giá tốt nhất","Thuê xe tại {c}","Công ty địa phương, nhiều xe được hủy miễn phí","Tìm xe"],
+["Nhiều lựa chọn hơn","So sánh thêm hãng cho thuê","So sánh"],
+["Tự túc","Thuyết minh âm thanh cho {c}","Khám phá theo nhịp của bạn","Tour âm thanh"],
+["Một số đường dẫn là liên kết đối tác — giá của bạn không đổi."],
+["Vòng quay du lịch tiết kiệm","Đặt ngân sách và quay — chúng tôi chọn một thành phố cuối tuần và mở giá vé máy bay.","ngân sách","Quay ngay","Vòng quay chọn…","Cuối tuần ở {c}","Chuyến bay từ {o} cuối tuần này. Chọn chuyến dưới {b}."],
+["Vé giá lỗi","Sắp có: lỗi giá của hãng bay và ưu đãi chớp nhoáng theo thời gian thực.","Muốn biết đầu tiên? Hãy giữ cuộc trò chuyện với bot — chúng tôi sẽ báo khi ra mắt."],
+["Chuyến bay bị trễ hoặc hủy?","Theo quy định EU, bạn có thể nhận tới 600 €.","Kiểm tra bồi thường"],
+["Khi bạn đặt khách sạn, tôi sẽ bật bản đồ giảm giá xung quanh."],
+["Tất cả","Ăn uống","Spa","Làm đẹp","Vui chơi"],
+["Khách sạn của bạn","Xem trước","Voucher sắp có","Làm gì ở đó bây giờ","Vé và tour","Thuyết minh âm thanh","Bản đồ chỉ là bản xem trước. Phiếu giảm giá thật sẽ có cùng mạng lưới đối tác."],
+["Bữa tối cho hai người","Brunch và cà phê","Ngày spa có xông hơi","Làm móng + mát-xa","Phòng thoát hiểm cho 4"],
+["Nhà hàng","Quán cà phê","Thẩm mỹ viện","Giải trí"],
+["Ngôn ngữ","Nhập ngôn ngữ","","Tiền tệ"],
+["Đi cùng nhau","Mời bạn bè dùng Tripwise và cùng lên kế hoạch chuyến đi.","Mời bạn bè"],
+["Huy hiệu","sắp có"],
+["Chuyến đi đầu tiên","Thợ săn ưu đãi","Nhà thám hiểm châu Á","Thợ săn lỗi","5 quốc gia","Cú đêm"],
+["Cảnh báo giá sắp có — chúng tôi sẽ nhắn bạn trong chat.","Voucher sắp có.","Vui lòng chọn ngày đi hợp lệ","Đang lên kế hoạch? Tripwise tìm vé bay, thuê xe, tour và hơn thế với giá tốt."]
+],
+hi: [
+["कहाँ चलें?","घुमाओ, बचाओ, चलो","आपके होटल के पास ऑफ़र","आपकी यात्रा प्रोफ़ाइल"],
+["खोज","कूपन","नक्शा","प्रोफ़ाइल"],
+["फ़्लाइट","होटल","कार","टूर","ट्रांसफ़र","eSIM"],
+["कहाँ से","कहाँ जाना है?","देश या शहर लिखें","शहर लिखें","शहर","कुछ नहीं मिला","लोकप्रिय"],
+["कब","वीकेंड","अगला हफ़्ता","तारीख चुनें","से","तक"],
+["कौन जा रहा है","वयस्क","बच्चे","0–17 साल","बच्चा {n}, उम्र","1 से कम"],
+["सबसे अच्छे ऑफ़र खोजें","{c} के लिए बेहतरीन","कीमत पर नज़र"],
+["लाइव कीमतें","{c} की फ़्लाइट","सभी एयरलाइंस की तुलना, आपकी तारीखें और यात्री भरे हुए","फ़्लाइट देखें"],
+["पहुँचना","{c} में एयरपोर्ट ट्रांसफ़र","तय कीमत, ड्राइवर आपसे मिलेगा","ट्रांसफ़र बुक करें"],
+["ऑनलाइन रहें","{c} के लिए eSIM","उतरते ही इंटरनेट","eSIM लें"],
+["होटल बुकिंग जल्द शुरू होगी — हम होटल पार्टनर जोड़ रहे हैं। तब तक बाकी यात्रा की योजना बनाएँ:","करने लायक","{c} में टिकट और टूर","संग्रहालय, आकर्षण, एक दिन की यात्राएँ","टूर देखें"],
+["सबसे किफ़ायती","{c} में कार किराया","स्थानीय कंपनियाँ, कई कारों पर मुफ़्त रद्दीकरण","कार खोजें"],
+["और विकल्प","और किराया कंपनियों की तुलना करें","तुलना करें"],
+["खुद घूमें","{c} के ऑडियो गाइड","अपनी रफ़्तार से घूमें","ऑडियो टूर"],
+["कुछ लिंक एफ़िलिएट लिंक हैं — आपकी कीमत वही रहती है।"],
+["किफ़ायती यात्री का पहिया","बजट तय करें और घुमाएँ — हम वीकेंड के लिए एक शहर चुनेंगे और फ़्लाइट की कीमतें खोलेंगे।","बजट","पहिया घुमाएँ","पहिया कहता है…","{c} में वीकेंड","इस वीकेंड {o} से फ़्लाइट। {b} तक वाली चुनें।"],
+["गलत किराए","जल्द आ रहा है: एयरलाइंस की कीमत की गलतियाँ और फ़्लैश डील्स, रियल टाइम में।","सबसे पहले जानना चाहते हैं? बॉट चैट खुली रखें — लॉन्च पर हम बताएँगे।"],
+["फ़्लाइट लेट या रद्द?","EU नियमों के तहत आपको 600 € तक मिल सकते हैं।","मुआवज़ा जाँचें"],
+["होटल बुक करने के बाद मैं उसके आसपास छूट का नक्शा चालू करूँगा।"],
+["सभी","खाना","स्पा","ब्यूटी","मनोरंजन"],
+["आपका होटल","प्रीव्यू","वाउचर जल्द","वहाँ अभी क्या करें","टिकट और टूर","ऑडियो गाइड","नक्शा एक प्रीव्यू है। असली कूपन पार्टनर नेटवर्क के साथ आएँगे।"],
+["दो लोगों का डिनर","ब्रंच और कॉफ़ी","सॉना के साथ स्पा डे","मैनीक्योर + मसाज","4 लोगों का एस्केप रूम"],
+["रेस्टोरेंट","कैफ़े","ब्यूटी सैलून","मनोरंजन"],
+["भाषा","भाषा लिखें","","मुद्रा"],
+["साथ घूमें","दोस्तों को Tripwise पर बुलाएँ और साथ मिलकर यात्रा की योजना बनाएँ।","दोस्तों को बुलाएँ"],
+["बैज","जल्द"],
+["पहली यात्रा","डील शिकारी","एशिया खोजी","बग शिकारी","5 देश","रात का उल्लू"],
+["कीमत अलर्ट जल्द — हम चैट में संदेश भेजेंगे।","वाउचर जल्द आ रहे हैं।","कृपया सही यात्रा तारीखें चुनें","यात्रा की योजना है? Tripwise किफ़ायती फ़्लाइट, कार, टूर और बहुत कुछ ढूँढता है।"]
+],
+id: [
+["Mau ke mana?","Putar, hemat, berangkat","Promo di sekitar hotelmu","Profil perjalananmu"],
+["Cari","Kupon","Peta","Profil"],
+["Penerbangan","Hotel","Mobil","Tur","Antar-jemput","eSIM"],
+["Berangkat dari","Ke mana?","Ketik negara atau kota","Ketik kota","Kota","Tidak ditemukan","Populer"],
+["Kapan","Akhir pekan","Minggu depan","Pilih tanggal","Dari","Sampai"],
+["Siapa yang pergi","Dewasa","Anak","0–17 tahun","Anak {n}, usia","di bawah 1"],
+["Cari penawaran terbaik","Pilihan terbaik di {c}","Pantau harga"],
+["Harga langsung","Penerbangan ke {c}","Semua maskapai dibandingkan, tanggal dan penumpang sudah terisi","Lihat penerbangan"],
+["Kedatangan","Antar-jemput bandara di {c}","Harga tetap, sopir menjemputmu","Pesan antar-jemput"],
+["Tetap online","eSIM untuk {c}","Internet sejak mendarat","Dapatkan eSIM"],
+["Pemesanan hotel segera hadir — kami sedang menghubungkan mitra hotel. Sementara itu, rencanakan sisa perjalananmu:","Aktivitas","Tiket dan tur di {c}","Museum, atraksi, wisata sehari","Lihat tur"],
+["Paling hemat","Sewa mobil di {c}","Perusahaan lokal, banyak mobil bisa batal gratis","Cari mobil"],
+["Lebih banyak pilihan","Bandingkan rental lain","Bandingkan"],
+["Jelajah sendiri","Pemandu audio untuk {c}","Jelajahi sesuai ritmemu","Tur audio"],
+["Beberapa tautan adalah tautan afiliasi — harganya tetap sama."],
+["Roda Pelancong Hemat","Atur anggaran lalu putar — kami pilih kota akhir pekan dan buka harga tiket pesawat.","anggaran","Putar roda","Roda berkata…","Akhir pekan di {c}","Penerbangan dari {o} akhir pekan ini. Pilih yang di bawah {b}."],
+["Tarif salah harga","Segera: salah harga maskapai dan promo kilat secara real time.","Mau jadi yang pertama? Biarkan chat bot tetap terbuka — kami kabari saat rilis."],
+["Penerbangan tertunda atau batal?","Menurut aturan UE kamu bisa dapat hingga 600 €.","Cek kompensasi"],
+["Setelah kamu memesan hotel, aku aktifkan peta diskon di sekitarnya."],
+["Semua","Makanan","Spa","Kecantikan","Hiburan"],
+["Hotelmu","Pratinjau","Voucher segera hadir","Aktivitas di sana sekarang","Tiket & tur","Pemandu audio","Peta ini pratinjau. Kupon asli hadir bersama jaringan mitra."],
+["Makan malam berdua","Brunch & kopi","Hari spa dengan sauna","Manikur + pijat","Escape room untuk 4"],
+["Restoran","Kafe","Salon kecantikan","Hiburan"],
+["Bahasa","Ketik bahasa","","Mata uang"],
+["Jalan bareng","Ajak teman ke Tripwise dan rencanakan perjalanan bersama.","Ajak teman"],
+["Lencana","segera"],
+["Perjalanan pertama","Pemburu promo","Penjelajah Asia","Pemburu bug","5 negara","Burung hantu"],
+["Peringatan harga segera hadir — kami kirim pesan di chat.","Voucher segera hadir.","Pilih tanggal perjalanan yang valid","Merencanakan perjalanan? Tripwise menemukan tiket pesawat, mobil, tur, dan lainnya dengan harga hemat."]
+]
+};
+
+// Group 29, part 2: flight + hotel, price alerts
+var TR3 = {
+en: ["Flight + hotel","Hotels in {c}","Opening the bot — press Start to turn on the price alert."],
+et: ["Lend + hotell","Hotellid: {c}","Avan boti — vajuta Start, et hinnateavitus sisse lülitada."],
+fi: ["Lento + hotelli","Hotellit: {c}","Avaan botin — paina Start, niin hintahälytys käynnistyy."],
+lv: ["Lidojums + viesnīca","Viesnīcas: {c}","Atveru botu — nospied Start, lai ieslēgtu cenu paziņojumu."],
+lt: ["Skrydis + viešbutis","Viešbučiai: {c}","Atidarau botą — paspausk Start, kad įjungtum kainų pranešimą."],
+pl: ["Lot + hotel","Hotele: {c}","Otwieram bota — naciśnij Start, aby włączyć alert cenowy."],
+de: ["Flug + Hotel","Hotels in {c}","Ich öffne den Bot — tippe auf Start, um den Preisalarm einzuschalten."],
+fr: ["Vol + hôtel","Hôtels : {c}","J'ouvre le bot — appuyez sur Démarrer pour activer l'alerte prix."],
+es: ["Vuelo + hotel","Hoteles en {c}","Abriendo el bot: pulsa Iniciar para activar la alerta de precio."],
+it: ["Volo + hotel","Hotel a {c}","Apro il bot: premi Avvia per attivare l'avviso di prezzo."],
+ru: ["Перелёт + отель","Отели — {c}","Открываю бота — нажмите «Старт», чтобы включить уведомление о цене."],
+uk: ["Переліт + готель","Готелі — {c}","Відкриваю бота — натисніть «Почати», щоб увімкнути сповіщення про ціну."],
+ar: ["طيران + فندق","فنادق في {c}","سأفتح البوت — اضغط ابدأ لتفعيل تنبيه السعر."],
+tr: ["Uçuş + otel","Oteller: {c}","Bot açılıyor — fiyat alarmını açmak için Başlat'a dokun."],
+zh: ["机票 + 酒店","{c} 酒店","正在打开机器人——点击“开始”即可开启价格提醒。"],
+ja: ["航空券＋ホテル","{c}のホテル","ボットを開きます。「開始」を押すと価格アラートがオンになります。"],
+ko: ["항공 + 호텔","{c} 호텔","봇을 열어요. '시작'을 누르면 가격 알림이 켜져요."],
+th: ["เที่ยวบิน + โรงแรม","โรงแรมใน {c}","กำลังเปิดบอท — กด เริ่ม เพื่อเปิดการแจ้งเตือนราคา"],
+vi: ["Vé bay + khách sạn","Khách sạn tại {c}","Đang mở bot — nhấn Bắt đầu để bật cảnh báo giá."],
+hi: ["फ़्लाइट + होटल","{c} में होटल","बॉट खुल रहा है — कीमत अलर्ट चालू करने के लिए Start दबाएँ।"],
+id: ["Pesawat + hotel","Hotel di {c}","Membuka bot — tekan Mulai untuk menyalakan peringatan harga."]
+};
+Object.keys(TR).forEach(function (l) { TR[l].push((TR2[l] || TR2.en).concat(TR3[l] || TR3.en)); });
+
+function load(key, fallback) {
+try { var v = localStorage.getItem("tw_" + key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+}
+function save(key, value) { try { localStorage.setItem("tw_" + key, JSON.stringify(value)); } catch (e) {} }
+
+var tg = window.Telegram && window.Telegram.WebApp;
+if (tg) {
+try { tg.ready(); tg.expand(); tg.setHeaderColor("#0A6FC0"); tg.setBackgroundColor("#F2F8FE"); } catch (e) {}
+}
+function detectLang() {
+var c = "";
+try { c = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || ""; } catch (e) {}
+if (!c) c = navigator.language || "en";
+c = c.toLowerCase().split("-")[0];
+if (c === "no" || c === "nn") c = "nb";
+if (c === "tl") c = "fil";
+return LANGS.indexOf(c) >= 0 ? c : "en";
+}
+var savedLang = load("lang3", null); // language picked in the app
+try { var urlLang = (new URLSearchParams(location.search).get("lang") || "").toLowerCase(); if (LANGS.indexOf(urlLang) < 0) urlLang = urlLang.slice(0, 2); if (LANGS.indexOf(urlLang) >= 0) { savedLang = urlLang; save("lang3", urlLang); } } catch (e) {} // language chosen in the bot wins
+var savedOrigin = load("origin", "TLL");
+var S = {
+tab: "search", cat: "flights", wmode: load("wmode", "flight") === "hotel" ? "hotel" : "flight", calM: 0, origin: CITY[savedOrigin] ? savedOrigin : "TLL", country: "es", city: "BCN",
+when: "weekend", from: "", to: "", adults: 2, kids: [], searched: false,
+budget: load("budget", 150), rotation: 0, wheel: null, filter: "all", deal: 0,
+lang: savedLang && LANGS.indexOf(savedLang) >= 0 ? savedLang : detectLang(),
+currency: CURRENCIES[load("currency", "EUR")] ? load("currency", "EUR") : "EUR"
+};
+var D = {};
+function buildDict(lang) {
+var g = TR[lang] || TR.en, d = {};
+KEYS.forEach(function (grp, i) { grp.forEach(function (k, j) { var v = g[i] && g[i][j]; d[k] = v ? v : TR.en[i][j]; }); });
+D = d;
+document.documentElement.lang = lang;
+document.documentElement.dir = TR[lang] && RTL.indexOf(lang) >= 0 ? "rtl" : "ltr";
+}
+function t(k, vars) {
+var s = D[k] || k;
+if (vars) Object.keys(vars).forEach(function (n) { s = s.split("{" + n + "}").join(vars[n]); });
+return s;
+}
+buildDict(S.lang);
+
+var dnCache = {};
+function dn(lang, type) {
+var k = lang + "|" + type;
+if (!(k in dnCache)) { try { dnCache[k] = new Intl.DisplayNames([lang], { type: type }); } catch (e) { dnCache[k] = null; } }
+return dnCache[k];
+}
+function countryName(iso) {
+var d = dn(S.lang, "region"), n = null;
+try { n = d && d.of(iso.toUpperCase()); } catch (e) {}
+return n && n !== iso.toUpperCase() ? n : BY_ISO[iso].en;
+}
+function langName(code, inLang) {
+var d = dn(inLang, "language"), n = null;
+try { n = d && d.of(code); } catch (e) {}
+if (!n || n === code) n = code.toUpperCase();
+return n.charAt(0).toUpperCase() + n.slice(1);
+}
+
+var ICON = {
+flights: "M2 16l20-6-20-6 4 6-4 6zM6 10h8",
+hotels: "M3 20V8l9-5 9 5v12M9 20v-6h6v6",
+car: "M5 16h14M3 16v-4l2-5h14l2 5v4M7 19a1.5 1.5 0 1 0 0-3M17 19a1.5 1.5 0 1 0 0-3",
+tours: "M4 21V4M4 4h12l-2 4 2 4H4",
+transfer: "M4 7h13l-3-3M20 17H7l3 3",
+esim: "M7 3h7l4 4v14H7zM10 12h5M10 16h5",
+search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",
+coupons: "M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4zM10 6v12",
+map: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
+bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0",
+globe: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9"
+};
+var CATS = ["flights","hotels","car","tours","transfer","esim"];
+var TABS = ["search","coupons","map","profile"];
+var WHEEL_CITIES = [["Riga","RIX"],["Vilnius","VNO"],["Krakow","KRK"],["Prague","PRG"],["Budapest","BUD"],["Gdansk","GDN"],["Copenhagen","CPH"],["Vienna","VIE"]];
+var PINS = [
+{ cat: "food", tk: "d1", mk: "restaurant", km: "0.3", d: "-40%", x: 40, y: 160 },
+{ cat: "food", tk: "d2", mk: "cafe", km: "0.5", d: "-30%", x: 240, y: 130 },
+{ cat: "spa", tk: "d3", mk: "spa", km: "0.6", d: "-35%", x: 220, y: 230 },
+{ cat: "beauty", tk: "d4", mk: "beautySalon", km: "0.8", d: "-50%", x: 60, y: 50 },
+{ cat: "fun", tk: "d5", mk: "entertainment", km: "1.1", d: "-25%", x: 100, y: 235 }
+];
+
+function haptic() { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred("light"); } catch (e) {} }
+function openLink(url) {
+haptic();
+if (tg && tg.openTelegramLink && url.indexOf("https://t.me/") === 0) tg.openTelegramLink(url);
+else if (tg && tg.openLink) tg.openLink(url);
+else window.open(url, "_blank", "noopener");
+}
+function toast(text) {
+var el = document.getElementById("toast");
+el.textContent = text; el.classList.add("show");
+clearTimeout(toast._t); toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function svg(path, size) {
+return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"></path></svg>';
+}
+function flagImg(iso) { return '<img class="fl" src="https://flagcdn.com/w40/' + iso + '.png" alt="" loading="lazy">'; }
+// Money: all prices are kept in EUR and shown in the chosen currency
+function money(eur, code) {
+code = code || S.currency;
+var v = eur * (RATES[code] || 1);
+if (CRYPTO[code]) return CRYPTO[code][1] + (code === "BTC" ? v.toFixed(5) : Math.round(v));
+try { return new Intl.NumberFormat(S.lang, { style: "currency", currency: code, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(v); }
+catch (e) { return Math.round(v) + " " + code; }
+}
+function curName(code) {
+if (CRYPTO[code]) return CRYPTO[code][0];
+var d = dn(S.lang, "currency"), n = null;
+try { n = d && d.of(code); } catch (e) {}
+return n && n !== code ? n.charAt(0).toUpperCase() + n.slice(1) : code;
+}
+function curSymbol(code) {
+if (CRYPTO[code]) return CRYPTO[code][1];
+try { var p = new Intl.NumberFormat("en", { style: "currency", currency: code, currencyDisplay: "narrowSymbol" }).formatToParts(1); return p.filter(function (x) { return x.type === "currency"; })[0].value; } catch (e) { return code; }
+}
+function pad(n) { return (n < 10 ? "0" : "") + n; }
+function ddmm(d) { return pad(d.getDate()) + pad(d.getMonth() + 1); }
+function nextWeekday(day) {
+var d = new Date(); d.setHours(12, 0, 0, 0);
+var diff = (day - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + diff); return d;
+}
+function tripDates() {
+if (S.when === "pick" && S.from && S.to) return [new Date(S.from + "T12:00:00"), new Date(S.to + "T12:00:00")];
+if (S.when === "next") { var m = nextWeekday(1); var e = new Date(m); e.setDate(m.getDate() + 6); return [m, e]; }
+var f = nextWeekday(5); var s = new Date(f); s.setDate(f.getDate() + 2); return [f, s];
+}
+function passengers() {
+var children = S.kids.filter(function (a) { return a >= 2; }).length;
+var infants = S.kids.filter(function (a) { return a < 2; }).length;
+return String(S.adults) + (children || infants ? String(children) + (infants ? String(infants) : "") : "");
+}
+function flightUrl(dest, when) {
+var keep = S.when; if (when) S.when = when;
+var d = tripDates(); S.when = keep;
+return "https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?marker=" + MARKER + ".miniapp" + curParam();
+}
+function curParam() { return CRYPTO[S.currency] ? "" : "&currency=" + S.currency.toLowerCase(); }
+var HOTEL_AID = ""; // Booking.com affiliate ID: fill in after the partner account is approved
+function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function hotelUrl(city, dep, ret) {
+return "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(city) + "&checkin=" + dep + "&checkout=" + ret +
+"&group_adults=" + S.adults + "&no_rooms=1" + (S.kids.length ? "&group_children=" + S.kids.length + S.kids.map(function (a) { return "&age=" + a; }).join("") : "") +
+"&lang=" + encodeURIComponent(S.lang) + (CRYPTO[S.currency] ? "" : "&selected_currency=" + S.currency) + (HOTEL_AID ? "&aid=" + HOTEL_AID : "");
+}
+// Price alert: opens the bot with /start a_ORIG_DEST_YYMMDD_YYMMDD_PAX (saved by the Make scenario)
+function alertLink(dest, dep, ret) {
+function yymmdd(s) { return s.slice(2, 4) + s.slice(5, 7) + s.slice(8, 10); }
+return BOT_LINK + "?start=a_" + S.origin + "_" + dest + "_" + yymmdd(dep) + "_" + yymmdd(ret) + "_" + passengers() + "_" + S.lang;
+}
+function searchAlert() { var d = tripDates(); return alertLink(S.city, iso(d[0]), iso(d[1])); }
+function tripUrl(trip) {
+var link = trip.link || ("/search/" + S.origin + trip.dep.slice(8, 10) + trip.dep.slice(5, 7) + trip.d + trip.ret.slice(8, 10) + trip.ret.slice(5, 7) + "1");
+return "https://www.aviasales.com" + link + (link.indexOf("?") >= 0 ? "&" : "?") + "marker=" + MARKER + ".wheel" + curParam();
+}
+function placeName(code) {
+var n = PRICES && PRICES.names && PRICES.names[code];
+if (n) return { name: n[0] || code, iso: n[1] || (CITY[code] && CITY[code].iso) };
+return CITY[code] ? { name: CITY[code].name, iso: CITY[code].iso } : { name: code, iso: null };
+}
+function pick3(arr) { var a = arr.slice(), out = []; while (a.length && out.length < 3) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]); return out; }
+function spinWheel() {
+var today = new Date().toISOString().slice(0, 10);
+var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
 if (S.wmode === "hotel") {
 var seen = {}, places = [];
 trips.forEach(function (x) { if (!seen[x.d] && x.d !== S.origin) { seen[x.d] = 1; places.push(placeName(x.d)); } });
