@@ -98,6 +98,12 @@ background: conic-gradient(var(--blue) 0 60deg, var(--sun) 60deg 120deg, var(--c
 .hub { position: absolute; left: 70px; top: 70px; width: 90px; height: 90px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .hub b { font-size: 22px; font-weight: 900; }
 input[type=range] { width: 100%; accent-color: var(--blue); }
+.hotbtn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 20px; background: linear-gradient(135deg, #FF6B35, #F7B32B); color: #fff; font-size: 18px; font-weight: 900; box-shadow: 0 6px 16px rgba(255,107,53,.3); }
+.hotlist { display: flex; flex-direction: column; gap: 12px; }
+.hotcard { background: #fff; border-radius: 20px; overflow: hidden; }
+.hotimg { position: relative; height: 170px; background: #2F80C8 linear-gradient(135deg, #0A6FC0, #5FB4F2) center/cover no-repeat; }
+.hotname { position: absolute; left: 12px; bottom: 10px; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 20px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.hotprice { position: absolute; right: 12px; top: 12px; background: #FF6B35; color: #fff; font-weight: 900; padding: 6px 10px; border-radius: 12px; }
 .win { border-radius: 16px; background: #DDF6F1; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .map { position: relative; height: 280px; border-radius: 20px; overflow: hidden; background: #DCEFE4; }
 .map .road { position: absolute; background: #fff; }
@@ -329,7 +335,7 @@ var KEYS = [
 ["badges","soon"],
 ["b1","b2","b3","b4","b5","b6"],
 ["watchToast","voucherToast","datesToast","inviteText"],
-["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText","flightHotel","hotelsIn","watchToast2"]
+["typeCurrency","inBudget","noneInBudget","direct","stops","pricesNote","noData","perPerson","moreOptions","open","bikesText","luggageTitle","luggageText","flightHotel","hotelsIn","watchToast2","hotDeals","hotDealsText"]
 ];
 // Texts added later (group 29): currency, live wheel, extra partners
 var TR2 = {
@@ -990,27 +996,27 @@ id: [
 
 // Group 29, part 2: flight + hotel, price alerts
 var TR3 = {
-en: ["Flight + hotel","Hotels in {c}","Opening the bot — press Start to turn on the price alert."],
-et: ["Lend + hotell","Hotellid: {c}","Avan boti — vajuta Start, et hinnateavitus sisse lülitada."],
-fi: ["Lento + hotelli","Hotellit: {c}","Avaan botin — paina Start, niin hintahälytys käynnistyy."],
-lv: ["Lidojums + viesnīca","Viesnīcas: {c}","Atveru botu — nospied Start, lai ieslēgtu cenu paziņojumu."],
-lt: ["Skrydis + viešbutis","Viešbučiai: {c}","Atidarau botą — paspausk Start, kad įjungtum kainų pranešimą."],
-pl: ["Lot + hotel","Hotele: {c}","Otwieram bota — naciśnij Start, aby włączyć alert cenowy."],
-de: ["Flug + Hotel","Hotels in {c}","Ich öffne den Bot — tippe auf Start, um den Preisalarm einzuschalten."],
-fr: ["Vol + hôtel","Hôtels : {c}","J'ouvre le bot — appuyez sur Démarrer pour activer l'alerte prix."],
-es: ["Vuelo + hotel","Hoteles en {c}","Abriendo el bot: pulsa Iniciar para activar la alerta de precio."],
-it: ["Volo + hotel","Hotel a {c}","Apro il bot: premi Avvia per attivare l'avviso di prezzo."],
-ru: ["Перелёт + отель","Отели — {c}","Открываю бота — нажмите «Старт», чтобы включить уведомление о цене."],
-uk: ["Переліт + готель","Готелі — {c}","Відкриваю бота — натисніть «Почати», щоб увімкнути сповіщення про ціну."],
-ar: ["طيران + فندق","فنادق في {c}","سأفتح البوت — اضغط ابدأ لتفعيل تنبيه السعر."],
-tr: ["Uçuş + otel","Oteller: {c}","Bot açılıyor — fiyat alarmını açmak için Başlat'a dokun."],
-zh: ["机票 + 酒店","{c} 酒店","正在打开机器人——点击“开始”即可开启价格提醒。"],
-ja: ["航空券＋ホテル","{c}のホテル","ボットを開きます。「開始」を押すと価格アラートがオンになります。"],
-ko: ["항공 + 호텔","{c} 호텔","봇을 열어요. '시작'을 누르면 가격 알림이 켜져요."],
-th: ["เที่ยวบิน + โรงแรม","โรงแรมใน {c}","กำลังเปิดบอท — กด เริ่ม เพื่อเปิดการแจ้งเตือนราคา"],
-vi: ["Vé bay + khách sạn","Khách sạn tại {c}","Đang mở bot — nhấn Bắt đầu để bật cảnh báo giá."],
-hi: ["फ़्लाइट + होटल","{c} में होटल","बॉट खुल रहा है — कीमत अलर्ट चालू करने के लिए Start दबाएँ।"],
-id: ["Pesawat + hotel","Hotel di {c}","Membuka bot — tekan Mulai untuk menyalakan peringatan harga."]
+en: ["Flight + hotel","Hotels in {c}","Opening the bot — press Start to turn on the price alert.","🔥 Hot deals","The cheapest flights from {o} departing soon"],
+et: ["Lend + hotell","Hotellid: {c}","Avan boti — vajuta Start, et hinnateavitus sisse lülitada.","🔥 Sooduspakkumised","Odavaimad lennud lähtekohast {o} lähipäevil"],
+fi: ["Lento + hotelli","Hotellit: {c}","Avaan botin — paina Start, niin hintahälytys käynnistyy.","🔥 Kuumat tarjoukset","Halvimmat pian lähtevät lennot: {o}"],
+lv: ["Lidojums + viesnīca","Viesnīcas: {c}","Atveru botu — nospied Start, lai ieslēgtu cenu paziņojumu.","🔥 Karstie piedāvājumi","Lētākie tuvākie lidojumi no {o}"],
+lt: ["Skrydis + viešbutis","Viešbučiai: {c}","Atidarau botą — paspausk Start, kad įjungtum kainų pranešimą.","🔥 Karšti pasiūlymai","Pigiausi artimiausi skrydžiai iš {o}"],
+pl: ["Lot + hotel","Hotele: {c}","Otwieram bota — naciśnij Start, aby włączyć alert cenowy.","🔥 Gorące oferty","Najtańsze loty z {o} w najbliższych dniach"],
+de: ["Flug + Hotel","Hotels in {c}","Ich öffne den Bot — tippe auf Start, um den Preisalarm einzuschalten.","🔥 Last-Minute-Angebote","Die günstigsten Flüge ab {o} in den nächsten Tagen"],
+fr: ["Vol + hôtel","Hôtels : {c}","J'ouvre le bot — appuyez sur Démarrer pour activer l'alerte prix.","🔥 Offres de dernière minute","Les vols les moins chers au départ de {o} très bientôt"],
+es: ["Vuelo + hotel","Hoteles en {c}","Abriendo el bot: pulsa Iniciar para activar la alerta de precio.","🔥 Ofertas de última hora","Los vuelos más baratos desde {o} que salen pronto"],
+it: ["Volo + hotel","Hotel a {c}","Apro il bot: premi Avvia per attivare l'avviso di prezzo.","🔥 Offerte last minute","I voli più economici da {o} in partenza a breve"],
+ru: ["Перелёт + отель","Отели — {c}","Открываю бота — нажмите «Старт», чтобы включить уведомление о цене.","🔥 Горящие предложения","Самые дешёвые вылеты из {o} в ближайшие дни"],
+uk: ["Переліт + готель","Готелі — {c}","Відкриваю бота — натисніть «Почати», щоб увімкнути сповіщення про ціну.","🔥 Гарячі пропозиції","Найдешевші вильоти з {o} найближчими днями"],
+ar: ["طيران + فندق","فنادق في {c}","سأفتح البوت — اضغط ابدأ لتفعيل تنبيه السعر.","🔥 عروض ساخنة","أرخص الرحلات من {o} في الأيام القادمة"],
+tr: ["Uçuş + otel","Oteller: {c}","Bot açılıyor — fiyat alarmını açmak için Başlat'a dokun.","🔥 Son dakika fırsatları","{o} çıkışlı yakında kalkan en ucuz uçuşlar"],
+zh: ["机票 + 酒店","{c} 酒店","正在打开机器人——点击“开始”即可开启价格提醒。","🔥 特惠精选","近期从{o}出发的最便宜航班"],
+ja: ["航空券＋ホテル","{c}のホテル","ボットを開きます。「開始」を押すと価格アラートがオンになります。","🔥 直前割","{o}発・まもなく出発の最安フライト"],
+ko: ["항공 + 호텔","{c} 호텔","봇을 열어요. '시작'을 누르면 가격 알림이 켜져요.","🔥 땡처리 특가","{o} 출발 곧 떠나는 최저가 항공편"],
+th: ["เที่ยวบิน + โรงแรม","โรงแรมใน {c}","กำลังเปิดบอท — กด เริ่ม เพื่อเปิดการแจ้งเตือนราคา","🔥 ดีลร้อนแรง","เที่ยวบินราคาถูกที่สุดจาก {o} ที่ออกเร็ว ๆ นี้"],
+vi: ["Vé bay + khách sạn","Khách sạn tại {c}","Đang mở bot — nhấn Bắt đầu để bật cảnh báo giá.","🔥 Ưu đãi giờ chót","Chuyến bay rẻ nhất từ {o} khởi hành sắp tới"],
+hi: ["फ़्लाइट + होटल","{c} में होटल","बॉट खुल रहा है — कीमत अलर्ट चालू करने के लिए Start दबाएँ।","🔥 हॉट डील्स","{o} से जल्द जाने वाली सबसे सस्ती फ़्लाइट्स"],
+id: ["Pesawat + hotel","Hotel di {c}","Membuka bot — tekan Mulai untuk menyalakan peringatan harga.","🔥 Promo kilat","Penerbangan termurah dari {o} yang segera berangkat"]
 };
 Object.keys(TR).forEach(function (l) { TR[l].push((TR2[l] || TR2.en).concat(TR3[l] || TR3.en)); });
 
@@ -1326,9 +1332,52 @@ render();
 }
 
 // ---------- Screens ----------
+// ---------- Hot deals: cheapest flights departing soon, with a city photo from Wikipedia ----------
+var PHOTO = {};
+function photoFor(name, iso) {
+if (PHOTO[name] !== undefined) return;
+PHOTO[name] = "";
+function get(title) {
+return fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title.replace(/ /g, "_")))
+.then(function (r) { return r.ok ? r.json() : {}; })
+.then(function (j) { return j.type === "disambiguation" ? "" : ((j.thumbnail && j.thumbnail.source) || ""); });
+}
+get(name).then(function (src) { return src || (iso && BY_ISO[iso] ? get(name + ", " + BY_ISO[iso].en) : ""); }).then(function (src) {
+if (!src) return;
+function safe(u) { return u.split("(").join("%28").split(")").join("%29").split("'").join("%27").split('"').join("%22"); }
+var parts = src.split("px-"), pre = parts[0], big = src;
+if (parts.length > 1) big = pre.slice(0, pre.lastIndexOf("/") + 1) + "640px-" + parts.slice(1).join("px-");
+PHOTO[name] = "linear-gradient(transparent 45%, rgba(0,0,0,.55)), url(" + safe(big) + "), url(" + safe(src) + ")";
+document.querySelectorAll('[data-photo="' + name + '"]').forEach(function (el) { el.style.backgroundImage = PHOTO[name]; });
+}).catch(function () {});
+}
+function hotDeals() {
+var today = iso(new Date()), lim = new Date(); lim.setDate(lim.getDate() + 21); lim = iso(lim);
+var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
+var soon = trips.filter(function (x) { return x.dep <= lim; });
+if (soon.length >= 3) trips = soon;
+var best = {};
+trips.forEach(function (x) { if (!best[x.d] || x.p < best[x.d].p) best[x.d] = x; });
+return Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 3);
+}
+function hotSection() {
+var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint" style="color:#fff;opacity:.9">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>";
+if (!S.hot) return h;
+var deals = hotDeals();
+if (!deals.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
+h += '<div class="hotlist">' + deals.map(function (tr) {
+var pl = placeName(tr.d); photoFor(pl.name, pl.iso);
+return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(pl.name) + '"' + (PHOTO[pl.name] ? ' style="background-image:' + PHOTO[pl.name] + '"' : "") + '><div class="hotname">' + (pl.iso ? flagImg(pl.iso) : "") + "<b>" + esc(pl.name) + '</b></div><div class="hotprice">' + esc(money(tr.p)) + "</div></div>" +
+'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
+'<div class="grid3"><button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("c_flights")) + "</button>" +
+'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">' + esc(t("c_hotels")) + "</button>" +
+'<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">' + esc(t("c_tours")) + "</button></div></div></div>";
+}).join("") + '<div class="hint">' + esc(t("pricesNote")) + " · 📷 Wikipedia</div></div>";
+return h;
+}
 function screenSearch() {
 var c = BY_ISO[S.country];
-var h = '<section class="card">';
+var h = hotSection() + '<section class="card">';
 h += '<div class="grid3">' + CATS.map(function (x) {
 return '<button class="chip cat' + (S.cat === x ? " on" : "") + '" data-act="cat" data-v="' + x + '">' + svg(ICON[x]) + "<span>" + esc(t("c_" + x)) + "</span></button>";
 }).join("") + "</div>";
@@ -1550,6 +1599,7 @@ setTimeout(function () { var r = document.querySelector(".result, .soon"); if (r
 return;
 case "open": if (el.hasAttribute("data-tp")) { choosePick(+el.getAttribute("data-tp")); setTimeout(render, 300); } openLink(v); return;
 case "tpick": choosePick(+v); haptic(); break;
+case "hot": S.hot = !S.hot; haptic(); break;
 case "unpick": S.picked = null; S.wheel = null; haptic(); break;
 case "watch": if (el.hasAttribute("data-tp")) choosePick(+el.getAttribute("data-tp")); toast(t("watchToast2")); setTimeout(function () { openLink(v); }, 700); return;
 case "wmode": S.wmode = v; save("wmode", v); S.wheel = null; haptic(); break;
