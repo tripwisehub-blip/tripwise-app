@@ -110,6 +110,12 @@ PAGES = {
     "delay": {"en": "https://www.airhelp.com/en/"},
     "tours3": {"en": "https://www.kkday.com/en-us"},
     "transfer3": {"en": "https://gettransfer.com/en"},
+    "tours4": dict({"en": "https://www.klook.com/en-US/", "zh": "https://www.klook.com/zh-CN/"},
+                   **{l: "https://www.klook.com/%s/" % l for l in ["de", "fr", "es", "it", "ja", "ko", "th", "vi", "id"]}),
+    "tours5": {"en": "https://gocity.com/en"},
+    "esim4": {"en": "https://www.gigsky.com/"},
+    "esim5": {"en": "https://saily.com/"},
+    "flights2": dict({"en": "https://www.kiwi.com/en/"}, **{l: "https://www.kiwi.com/%s/" % l for l in ["de", "fr", "es", "it", "pl"]}),
 }
 OUT2 = "data/links.json"
 try:
