@@ -64,6 +64,33 @@ os.makedirs("data", exist_ok=True)
 json.dump(dict(sorted(links.items())), open(OUT, "w"), ensure_ascii=False, indent=0)
 print("saved:", len(links))
 
+# City tours in other languages: data/tours_<lang>.json (the app falls back to English)
+for lang in ["de", "es", "fr", "it", "ru", "pl", "ja", "ko", "zh"]:
+    path = "data/tours_%s.json" % lang
+    try:
+        tl = json.load(open(path))
+    except Exception:
+        tl = {}
+    todo_l = sorted(c for c in cities if c not in tl)
+    for i in range(0, len(todo_l), 10):
+        batch = todo_l[i:i + 10]
+        body = {"trs": TRS, "marker": MARKER, "shorten": True,
+                "links": [{"url": "https://www.tiqets.com/%s/search?q=%s" % (lang, urllib.parse.quote(c)), "sub_id": "tours_" + lang} for c in batch]}
+        req = urllib.request.Request("https://api.travelpayouts.com/links/v1/create", data=json.dumps(body).encode(),
+                                     headers={"X-Access-Token": TOKEN, "Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=40) as r:
+                res = json.load(r)
+        except Exception as e:
+            print(lang, "request failed:", e)
+            break
+        for c, l in zip(batch, (res.get("result") or {}).get("links") or []):
+            if l.get("code") == "success" and l.get("partner_url"):
+                tl[c] = l["partner_url"]
+        time.sleep(0.7)
+    json.dump(dict(sorted(tl.items())), open(path, "w"), ensure_ascii=False, indent=0)
+    print("tours", lang, len(tl))
+
 
 # ---------- Partner home pages in the user's language (English when the site has no such language) ----------
 LR = {"en": "https://www.localrent.com/en/", "de": "https://localrent.de/", "es": "https://localrent.es/", "fr": "https://localrent.fr/",
