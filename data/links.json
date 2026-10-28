@@ -32,6 +32,17 @@
 "delay": {
 "en": "https://airhelp.tpx.lu/CwVLbAbm"
 },
+"esim5": {
+"en": "https://saily.tpx.lu/PoBGNDuQ"
+},
+"flights2": {
+"de": "https://kiwi.tpx.lu/CgmNNlEL",
+"en": "https://kiwi.tpx.lu/mSYPrCCe",
+"es": "https://kiwi.tpx.lu/RZlqgfCK",
+"fr": "https://kiwi.tpx.lu/D7EFZFgH",
+"it": "https://kiwi.tpx.lu/2HUFyjAb",
+"pl": "https://kiwi.tpx.lu/Iz1IJGGT"
+},
 "tours": {
 "de": "https://tiqets.tpx.lu/CNWWNtLo",
 "en": "https://tiqets.tpx.lu/7fk6Ko83",
@@ -46,6 +57,22 @@
 },
 "tours3": {
 "en": "https://kkday.tpx.lu/PgCiMokr"
+},
+"tours4": {
+"de": "https://klook.tpx.lu/FBQYq1II",
+"en": "https://klook.tpx.lu/iVYbkAN5",
+"es": "https://klook.tpx.lu/UtiUVIqW",
+"fr": "https://klook.tpx.lu/Va5FvVBI",
+"id": "https://klook.tpx.lu/AKebi9eh",
+"it": "https://klook.tpx.lu/ott519wS",
+"ja": "https://klook.tpx.lu/LoGLs3qR",
+"ko": "https://klook.tpx.lu/KjrZRsro",
+"th": "https://klook.tpx.lu/4GtXLTrT",
+"vi": "https://klook.tpx.lu/LgGRXQm3",
+"zh": "https://klook.tpx.lu/m9lbyreP"
+},
+"tours5": {
+"en": "https://gocity.tpx.lu/hcIHAQCj"
 },
 "transfer": {
 "de": "https://kiwitaxi.tpx.lu/M7kiBVvo",
