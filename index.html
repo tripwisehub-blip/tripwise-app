@@ -159,7 +159,9 @@ var CRYPTO = { USDT: ["Tether (USDT)", "₮"], BTC: ["Bitcoin", "₿"] };
 var RATES = {}; Object.keys(CURRENCIES).forEach(function (c) { RATES[c] = CURRENCIES[c]; });
 var PRICES = null; // data/prices.json, refreshed by GitHub Actions
 var TOURS = {}; // data/tours.json: city -> affiliate link to tours in that city
-function toursUrl(name) { return (name && TOURS[name]) || LINKS.tours; }
+var TOURS_L = {}, TOURS_LANGS = ["de", "es", "fr", "it", "ru", "pl", "ja", "ko", "zh"]; // data/tours_<lang>.json
+function loadToursLang() { var l = S.lang; if (TOURS_LANGS.indexOf(l) < 0 || TOURS_L[l]) return; TOURS_L[l] = {}; loadJSON("data/tours_" + l + ".json").then(function (d) { TOURS_L[l] = d || {}; }).catch(function () {}); }
+function toursUrl(name) { return (name && ((TOURS_L[S.lang] || {})[name] || TOURS[name])) || LINKS.tours; }
 var LINKS0 = Object.assign({}, LINKS), PLINKS = {}; // data/links.json: partner pages in each language
 function applyLinks() { Object.keys(LINKS0).forEach(function (k) { var m = PLINKS[k]; LINKS[k] = (m && (m[S.lang] || m.en)) || LINKS0[k]; }); }
 var BOT_LINK = "https://t.me/tripwise_hub_bot";
@@ -1289,7 +1291,7 @@ opts[box._act].scrollIntoView({ block: "nearest" });
 function pick(name, v) {
 if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
 else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
-else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); applyLinks(); closeSheet(); }
+else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); applyLinks(); loadToursLang(); closeSheet(); }
 else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
 haptic();
 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -1470,6 +1472,7 @@ function screenProfile() {
 var h = '<section class="card"><div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("language")) + "</div>" + combo("lang", t("typeLang")) + "</div>";
 if (!TR[S.lang]) h += '<div class="hint">' + esc(t("langNote")) + "</div>";
 h += '<div style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("currency")) + "</div>" + combo("currency", t("typeCurrency")) + "</div></section>";
+h += '<section class="card"><button class="btn ghost" data-act="open" data-v="https://tripwisehub-blip.github.io/tripwise-app/blog/">📖 Tripwise Guides</button></section>';
 h += '<section class="card" style="background:var(--blue);color:#fff"><div class="h">' + esc(t("together")) + "</div>" +
 '<div style="font-size:13px;color:#D8ECFB">' + esc(t("togetherText")) + '</div><button class="cta" data-act="invite">' + esc(t("invite")) + "</button></section>";
 h += '<section class="card"><div class="row"><div class="h">' + esc(t("badges")) + '</div><div class="hint" style="font-weight:700">' + esc(t("soon")) + '</div></div><div class="grid3">' +
@@ -1603,6 +1606,7 @@ function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 60
 loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
 loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
 loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
+loadToursLang();
 loadJSON("data/links.json").then(function (d) { PLINKS = d || {}; applyLinks(); render(); }).catch(function () {});
 })();
 </script>
