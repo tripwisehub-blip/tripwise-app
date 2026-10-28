@@ -15,6 +15,7 @@ import urllib.request
 TOKEN = os.environ.get("TP_TOKEN", "").strip()
 MARKER = 793212
 TRS = 588570
+TRS2 = 589578  # Website project
 OUT = "data/tours.json"
 if not TOKEN:
     print("No TP_TOKEN, skipping")
@@ -124,6 +125,7 @@ except Exception:
     plinks = {}
 need = [(k, l, u) for k, m in PAGES.items() for l, u in m.items() if (plinks.get(k) or {}).get(l) is None]
 print("partner pages to create:", len(need))
+failed = []
 for i in range(0, len(need), 10):
     batch = need[i:i + 10]
     body = {"trs": TRS, "marker": MARKER, "shorten": True, "links": [{"url": u, "sub_id": k + "_" + l} for k, l, u in batch]}
@@ -139,7 +141,25 @@ for i in range(0, len(need), 10):
         if x.get("code") == "success" and x.get("partner_url"):
             plinks.setdefault(k, {})[l] = x["partner_url"]
         else:
-            print("failed:", k, l, x.get("code"))
+            failed.append((k, l, u))
+    time.sleep(0.8)
+# Programs joined in the Website project (Klook, Kiwi.com, Go City, ...) need its trs
+for i in range(0, len(failed), 10):
+    batch = failed[i:i + 10]
+    body = {"trs": TRS2, "marker": MARKER, "shorten": True, "links": [{"url": u, "sub_id": k + "_" + l} for k, l, u in batch]}
+    req = urllib.request.Request("https://api.travelpayouts.com/links/v1/create", data=json.dumps(body).encode(),
+                                 headers={"X-Access-Token": TOKEN, "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            res = json.load(r)
+    except Exception as e:
+        print("request failed:", e)
+        break
+    for (k, l, u), x in zip(batch, (res.get("result") or {}).get("links") or []):
+        if x.get("code") == "success" and x.get("partner_url"):
+            plinks.setdefault(k, {})[l] = x["partner_url"]
+        else:
+            print("failed:", k, l, x.get("code"), x.get("message", ""))
     time.sleep(0.8)
 json.dump(plinks, open(OUT2, "w"), ensure_ascii=False, indent=0, sort_keys=True)
 print("partner pages saved:", sum(len(v) for v in plinks.values()))
