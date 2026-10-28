@@ -29,6 +29,9 @@ jobs:
         continue-on-error: true
         env:
           TP_TOKEN: ${{ secrets.TP_TOKEN }}
+      - name: Ping search engines (IndexNow)
+        run: python3 scripts/indexnow.py
+        continue-on-error: true
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
