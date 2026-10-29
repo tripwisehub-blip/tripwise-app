@@ -38,6 +38,17 @@ jobs:
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
+      - name: Hot package holidays from partner feeds
+        run: python3 scripts/tours_feed.py
+        continue-on-error: true
+        env:
+          ADMITAD_FEED_TRAVELKING: ${{ secrets.ADMITAD_FEED_TRAVELKING }}
+      - name: Post hot tours to the Telegram channel
+        run: python3 scripts/tours_post.py
+        continue-on-error: true
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
