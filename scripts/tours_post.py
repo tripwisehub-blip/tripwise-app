@@ -48,18 +48,21 @@ def money(o):
     return ("%s%d" % (s, o["price"])) if s in ("€", "$", "£") else ("%d %s" % (o["price"], o.get("currency", "")))
 
 
-lines = ["🌴 <b>Hot package holidays</b> — flight + hotel", ""]
+lines = ["🏨 <b>Hot hotel deals</b> — short breaks with breakfast", ""]
 for o in picks:
-    where = ", ".join(x for x in [o.get("place"), o.get("country")] if x) or o["name"]
+    nm = o["name"]
+    head, _, rest = nm.partition(":")
+    where = ", ".join(x for x in [o.get("place"), o.get("country")] if x) or (head.strip() if rest else " ".join(nm.split()[:4]))
+    o["name"] = rest.strip() if rest else nm
     extra = " · ".join(x for x in [
         datetime.date.fromisoformat(o["date"]).strftime("%d %b") if o.get("date") else "",
         (o["days"] + " days") if o.get("days") and o["days"].isdigit() else o.get("days", ""),
         o.get("board", ""), ("★" * int(o["stars"][0])) if o.get("stars", "")[:1].isdigit() else ""] if x)
-    lines.append("🏝 <b>%s</b> — from <b>%s</b>\n%s%s\n<a href=\"%s\">See the offer (%s, departures from %s)</a>" % (
+    lines.append("🏝 <b>%s</b> — from <b>%s</b>\n%s%s\n<a href=\"%s\">See the offer on %s</a>" % (
         html.escape(where), money(o), html.escape(o["name"][:80]), ("\n" + html.escape(extra)) if extra else "",
-        html.escape(o["url"], quote=True), html.escape(o["partner"]), html.escape(o.get("market", ""))))
+        html.escape(o["url"], quote=True), html.escape(o["partner"])))
     lines.append("")
-lines.append("Prices per person from the tour operator; availability changes quickly.")
+lines.append("Prices from the partner site at the time of posting; availability changes quickly.")
 lines.append("🎡 <a href=\"%s\">More deals in the Tripwise app</a>" % APP)
 text = "\n".join(lines)
 
