@@ -1212,15 +1212,23 @@ return { kind: "none", trip: cheap };
 var best = {};
 fit.forEach(function (x) { if (!best[x.d] || x.p < best[x.d].p) best[x.d] = x; });
 var list = Object.keys(best).map(function (k) { return best[k]; });
-return { kind: "trip", trips: pick3(list).sort(function (a, b) { return a.p - b.p; }), count: list.length };
+return { kind: "trip", trips: tiers(list.sort(function (a, b) { return a.p - b.p; })), count: list.length };
 }
 function choosePick(i) {
 var tr = S.wheel && S.wheel.trips && S.wheel.trips[i]; if (!tr) return;
 var pl = placeName(tr.d); S.picked = { d: tr.d, dep: tr.dep, ret: tr.ret, name: pl.name, iso: pl.iso };
 }
 function isPicked(tr) { return S.picked && S.picked.d === tr.d && S.picked.dep === tr.dep; }
-function cheapHotelUrl(city, dep, ret) {
-return hotelUrl(city, dep, ret) + "&order=price&nflt=" + encodeURIComponent("price=EUR-min-" + S.budget + "-1");
+// Three price levels: cheap, middle and close to the budget (a random pick inside each third)
+function tiers(sorted) {
+var n = sorted.length; if (n <= 3) return sorted;
+function from(a, b) { a = Math.floor(a); b = Math.max(a + 1, Math.floor(b)); return sorted[a + Math.floor(Math.random() * (b - a))]; }
+return [from(0, n / 3), from(n / 3, 2 * n / 3), from(2 * n / 3, n)];
+}
+function hotelBand(i) { var b = S.budget, lo = Math.round(b * i / 3), hi = Math.round(b * (i + 1) / 3); return [i ? lo : 0, hi]; }
+function cheapHotelUrl(city, dep, ret, band) {
+band = band || [0, S.budget];
+return hotelUrl(city, dep, ret) + "&order=price&nflt=" + encodeURIComponent("price=EUR-" + (band[0] || "min") + "-" + band[1] + "-1");
 }
 function cityName() {
 var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; })[0];
@@ -1499,8 +1507,8 @@ h += '<div class="hint">' + esc(t("inBudget", { n: w.count })) + " · " + esc(t(
 w.places.forEach(function (pl, i) {
 h += '<div class="card" style="gap:8px;padding:12px">' +
 '<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">' + (i + 1) + ".</b>" + (pl.iso ? flagImg(pl.iso) : "") + '<div style="font-size:17px;font-weight:900">' + esc(pl.name) + "</div></div>" +
-'<div class="meta"><span>' + esc(fmt(new Date(w.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(w.ret + "T12:00:00"))) + "</span><span>≤ " + esc(money(S.budget)) + " / 🌙</span></div>" +
-'<div class="grid2"><button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(cheapHotelUrl(pl.name, w.dep, w.ret)) + '">' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
+'<div class="meta"><span>' + esc(fmt(new Date(w.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(w.ret + "T12:00:00"))) + "</span><span>" + (i ? esc(money(hotelBand(i)[0])) + " – " : "≤ ") + esc(money(hotelBand(i)[1])) + " / 🌙</span></div>" +
+'<div class="grid2"><button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(cheapHotelUrl(pl.name, w.dep, w.ret, hotelBand(i))) + '">' + esc(t("hotelsIn", { c: pl.name })) + "</button>" +
 '<button class="btn ghost" data-act="open" data-v="' + esc(toursUrl(pl.name)) + '">' + esc(t("toursIn", { c: pl.name })) + "</button></div></div>";
 });
 } else if (w.kind === "none") {
