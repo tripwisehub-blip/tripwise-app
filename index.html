@@ -1372,14 +1372,15 @@ return Object.keys(best).map(function (k) { return best[k]; }).sort(function (a,
 var HOTT = []; // data/hot_tours.json: package-tour partners per market
 function hotTours() {
 var c0 = CITY[S.origin] ? CITY[S.origin].iso : "";
-return HOTT.filter(function (x) { var m = x.markets || []; return x.url && (m.indexOf(c0) >= 0 || m.indexOf("*") >= 0 || (x.langs || []).indexOf(S.lang) >= 0); }).slice(0, 3);
+var own = HOTT.filter(function (x) { return x.url && ((x.markets || []).indexOf(c0) >= 0 || (x.langs || []).indexOf(S.lang) >= 0); });
+return (own.length ? own : HOTT.filter(function (x) { return x.url && (x.markets || []).indexOf("*") >= 0; })).slice(0, 3);
 }
 function tourCard(x) {
 photoFor(x.photo, null);
 var dests = (x.dest || []).map(function (i) { return countryName(i); }).join(", ");
 return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(x.photo) + '"' + (PHOTO[x.photo] ? ' style="background-image:' + PHOTO[x.photo] + '"' : "") + '><div class="hotname"><b>🌴 ' + esc(dests) + '</b></div><div class="hotprice">' + esc(x.name) + "</div></div>" +
 '<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><div class="meta"><span>' + esc(t("flightHotel")) + "</span></div>" +
-'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(x.url) + '">' + esc(t("seeTours")) + "</button></div></div>";
+'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(x.url) + '">' + esc(t("open")) + " · " + esc(x.name) + "</button></div></div>";
 }
 function hotSection() {
 var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint" style="color:#fff;opacity:.9">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>";
