@@ -1,3 +1,14 @@
 [
-{"id": "travelking", "name": "Travelking", "url": "https://vxrlm.com/g/dquwu4q32h866b75ce367eaf385c59/", "markets": ["pl", "hu"], "langs": ["pl", "hu"], "dest": ["eg", "tr", "gr", "es"], "photo": "Hurghada"}
+{"id": "travelking", "name": "Travelking", "url": "https://vxrlm.com/g/dquwu4q32h866b75ce367eaf385c59/", "markets": ["pl", "hu"], "langs": ["pl", "hu"], "dest": ["eg", "tr", "gr", "es"], "photo": "Hurghada"},
+{"id": "expedia-gb", "name": "Expedia", "url": "https://expedia.com/affiliate/zPaHEfZ", "markets": ["gb", "ie", "ee", "lv", "lt", "fi", "se", "no", "dk", "is", "nl", "lu", "cz", "sk", "si", "hr", "rs", "me", "al", "ba", "mk", "bg", "ro", "cy", "mt", "it", "es", "pt", "gr", "ua", "ge", "am", "az", "md"], "dest": ["es", "gr", "tr", "pt"], "photo": "Mallorca"},
+{"id": "expedia-de", "name": "Expedia", "url": "https://expedia.com/affiliate/jHo7uva", "markets": ["de", "at", "ch"], "langs": ["de"], "dest": ["es", "tr", "gr", "eg"], "photo": "Antalya"},
+{"id": "expedia-fr", "name": "Expedia", "url": "https://expedia.com/affiliate/NO8sgGa", "markets": ["fr", "be"], "langs": ["fr"], "dest": ["es", "gr", "ma", "pt"], "photo": "Santorini"},
+{"id": "expedia-ca", "name": "Expedia", "url": "https://expedia.com/affiliate/T4CNBAS", "markets": ["ca"], "dest": ["mx", "do", "cu"], "photo": "Cancún"},
+{"id": "expedia-au", "name": "Expedia", "url": "https://expedia.com/affiliate/gTePBTC", "markets": ["au"], "dest": ["id", "th", "fj"], "photo": "Bali"},
+{"id": "expedia-nz", "name": "Expedia", "url": "https://expedia.com/affiliate/dbeWSjz", "markets": ["nz"], "dest": ["fj", "au", "id"], "photo": "Fiji"},
+{"id": "expedia-jp", "name": "Expedia", "url": "https://expedia.com/affiliate/2KZyqP9", "markets": ["jp"], "langs": ["ja"], "dest": ["th", "us", "kr"], "photo": "Hawaii"},
+{"id": "expedia-kr", "name": "Expedia", "url": "https://expedia.com/affiliate/vYX8Bb1", "markets": ["kr"], "langs": ["ko"], "dest": ["vn", "th", "jp"], "photo": "Da Nang"},
+{"id": "expedia-mx", "name": "Expedia", "url": "https://expedia.com/affiliate/hYvCqh4", "markets": ["mx"], "dest": ["mx", "us", "co"], "photo": "Cancún"},
+{"id": "expedia-sg", "name": "Expedia", "url": "https://expedia.com/affiliate/4h8PUZQ", "markets": ["sg", "my"], "dest": ["id", "th", "jp"], "photo": "Bali"},
+{"id": "expedia-us", "name": "Expedia", "url": "https://expedia.com/affiliate/hM6qIUv", "markets": ["us", "*"], "dest": ["mx", "do", "us"], "photo": "Punta Cana"}
 ]
