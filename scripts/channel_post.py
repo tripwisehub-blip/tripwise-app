@@ -15,6 +15,7 @@ CHANNEL = os.environ.get("TG_CHANNEL", "").strip() or (open("data/channel.txt").
 MARKER = "793212"
 APP = "https://tripwisehub-blip.github.io/tripwise-app/"
 BOT = "https://t.me/tripwise_hub_bot"
+CARS = "https://naiawork.com/g/wqjhitsyjqb09d80c5375ea594bb46/"  # DiscoverCars via Admitad (channel ad space)
 ORIGIN_NAMES = {"TLL": "Tallinn", "HEL": "Helsinki", "RIX": "Riga", "VNO": "Vilnius", "LON": "London", "BER": "Berlin",
                 "WAW": "Warsaw", "PAR": "Paris", "AMS": "Amsterdam", "STO": "Stockholm"}
 ORIGINS = list(ORIGIN_NAMES)
@@ -70,6 +71,7 @@ for t in deals:
     lines.append("")
 lines.append("Prices found on Aviasales recently and may change.")
 lines.append("🎡 <a href=\"%s\">Spin the budget wheel</a> · 🤖 <a href=\"%s\">Ask the travel bot</a>" % (APP, BOT))
+lines.append('🚗 <a href="%s">Rent a car at your destination</a> (DiscoverCars)' % CARS)
 text = "\n".join(lines)
 
 body = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
