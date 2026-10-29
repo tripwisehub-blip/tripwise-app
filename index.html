@@ -1355,7 +1355,7 @@ get(name).then(function (src) { return src || (iso && BY_ISO[iso] ? get(name + "
 if (!src) return;
 function safe(u) { return u.split("(").join("%28").split(")").join("%29").split("'").join("%27").split('"').join("%22"); }
 var parts = src.split("px-"), pre = parts[0], big = src;
-if (parts.length > 1) big = pre.slice(0, pre.lastIndexOf("/") + 1) + "640px-" + parts.slice(1).join("px-");
+if (parts.length > 1) big = pre.slice(0, pre.lastIndexOf("/") + 1) + "500px-" + parts.slice(1).join("px-");
 PHOTO[name] = "linear-gradient(transparent 45%, rgba(0,0,0,.55)), url(" + safe(big) + "), url(" + safe(src) + ")";
 document.querySelectorAll('[data-photo="' + name + '"]').forEach(function (el) { el.style.backgroundImage = PHOTO[name]; });
 }).catch(function () {});
