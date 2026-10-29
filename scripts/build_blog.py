@@ -70,7 +70,7 @@ DISC = ('<div class="note">Some links on this page are affiliate links. If you b
         'at no extra cost to you. It helps keep our guides and app free. <a href="disclosure.html">Learn more</a>.</div>')
 CTA = (f'<div class="pass"><div class="m"><h2>Ask the travel bot</h2><p>Tell it where you want to go, in any language. It finds cheap flights, '
        f'suggests hotels and tours, and sends a message when prices drop.</p><a class="btn" href="{BOT}">Open in Telegram</a>'
-       f'<a class="btn alt" href="{A}">Open the web app</a></div><div class="stub"><span>✈</span>Free, no sign-up</div></div>')
+       f'<a class="btn alt" href="https://t.me/tripwise_deals">Daily deals: @tripwise_deals</a><a class="btn alt" href="{A}">Open the web app</a></div><div class="stub"><span>✈</span>Free, no sign-up</div></div>')
 
 # Country, city label and Wikipedia photo title for each guide (index layout and hero images)
 META = {
@@ -91,12 +91,18 @@ META = {
     "istanbul-guide": ("Türkiye", "Istanbul", "Istanbul"),
     "dubai-on-a-budget": ("United Arab Emirates", "Dubai", "Dubai"),
     "bangkok-guide": ("Thailand", "Bangkok", "Bangkok"),
+    "tenerife-winter-sun": ("Spain", "Tenerife", "Teide National Park"),
+    "antalya-guide": ("Türkiye", "Antalya", "Antalya"),
+    "hurghada-guide": ("Egypt", "Hurghada", "Hurghada"),
+    "budapest-on-a-budget": ("Hungary", "Budapest", "Budapest"),
+    "krakow-weekend": ("Poland", "Kraków", "Kraków"),
+    "paris-first-time": ("France", "Paris", "Paris"),
     "how-to-find-cheap-flights": ("Travel tips", "Cheap flights", "Airliner"),
     "esim-for-travel": ("Travel tips", "eSIM", "SIM card"),
     "flight-delay-compensation": ("Travel tips", "Flight delays", "Frankfurt Airport"),
 }
 FLAGS = {"Estonia": "🇪🇪", "Finland": "🇫🇮", "Latvia": "🇱🇻", "Lithuania": "🇱🇹", "Baltic States": "🧭", "Czechia": "🇨🇿", "Spain": "🇪🇸",
-         "Italy": "🇮🇹", "Portugal": "🇵🇹", "Türkiye": "🇹🇷", "United Arab Emirates": "🇦🇪", "Thailand": "🇹🇭", "Travel tips": "💡"}
+         "Italy": "🇮🇹", "Portugal": "🇵🇹", "Türkiye": "🇹🇷", "United Arab Emirates": "🇦🇪", "Thailand": "🇹🇭", "Egypt": "🇪🇬", "Hungary": "🇭🇺", "Poland": "🇵🇱", "France": "🇫🇷", "Travel tips": "💡"}
 
 PHOTO_JS = """<script>
 (function(){var cache={};
@@ -116,7 +122,7 @@ def page(name, title, desc, body, extra_head=""):
 <link rel="alternate" type="application/rss+xml" title="Tripwise Guides" href="{BASE}feed.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 {extra_head}<style>{CSS}</style></head><body>
-<header class="top"><div class="wrap"><a class="logo" href="index.html">Trip<i>wise</i></a><nav><a href="index.html">Guides</a><a class="hide-s" href="about.html">About</a><a class="tg" href="{BOT}">Telegram bot</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="index.html">Trip<i>wise</i></a><nav><a href="index.html">Guides</a><a class="hide-s" href="https://t.me/tripwise_deals">Deals channel</a><a class="hide-s" href="about.html">About</a><a class="tg" href="{BOT}">Telegram bot</a></nav></div></header>
 <main>{body}</main>
 <footer><div class="wrap"><p>Independent travel guides by Tripwise, 2026.</p><a href="about.html">About</a><a href="disclosure.html">Affiliate disclosure</a><a href="privacy.html">Privacy</a><a href="mailto:tripwise.hub@gmail.com">Contact</a></div></footer>
 {PHOTO_JS}</body></html>"""
@@ -168,7 +174,7 @@ def short(t):
     return t
 
 
-board = [g for g in GUIDES if g["slug"] in ("barcelona-first-time", "rome-in-three-days", "lisbon-guide", "istanbul-guide", "dubai-on-a-budget", "bangkok-guide", "prague-on-a-budget", "tallinn-on-a-budget")]
+board = [g for g in GUIDES if g["slug"] in ("barcelona-first-time", "rome-in-three-days", "lisbon-guide", "istanbul-guide", "dubai-on-a-budget", "bangkok-guide", "paris-first-time", "tenerife-winter-sun")]
 rows = "".join(f'<a class="row" href="{g["slug"]}.html"><span class="c">{html.escape(META[g["slug"]][1].split(",")[0])}</span><span class="k">{html.escape(META[g["slug"]][0])}</span>'
                f'<span class="t">{html.escape(short(g["title"]))}</span><span class="go">Read</span></a>' for g in board)
 page("index.html", "Tripwise Guides – practical, budget-friendly travel guides",
