@@ -32,6 +32,12 @@ jobs:
       - name: Ping search engines (IndexNow)
         run: python3 scripts/indexnow.py
         continue-on-error: true
+      - name: Post deals to the Telegram channel
+        run: python3 scripts/channel_post.py
+        continue-on-error: true
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
