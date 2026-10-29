@@ -76,14 +76,14 @@ CTA = (f'<div class="pass"><div class="m"><h2>Ask the travel bot</h2><p>Tell it 
 META = {
     "tallinn-on-a-budget": ("Estonia", "Tallinn", "Tallinn"),
     "tallinn-airport-to-city": ("Estonia", "Tallinn Airport", "Lennart Meri Tallinn Airport"),
-    "tallinn-to-helsinki": ("Estonia", "Tallinn – Helsinki ferry", "Viking Line"),
+    "tallinn-to-helsinki": ("Estonia", "Tallinn – Helsinki ferry", "MS Megastar"),
     "helsinki-city-guide": ("Finland", "Helsinki", "Helsinki"),
     "helsinki-airport-to-city": ("Finland", "Helsinki Airport", "Helsinki Airport"),
     "lapland-rovaniemi-winter": ("Finland", "Rovaniemi, Lapland", "Rovaniemi"),
     "riga-weekend-guide": ("Latvia", "Riga", "Riga"),
     "riga-to-tallinn": ("Latvia", "Riga – Tallinn", "Riga Central Station"),
     "vilnius-weekend": ("Lithuania", "Vilnius", "Vilnius"),
-    "baltics-best-time-to-visit": ("Baltic States", "Estonia, Latvia, Lithuania", "Baltic states"),
+    "baltics-best-time-to-visit": ("Baltic States", "Estonia, Latvia, Lithuania", "Curonian Spit"),
     "prague-on-a-budget": ("Czechia", "Prague", "Prague"),
     "barcelona-first-time": ("Spain", "Barcelona", "Barcelona"),
     "rome-in-three-days": ("Italy", "Rome", "Rome"),
@@ -93,15 +93,15 @@ META = {
     "bangkok-guide": ("Thailand", "Bangkok", "Bangkok"),
     "how-to-find-cheap-flights": ("Travel tips", "Cheap flights", "Airliner"),
     "esim-for-travel": ("Travel tips", "eSIM", "SIM card"),
-    "flight-delay-compensation": ("Travel tips", "Flight delays", "Airport"),
+    "flight-delay-compensation": ("Travel tips", "Flight delays", "Frankfurt Airport"),
 }
 FLAGS = {"Estonia": "🇪🇪", "Finland": "🇫🇮", "Latvia": "🇱🇻", "Lithuania": "🇱🇹", "Baltic States": "🧭", "Czechia": "🇨🇿", "Spain": "🇪🇸",
          "Italy": "🇮🇹", "Portugal": "🇵🇹", "Türkiye": "🇹🇷", "United Arab Emirates": "🇦🇪", "Thailand": "🇹🇭", "Travel tips": "💡"}
 
 PHOTO_JS = """<script>
 (function(){var cache={};
-function load(t,w){var k=t+w;if(cache[k])return cache[k];cache[k]=fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t.replace(/ /g,'_'))).then(function(r){return r.ok?r.json():{}}).then(function(j){var s=(j.thumbnail&&j.thumbnail.source)||'';if(!s)return '';var p=s.split('px-');return p.length>1?p[0].slice(0,p[0].lastIndexOf('/')+1)+w+'px-'+p.slice(1).join('px-'):s;}).catch(function(){return ''});return cache[k];}
-document.querySelectorAll('[data-photo]').forEach(function(el){var big=el.classList.contains('hero');load(el.getAttribute('data-photo'),big?1280:640).then(function(u){if(u)el.style.backgroundImage=(big?'linear-gradient(rgba(11,35,64,.1),rgba(11,35,64,.78))':'linear-gradient(transparent 50%,rgba(0,0,0,.6))')+',url("'+u+'")';});});
+function load(t,w){var k=t+w;if(cache[k])return cache[k];cache[k]=fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t.replace(/ /g,'_'))).then(function(r){return r.ok?r.json():{}}).then(function(j){var s=(j.thumbnail&&j.thumbnail.source)||'';if(!s)return '';var p=s.split('px-');return p.length>1?p[0].slice(0,p[0].lastIndexOf('/')+1)+w+'px-'+p.slice(1).join('px-')+'"),url("'+s:s;}).catch(function(){return ''});return cache[k];}
+document.querySelectorAll('[data-photo]').forEach(function(el){var big=el.classList.contains('hero');load(el.getAttribute('data-photo'),big?1280:500).then(function(u){if(u)el.style.backgroundImage=(big?'linear-gradient(rgba(11,35,64,.1),rgba(11,35,64,.78))':'linear-gradient(transparent 50%,rgba(0,0,0,.6))')+',url("'+u+'")';});});
 var q=document.getElementById('q');if(q)q.addEventListener('input',function(){var v=q.value.toLowerCase().trim();document.querySelectorAll('.tile,.row').forEach(function(t){t.style.display=!v||t.textContent.toLowerCase().indexOf(v)>=0?'':'none';});document.querySelectorAll('section.cs').forEach(function(sc){var any=[].some.call(sc.querySelectorAll('.tile'),function(t){return t.style.display!=='none'});sc.style.display=any?'':'none';});});
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var A='ABCDEFGHIJKLMNOPRSTUVWZ';document.querySelectorAll('.row .c').forEach(function(el,i){var f=el.textContent,n=0,id=setInterval(function(){n++;var k=Math.floor(n/2)-i;el.textContent=f.split('').map(function(ch,j){return j<k||ch===' '?ch:A[Math.floor(Math.random()*A.length)]}).join('');if(k>=f.length){clearInterval(id);el.textContent=f;}},45);});}
 })();
