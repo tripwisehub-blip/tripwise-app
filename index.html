@@ -1361,12 +1361,24 @@ var best = {};
 trips.forEach(function (x) { if (!best[x.d] || x.p < best[x.d].p) best[x.d] = x; });
 return Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 3);
 }
+var HOTT = []; // data/hot_tours.json: package-tour partners per market
+function hotTours() {
+var c0 = CITY[S.origin] ? CITY[S.origin].iso : "";
+return HOTT.filter(function (x) { var m = x.markets || []; return x.url && (m.indexOf(c0) >= 0 || m.indexOf("*") >= 0 || (x.langs || []).indexOf(S.lang) >= 0); }).slice(0, 3);
+}
+function tourCard(x) {
+photoFor(x.photo, null);
+var dests = (x.dest || []).map(function (i) { return countryName(i); }).join(", ");
+return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(x.photo) + '"' + (PHOTO[x.photo] ? ' style="background-image:' + PHOTO[x.photo] + '"' : "") + '><div class="hotname"><b>🌴 ' + esc(dests) + '</b></div><div class="hotprice">' + esc(x.name) + "</div></div>" +
+'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><div class="meta"><span>' + esc(t("flightHotel")) + "</span></div>" +
+'<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(x.url) + '">' + esc(t("seeTours")) + "</button></div></div>";
+}
 function hotSection() {
 var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint" style="color:#fff;opacity:.9">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>";
 if (!S.hot) return h;
-var deals = hotDeals();
-if (!deals.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
-h += '<div class="hotlist">' + deals.map(function (tr) {
+var deals = hotDeals(), tours = hotTours();
+if (!deals.length && !tours.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
+h += '<div class="hotlist">' + tours.map(tourCard).join("") + deals.map(function (tr) {
 var pl = placeName(tr.d); photoFor(pl.name, pl.iso);
 return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(pl.name) + '"' + (PHOTO[pl.name] ? ' style="background-image:' + PHOTO[pl.name] + '"' : "") + '><div class="hotname">' + (pl.iso ? flagImg(pl.iso) : "") + "<b>" + esc(pl.name) + '</b></div><div class="hotprice">' + esc(money(tr.p)) + "</div></div>" +
 '<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><div class="meta"><span>' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + "</span><span>" + esc(tr.tr ? t("stops") : t("direct")) + "</span></div>" +
@@ -1695,6 +1707,7 @@ function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 60
 loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
 loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
 loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
+loadJSON("data/hot_tours.json").then(function (d) { HOTT = d || []; if (S.hot) render(); }).catch(function () {});
 loadToursLang();
 loadJSON("data/links.json").then(function (d) { PLINKS = d || {}; applyLinks(); render(); }).catch(function () {});
 })();
