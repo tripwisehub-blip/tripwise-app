@@ -1191,9 +1191,9 @@ function spinWheel() {
 var today = new Date().toISOString().slice(0, 10);
 var trips = (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today; });
 if (S.wmode === "hotel" && S.picked) {
-var pk = S.picked, ctry = BY_ISO[pk.iso], others = [];
-if (ctry) ctry.cities.forEach(function (x) { if (x[1] !== pk.d && x[0] !== pk.name) others.push({ name: x[0], iso: pk.iso }); });
-return { kind: "hotels", places: [{ name: pk.name, iso: pk.iso }].concat(pick3(others).slice(0, 2)), dep: pk.dep, ret: pk.ret };
+var pk = S.picked, here = { name: pk.name, iso: pk.iso };
+// All three hotel options are in the arrival city: cheap, middle and close to the budget (see hotelBand)
+return { kind: "hotels", places: [here, here, here], dep: pk.dep, ret: pk.ret };
 }
 if (S.wmode === "hotel") {
 var seen = {}, places = [];
