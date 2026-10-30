@@ -49,6 +49,12 @@ jobs:
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
+      - name: Post the guide of the day to the Telegram channel
+        run: python3 scripts/guide_post.py
+        continue-on-error: true
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
