@@ -66,9 +66,12 @@ lines.append("Prices from the partner site at the time of posting; availability 
 lines.append("🎡 <a href=\"%s\">More deals in the Tripwise app</a>" % APP)
 text = "\n".join(lines)
 
+MARKUP = {"inline_keyboard": [[{"text": "🏨 Deal %d · from %s" % (i + 1, money(o)), "url": o["url"]}] for i, o in enumerate(picks)] + [[
+    {"text": "🎡 More deals", "url": APP},
+    {"text": "📣 Share", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Ftripwise_deals"}]]}
 photo = next((o["photo"] for o in picks if o.get("photo")), "")
-method, body = ("sendPhoto", {"chat_id": CHANNEL, "photo": photo, "caption": text, "parse_mode": "HTML"}) if photo and len(text) <= 1024 \
-    else ("sendMessage", {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True})
+method, body = ("sendPhoto", {"chat_id": CHANNEL, "photo": photo, "caption": text, "parse_mode": "HTML", "reply_markup": MARKUP}) if photo and len(text) <= 1024 \
+    else ("sendMessage", {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True, "reply_markup": MARKUP})
 req = urllib.request.Request("https://api.telegram.org/bot%s/%s" % (TOKEN, method), data=json.dumps(body).encode(),
                              headers={"Content-Type": "application/json"}, method="POST")
 with urllib.request.urlopen(req, timeout=30) as r:
