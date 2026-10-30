@@ -1,4 +1,4 @@
-import os, sys, html, json
+import os, sys, html, json, urllib.request, urllib.parse
 sys.path.insert(0, os.path.dirname(__file__))
 from blog_content import GUIDES, A, BOT, L
 
@@ -120,11 +120,34 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var A='ABCDEF
 </script>"""
 
 
+OG = {}
+
+
+def og_img(title):
+    """Large Wikipedia photo for social previews (og:image); empty on any error."""
+    try:
+        req = urllib.request.Request("https://en.wikipedia.org/api/rest_v1/page/summary/" + urllib.parse.quote(title.replace(" ", "_")),
+                                     headers={"User-Agent": "TripwiseBlog/1.0 (https://t.me/tripwise_deals)"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            src = (json.load(r).get("thumbnail") or {}).get("source", "")
+        if "px-" in src:
+            head, _, tail = src.partition("px-")
+            src = head[:head.rfind("/") + 1] + "1280px-" + tail
+        return src.split("?")[0]
+    except Exception:
+        return ""
+
+
+def ogmeta(name):
+    u = OG.get(name, "")
+    return (f'<meta property="og:image" content="{html.escape(u)}"><meta name="twitter:card" content="summary_large_image">') if u else ""
+
+
 def page(name, title, desc, body, extra_head=""):
     doc = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc)}">
 <link rel="canonical" href="{BASE}{'' if name == 'index.html' else name}">
-<meta property="og:title" content="{html.escape(title)}"><meta property="og:description" content="{html.escape(desc)}"><meta property="og:type" content="article"><meta property="og:url" content="{BASE}{'' if name == 'index.html' else name}"><meta property="og:site_name" content="Tripwise Guides">
+<meta property="og:title" content="{html.escape(title)}"><meta property="og:description" content="{html.escape(desc)}"><meta property="og:type" content="article"><meta property="og:url" content="{BASE}{'' if name == 'index.html' else name}"><meta property="og:site_name" content="Tripwise Guides">{ogmeta(name)}
 <link rel="alternate" type="application/rss+xml" title="Tripwise Guides" href="{BASE}feed.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 {extra_head}<style>{CSS}</style></head><body>
@@ -136,6 +159,9 @@ def page(name, title, desc, body, extra_head=""):
         f.write(doc)
 
 
+OG["index.html"] = og_img("Barcelona")
+for g in GUIDES:
+    OG[g["slug"] + ".html"] = og_img(META.get(g["slug"], ("", "", g["tag"]))[2])
 for g in GUIDES:
     others = [o for o in GUIDES if o is not g][:3]
     more = '<div class="more"><h2>More guides</h2><div class="grid">' + "".join(
