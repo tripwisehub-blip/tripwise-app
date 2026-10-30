@@ -97,12 +97,18 @@ META = {
     "budapest-on-a-budget": ("Hungary", "Budapest", "Budapest"),
     "krakow-weekend": ("Poland", "Kraków", "Kraków"),
     "paris-first-time": ("France", "Paris", "Paris"),
+    "christmas-markets-europe": ("Travel tips", "Christmas markets", "Christmas market"),
+    "vienna-guide": ("Austria", "Vienna", "Vienna"),
+    "amsterdam-on-a-budget": ("Netherlands", "Amsterdam", "Amsterdam"),
+    "london-on-a-budget": ("United Kingdom", "London", "London"),
+    "madeira-winter": ("Portugal", "Madeira", "Funchal"),
+    "bali-guide": ("Indonesia", "Bali", "Pura Ulun Danu Bratan"),
     "how-to-find-cheap-flights": ("Travel tips", "Cheap flights", "Airliner"),
     "esim-for-travel": ("Travel tips", "eSIM", "SIM card"),
     "flight-delay-compensation": ("Travel tips", "Flight delays", "Frankfurt Airport"),
 }
 FLAGS = {"Estonia": "🇪🇪", "Finland": "🇫🇮", "Latvia": "🇱🇻", "Lithuania": "🇱🇹", "Baltic States": "🧭", "Czechia": "🇨🇿", "Spain": "🇪🇸",
-         "Italy": "🇮🇹", "Portugal": "🇵🇹", "Türkiye": "🇹🇷", "United Arab Emirates": "🇦🇪", "Thailand": "🇹🇭", "Egypt": "🇪🇬", "Hungary": "🇭🇺", "Poland": "🇵🇱", "France": "🇫🇷", "Travel tips": "💡"}
+         "Italy": "🇮🇹", "Portugal": "🇵🇹", "Türkiye": "🇹🇷", "United Arab Emirates": "🇦🇪", "Thailand": "🇹🇭", "Egypt": "🇪🇬", "Hungary": "🇭🇺", "Poland": "🇵🇱", "France": "🇫🇷", "Austria": "🇦🇹", "Netherlands": "🇳🇱", "United Kingdom": "🇬🇧", "Indonesia": "🇮🇩", "Travel tips": "💡"}
 
 PHOTO_JS = """<script>
 (function(){var cache={};
