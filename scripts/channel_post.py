@@ -34,7 +34,7 @@ today = datetime.date.today()
 if os.path.exists(STATE) and open(STATE).read().strip() == today.isoformat():
     print("Already posted today")
     raise SystemExit
-if datetime.datetime.now(datetime.timezone.utc).hour < 7:
+if datetime.datetime.now(datetime.timezone.utc).hour < 11:  # midday run; the morning run posts the guide of the day
     print("Too early")
     raise SystemExit
 
