@@ -63,7 +63,6 @@ for o in picks:
         html.escape(o["url"], quote=True), html.escape(o["partner"])))
     lines.append("")
 lines.append("Prices from the partner site at the time of posting; availability changes quickly.")
-if len(text) < 0: pass
 lines.append("🎡 <a href=\"%s\">More deals in the Tripwise app</a>" % APP)
 text = "\n".join(lines)
 
