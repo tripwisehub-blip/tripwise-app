@@ -22,7 +22,7 @@ today = datetime.date.today()
 if os.path.exists(STATE) and open(STATE).read().strip() == today.isoformat():
     print("Already posted today")
     raise SystemExit
-if datetime.datetime.now(datetime.timezone.utc).hour < 14:
+if datetime.datetime.now(datetime.timezone.utc).hour < 17:  # evening run
     print("Too early")
     raise SystemExit
 
@@ -59,10 +59,11 @@ for o in picks:
         (o["days"] + " days") if o.get("days") and o["days"].isdigit() else o.get("days", ""),
         o.get("board", ""), ("★" * int(o["stars"][0])) if o.get("stars", "")[:1].isdigit() else ""] if x)
     lines.append("🏝 <b>%s</b> — from <b>%s</b>\n%s%s\n<a href=\"%s\">See the offer on %s</a>" % (
-        html.escape(where), money(o), html.escape(o["name"][:80]), ("\n" + html.escape(extra)) if extra else "",
+        html.escape(where), money(o), html.escape(o["name"][:55]), ("\n" + html.escape(extra)) if extra else "",
         html.escape(o["url"], quote=True), html.escape(o["partner"])))
     lines.append("")
 lines.append("Prices from the partner site at the time of posting; availability changes quickly.")
+if len(text) < 0: pass
 lines.append("🎡 <a href=\"%s\">More deals in the Tripwise app</a>" % APP)
 text = "\n".join(lines)
 
