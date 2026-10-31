@@ -29,7 +29,7 @@ if os.path.exists(STATE) and open(STATE).read().strip() == today.isoformat():
     print("Already posted today")
     raise SystemExit
 hour = datetime.datetime.now(datetime.timezone.utc).hour
-if not 4 <= hour < 12:
+if not 4 <= hour < 11:
     print("Not the morning run")
     raise SystemExit
 
