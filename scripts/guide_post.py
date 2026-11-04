@@ -35,7 +35,7 @@ if not 4 <= hour < 11:
 
 guides = json.load(open("scripts/blog_guides.json", encoding="utf-8"))
 guides = [g for g in guides if g.get("slug")][::-1]
-g = guides[today.toordinal() % len(guides)]
+g = guides[(today.toordinal() * 7) % len(guides)]  # step 7 so neighbouring days get different topics
 page = "blog/%s.html" % g["slug"]
 photo_title = ""
 if os.path.exists(page):
