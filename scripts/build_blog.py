@@ -143,8 +143,8 @@ def ogmeta(name):
     return (f'<meta property="og:image" content="{html.escape(u)}"><meta name="twitter:card" content="summary_large_image">') if u else ""
 
 
-def page(name, title, desc, body, extra_head=""):
-    doc = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+def page(name, title, desc, body, extra_head="", lang="en"):
+    doc = f"""<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc)}">
 <link rel="canonical" href="{BASE}{'' if name == 'index.html' else name}">
 <meta property="og:title" content="{html.escape(title)}"><meta property="og:description" content="{html.escape(desc)}"><meta property="og:type" content="article"><meta property="og:url" content="{BASE}{'' if name == 'index.html' else name}"><meta property="og:site_name" content="Tripwise Guides">{ogmeta(name)}
@@ -159,10 +159,70 @@ def page(name, title, desc, body, extra_head=""):
         f.write(doc)
 
 
-# Live deal pages: cheapest return flights from each origin city, rebuilt with every price update
+# Live deal pages: cheapest return flights from each origin city, rebuilt with every price update.
+# Every city gets an English page, a Russian page and a page in the local language (better local search reach).
 DEAL_CITIES = [("TLL", "Tallinn"), ("RIX", "Riga"), ("HEL", "Helsinki"), ("VNO", "Vilnius"), ("STO", "Stockholm"),
                ("WAW", "Warsaw"), ("BER", "Berlin"), ("LON", "London"), ("PAR", "Paris"), ("AMS", "Amsterdam")]
 PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "prices.json")
+RU_FROM = {"TLL": ("Таллинна", "tallinna"), "RIX": ("Риги", "rigi"), "HEL": ("Хельсинки", "helsinki"), "VNO": ("Вильнюса", "vilnyusa"),
+           "STO": ("Стокгольма", "stokgolma"), "WAW": ("Варшавы", "varshavy"), "BER": ("Берлина", "berlina"), "LON": ("Лондона", "londona"),
+           "PAR": ("Парижа", "parizha"), "AMS": ("Амстердама", "amsterdama")}
+LOCAL = {"TLL": ("et", "Odavad lennupiletid Tallinnast", "odavad-lennupiletid-tallinnast.html"),
+         "RIX": ("lv", "Lēti lidojumi no Rīgas", "leti-lidojumi-no-rigas.html"),
+         "HEL": ("fi", "Halvat lennot Helsingistä", "halvat-lennot-helsingista.html"),
+         "VNO": ("lt", "Pigūs skrydžiai iš Vilniaus", "pigus-skrydziai-is-vilniaus.html"),
+         "STO": ("sv", "Billiga flyg från Stockholm", "billiga-flyg-fran-stockholm.html"),
+         "WAW": ("pl", "Tanie loty z Warszawy", "tanie-loty-z-warszawy.html"),
+         "BER": ("de", "Billigflüge ab Berlin", "billigfluege-ab-berlin.html"),
+         "PAR": ("fr", "Vols pas chers au départ de Paris", "vols-pas-chers-depuis-paris.html"),
+         "AMS": ("nl", "Goedkope vluchten vanaf Amsterdam", "goedkope-vluchten-vanaf-amsterdam.html")}
+# sub, Destination, Flight, Dates, Price, Direct, With stops, return, note, tip, channel line, other cities
+TXT = {
+    "en": ("The cheapest return flights we found recently, sorted by price. Updated several times a day.", "Destination", "Flight", "Dates", "Price",
+           "Direct", "With stops", "return", "Prices are per person for a return economy ticket, found on Aviasales recently. Fares change quickly, so check the final price before booking. Updated",
+           "Be flexible with dates – moving a trip by a day or two often saves more than any discount code. The lowest fares sell out first, and the cheapest often include only a small bag.",
+           "Get the 3 best deals from a different city every day in our Telegram channel", "Flights from other cities"),
+    "ru": ("Самые дешёвые билеты туда-обратно, которые мы нашли за последние дни. Отсортировано по цене, обновляется несколько раз в день.", "Куда", "Рейс", "Даты", "Цена",
+           "Прямой", "С пересадкой", "туда-обратно", "Цена за одного человека, билет туда-обратно, эконом, найдено на Aviasales. Цены быстро меняются — проверяйте итоговую цену перед покупкой. Обновлено",
+           "Будьте гибки с датами: сдвиг на день-два часто экономит больше любого промокода. Самые дешёвые билеты раскупают первыми, и в них обычно входит только ручная кладь.",
+           "Каждый день 3 лучших предложения из разных городов — в нашем Telegram-канале", "Билеты из других городов"),
+    "et": ("Odavaimad edasi-tagasi lennud, mis viimastel päevadel leidsime, hinna järgi sorteeritud. Uuendatakse mitu korda päevas.", "Sihtkoht", "Lend", "Kuupäevad", "Hind",
+           "Otselend", "Ümberistumisega", "edasi-tagasi", "Hind ühe inimese kohta, edasi-tagasi turistiklassis, leitud Aviasalesist. Hinnad muutuvad kiiresti, kontrolli lõpphinda enne ostu. Uuendatud",
+           "Ole kuupäevadega paindlik – päeva-kahe võrra nihutamine säästab sageli rohkem kui sooduskood. Odavaimad piletid müüakse esimesena läbi ja neis on tavaliselt ainult käsipagas.",
+           "Iga päev 3 parimat pakkumist meie Telegrami kanalis", "Lennud teistest linnadest"),
+    "lv": ("Lētākie lidojumi turp un atpakaļ, ko atradām pēdējās dienās, sakārtoti pēc cenas. Atjaunots vairākas reizes dienā.", "Galamērķis", "Lidojums", "Datumi", "Cena",
+           "Tiešais", "Ar pārsēšanos", "turp un atpakaļ", "Cena vienai personai par biļeti turp un atpakaļ ekonomiskajā klasē, atrasta Aviasales. Cenas strauji mainās, pirms pirkuma pārbaudiet gala cenu. Atjaunots",
+           "Esiet elastīgi ar datumiem – pārcelšana par dienu vai divām bieži ietaupa vairāk nekā atlaides kods. Lētākās biļetes izpērk pirmās, un tajās parasti ir tikai rokas bagāža.",
+           "Katru dienu 3 labākie piedāvājumi mūsu Telegram kanālā", "Lidojumi no citām pilsētām"),
+    "lt": ("Pigiausi skrydžiai pirmyn ir atgal, kuriuos radome per pastarąsias dienas, surūšiuoti pagal kainą. Atnaujinama kelis kartus per dieną.", "Kryptis", "Skrydis", "Datos", "Kaina",
+           "Tiesioginis", "Su persėdimu", "pirmyn ir atgal", "Kaina vienam asmeniui už bilietą pirmyn ir atgal ekonomine klase, rasta Aviasales. Kainos greitai keičiasi, prieš pirkdami patikrinkite galutinę kainą. Atnaujinta",
+           "Būkite lankstūs su datomis – kelionės perkėlimas diena ar dviem dažnai sutaupo daugiau nei nuolaidos kodas. Pigiausi bilietai išperkami pirmiausia, juose dažniausiai tik rankinis bagažas.",
+           "Kasdien 3 geriausi pasiūlymai mūsų Telegram kanale", "Skrydžiai iš kitų miestų"),
+    "fi": ("Halvimmat meno-paluulennot, jotka löysimme viime päivinä, hinnan mukaan järjestettynä. Päivittyy useita kertoja päivässä.", "Kohde", "Lento", "Päivät", "Hinta",
+           "Suora", "Vaihdollinen", "meno-paluu", "Hinta per henkilö meno-paluulipusta turistiluokassa, löydetty Aviasalesista. Hinnat muuttuvat nopeasti, tarkista lopullinen hinta ennen ostoa. Päivitetty",
+           "Ole joustava päivien kanssa – matkan siirtäminen päivällä tai kahdella säästää usein enemmän kuin alennuskoodi. Halvimmat liput myydään ensin loppuun, ja niihin kuuluu yleensä vain käsimatkatavara.",
+           "Joka päivä 3 parasta tarjousta Telegram-kanavallamme", "Lennot muista kaupungeista"),
+    "sv": ("De billigaste tur och retur-flygen vi hittat de senaste dagarna, sorterade efter pris. Uppdateras flera gånger om dagen.", "Resmål", "Flyg", "Datum", "Pris",
+           "Direkt", "Med byte", "tur och retur", "Pris per person för en tur och retur-biljett i ekonomiklass, hittat på Aviasales. Priserna ändras snabbt, kontrollera slutpriset innan du bokar. Uppdaterat",
+           "Var flexibel med datum – att flytta resan en dag eller två sparar ofta mer än en rabattkod. De billigaste biljetterna tar slut först och har oftast bara handbagage.",
+           "Varje dag de 3 bästa erbjudandena i vår Telegram-kanal", "Flyg från andra städer"),
+    "pl": ("Najtańsze loty w obie strony, które znaleźliśmy w ostatnich dniach, posortowane według ceny. Aktualizowane kilka razy dziennie.", "Kierunek", "Lot", "Daty", "Cena",
+           "Bezpośredni", "Z przesiadką", "w obie strony", "Cena za osobę za bilet w obie strony w klasie ekonomicznej, znaleziona na Aviasales. Ceny szybko się zmieniają, sprawdź cenę końcową przed zakupem. Aktualizacja",
+           "Bądź elastyczny z datami – przesunięcie podróży o dzień lub dwa często daje więcej niż kod rabatowy. Najtańsze bilety wyprzedają się najszybciej i zwykle obejmują tylko bagaż podręczny.",
+           "Codziennie 3 najlepsze oferty na naszym kanale Telegram", "Loty z innych miast"),
+    "de": ("Die günstigsten Hin- und Rückflüge, die wir in den letzten Tagen gefunden haben, nach Preis sortiert. Mehrmals täglich aktualisiert.", "Ziel", "Flug", "Daten", "Preis",
+           "Direkt", "Mit Umstieg", "hin und zurück", "Preis pro Person für ein Hin- und Rückflugticket in der Economy, gefunden bei Aviasales. Preise ändern sich schnell, prüfe den Endpreis vor der Buchung. Aktualisiert",
+           "Sei flexibel bei den Daten – ein oder zwei Tage Verschiebung sparen oft mehr als jeder Rabattcode. Die günstigsten Tarife sind zuerst weg und enthalten meist nur Handgepäck.",
+           "Jeden Tag die 3 besten Angebote in unserem Telegram-Kanal", "Flüge aus anderen Städten"),
+    "fr": ("Les vols aller-retour les moins chers trouvés ces derniers jours, triés par prix. Mis à jour plusieurs fois par jour.", "Destination", "Vol", "Dates", "Prix",
+           "Direct", "Avec escale", "aller-retour", "Prix par personne pour un billet aller-retour en classe économique, trouvé sur Aviasales. Les prix changent vite, vérifiez le prix final avant de réserver. Mis à jour",
+           "Soyez flexible sur les dates : décaler le voyage d'un ou deux jours fait souvent économiser plus qu'un code promo. Les tarifs les plus bas partent en premier et n'incluent souvent qu'un bagage cabine.",
+           "Chaque jour les 3 meilleures offres sur notre chaîne Telegram", "Vols depuis d'autres villes"),
+    "nl": ("De goedkoopste retourvluchten die we de afgelopen dagen vonden, gesorteerd op prijs. Meerdere keren per dag bijgewerkt.", "Bestemming", "Vlucht", "Data", "Prijs",
+           "Direct", "Met overstap", "retour", "Prijs per persoon voor een retourticket in economy, gevonden op Aviasales. Prijzen veranderen snel, controleer de eindprijs voor je boekt. Bijgewerkt",
+           "Wees flexibel met data – een dag of twee schuiven bespaart vaak meer dan een kortingscode. De goedkoopste tickets zijn het eerst weg en hebben meestal alleen handbagage.",
+           "Elke dag de 3 beste deals in ons Telegram-kanaal", "Vluchten vanuit andere steden"),
+}
 
 
 def deal_slug(city):
@@ -172,6 +232,15 @@ def deal_slug(city):
 def flag_emoji(iso):
     iso = (iso or "").upper()
     return "".join(chr(0x1F1E6 + ord(c) - 65) for c in iso) if len(iso) == 2 and iso.isalpha() else ""
+
+
+def deal_versions(code, city):
+    """(lang, h1 title, file name) for every language version of one city's deal page."""
+    out = [("en", "Cheap flights from " + city, deal_slug(city)),
+           ("ru", "Дешёвые авиабилеты из " + RU_FROM[code][0], "deshevye-aviabilety-iz-" + RU_FROM[code][1] + ".html")]
+    if code in LOCAL:
+        out.append(LOCAL[code])
+    return out
 
 
 def deal_pages():
@@ -192,35 +261,37 @@ def deal_pages():
         deals = sorted(best.values(), key=lambda t: t["p"])[:15]
         if not deals:
             continue
-        rows = ""
-        for t in deals:
-            n = names.get(t["d"]) or [t["d"], ""]
-            path = t.get("link") or "/search/%s%s%s%s%s%s1" % (code, t["dep"][8:10], t["dep"][5:7], t["d"], t["ret"][8:10], t["ret"][5:7])
-            url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.blog"
-            d1 = datetime.date.fromisoformat(t["dep"]).strftime("%d %b")
-            d2 = datetime.date.fromisoformat(t["ret"]).strftime("%d %b")
-            kind = "Direct" if not t.get("tr") else "With stops"
-            label = (flag_emoji(n[1] if len(n) > 1 else "") + " " + (n[0] or t["d"])).strip()
-            rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{html.escape(label)}</span>'
-                     f'<span class="k">{kind}</span><span class="t">{d1} – {d2} · return</span><span class="go">€{round(t["p"])}</span></a>')
-        others = " · ".join(f'<a href="{deal_slug(n)}">{html.escape(n)}</a>' for k, n in DEAL_CITIES if k != code)
-        body = (f'<section class="board"><div class="wrap"><h1>Cheap flights from {city}</h1>'
-                f'<p class="sub">The cheapest return flights from {city} we found recently, sorted by price. Updated several times a day.</p>'
-                f'<div class="rows deals"><div class="hd"><span>Destination</span><span class="k">Flight</span><span class="t">Dates</span><span>Price</span></div>{rows}</div></div></section>'
-                f'<div class="wrap"><div class="page"><p class="meta">Prices are per person for a return economy ticket, found on Aviasales recently. Fares change quickly, so check the final price before booking. Updated {today}.</p>'
-                f'<h2>How to get the most from these fares</h2><ul><li>Be flexible: moving your trip by a day or two often saves more than any discount code.</li>'
-                f'<li>Book quickly – the lowest fares usually sell out first.</li><li>Check baggage rules: the cheapest fares often include only a small bag.</li></ul>'
-                f'<p>Get the 3 best deals from a different city every day in our Telegram channel <a href="https://t.me/tripwise_deals">@tripwise_deals</a>, or set a budget and let the <a href="{A}">budget wheel</a> pick trips for you.</p>'
-                f'<h2>Flights from other cities</h2><p>{others}</p>' + CTA + '</div></div>')
-        page(deal_slug(city), f"Cheap flights from {city} – best deals right now | Tripwise",
-             f"The cheapest return flights from {city} found in the last days: destinations, dates and prices, updated several times a day.", body)
-        made.append(city)
+        versions = deal_versions(code, city)
+        alt = "".join(f'<link rel="alternate" hreflang="{lg}" href="{BASE}{fn}">' for lg, _, fn in versions)
+        for lang, h1, fname in versions:
+            T = TXT[lang]
+            rows = ""
+            for t in deals:
+                n = names.get(t["d"]) or [t["d"], ""]
+                path = t.get("link") or "/search/%s%s%s%s%s%s1" % (code, t["dep"][8:10], t["dep"][5:7], t["d"], t["ret"][8:10], t["ret"][5:7])
+                url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.blog"
+                x1, x2 = datetime.date.fromisoformat(t["dep"]), datetime.date.fromisoformat(t["ret"])
+                dates = (x1.strftime("%d %b") + " – " + x2.strftime("%d %b")) if lang == "en" else (x1.strftime("%d.%m") + " – " + x2.strftime("%d.%m"))
+                kind = T[5] if not t.get("tr") else T[6]
+                label = (flag_emoji(n[1] if len(n) > 1 else "") + " " + (n[0] or t["d"])).strip()
+                rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{html.escape(label)}</span>'
+                         f'<span class="k">{kind}</span><span class="t">{dates} · {T[7]}</span><span class="go">€{round(t["p"])}</span></a>')
+            others = " · ".join(f'<a href="{deal_versions(k, n)[1 if lang == "ru" else 0][2]}">{html.escape(RU_FROM[k][0] if lang == "ru" else n)}</a>' for k, n in DEAL_CITIES if k != code)
+            langs = " · ".join(f'<a href="{fn}">{lg.upper()}</a>' for lg, _, fn in versions if fn != fname)
+            body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(T[0])}</p>'
+                    f'<div class="rows deals"><div class="hd"><span>{T[1]}</span><span class="k">{T[2]}</span><span class="t">{T[3]}</span><span>{T[4]}</span></div>{rows}</div></div></section>'
+                    f'<div class="wrap"><div class="page"><p class="meta">{html.escape(T[8])} {today}. {langs}</p><p>{html.escape(T[9])}</p>'
+                    f'<p>{html.escape(T[10])}: <a href="https://t.me/tripwise_deals">@tripwise_deals</a> · <a href="{A}">Tripwise app</a></p>'
+                    f'<h2>{html.escape(T[11])}</h2><p>{others}</p>' + CTA + '</div></div>')
+            page(fname, h1 + " | Tripwise", h1 + ": " + T[0], body, alt, lang)
+            made.append((code, city, lang, fname))
     return made
 
 
-DEAL_MADE = deal_pages()
+DEAL_ALL = deal_pages()
+DEAL_MADE = [c for k, c, lg, fn in DEAL_ALL if lg == "en"]
 DEALS_BLOCK = ('<section class="cs"><h2 class="country">✈️ Cheap flights from your city</h2><div class="chips">'
-               + "".join(f'<a href="{deal_slug(c)}">{html.escape(c)}</a>' for c in DEAL_MADE) + '</div></section>') if DEAL_MADE else ""
+               + "".join(f'<a href="{fn}">{html.escape(c if lg == "en" else lg.upper() + " · " + c)}</a>' for k, c, lg, fn in DEAL_ALL) + '</div></section>') if DEAL_ALL else ""
 OG["index.html"] = og_img("Barcelona")
 for g in GUIDES:
     OG[g["slug"] + ".html"] = og_img(META.get(g["slug"], ("", "", g["tag"]))[2])
@@ -300,7 +371,7 @@ page("privacy.html", "Privacy policy | Tripwise", "Tripwise privacy policy.",
 <h2>Telegram bot</h2><p>When you message @tripwise_hub_bot, we process your messages to answer them, using an AI service. We store your Telegram chat ID and, if you turn on a price alert, the route and dates you chose, so that we can send you updates. Send /stopalerts to remove your alerts. We do not sell personal data.</p>
 <h2>Contact</h2><p>To ask about or delete your data, write to <a href="mailto:tripwise.hub@gmail.com">tripwise.hub@gmail.com</a>.</p></div>""")
 
-urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + deal_slug(c) for c in DEAL_MADE] + [BASE + g["slug"] + ".html" for g in GUIDES]
+urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + fn for k, c, lg, fn in DEAL_ALL] + [BASE + g["slug"] + ".html" for g in GUIDES]
 with open(os.path.join(OUT, "sitemap.xml"), "w") as f:
     f.write('<?xml version="1.0" encoding="UTF-8"?>' + NL + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + NL +
             "".join(f"<url><loc>{u}</loc><lastmod>2026-10-28</lastmod></url>" + NL + "" for u in urls) + "</urlset>" + NL + "")
