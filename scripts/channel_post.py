@@ -105,6 +105,7 @@ lines += ["", HOOKS[today.toordinal() % len(HOOKS)], "👇 Tap a destination to 
 caption = NL.join(lines)
 
 buttons = [[{"text": "✈️ %s from €%d" % (name(t["d"]), round(t["p"])), "url": link(t)}] for t in deals]
+buttons.append([{"text": "📋 All deals from %s" % city, "url": "https://tripwisehub-blip.github.io/tripwise-app/blog/cheap-flights-from-%s.html" % city.lower()}])
 buttons.append([{"text": "🎡 Budget wheel", "url": APP}, {"text": "🤖 Travel bot", "url": BOT}])
 buttons.append([{"text": "🚗 Rent a car", "url": CARS},
                 {"text": "📣 Share", "url": "https://t.me/share/url?url=" + urllib.parse.quote(CHAN_LINK) + "&text=" + urllib.parse.quote("Cheap flights every day 👉")}])
