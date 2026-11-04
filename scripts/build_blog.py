@@ -1,4 +1,4 @@
-import os, sys, html, json, urllib.request, urllib.parse
+import os, sys, html, json, datetime, urllib.request, urllib.parse
 sys.path.insert(0, os.path.dirname(__file__))
 from blog_content import GUIDES, A, BOT, L
 
@@ -159,6 +159,68 @@ def page(name, title, desc, body, extra_head=""):
         f.write(doc)
 
 
+# Live deal pages: cheapest return flights from each origin city, rebuilt with every price update
+DEAL_CITIES = [("TLL", "Tallinn"), ("RIX", "Riga"), ("HEL", "Helsinki"), ("VNO", "Vilnius"), ("STO", "Stockholm"),
+               ("WAW", "Warsaw"), ("BER", "Berlin"), ("LON", "London"), ("PAR", "Paris"), ("AMS", "Amsterdam")]
+PRICES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "prices.json")
+
+
+def deal_slug(city):
+    return "cheap-flights-from-" + city.lower() + ".html"
+
+
+def flag_emoji(iso):
+    iso = (iso or "").upper()
+    return "".join(chr(0x1F1E6 + ord(c) - 65) for c in iso) if len(iso) == 2 and iso.isalpha() else ""
+
+
+def deal_pages():
+    try:
+        prices = json.load(open(PRICES_FILE, encoding="utf-8"))
+    except Exception:
+        return []
+    names = prices.get("names") or {}
+    today = datetime.date.today().isoformat()
+    made = []
+    for code, city in DEAL_CITIES:
+        best = {}
+        for t in (prices.get("origins") or {}).get(code, []):
+            if t.get("dep", "") <= today:
+                continue
+            if t["d"] not in best or t["p"] < best[t["d"]]["p"]:
+                best[t["d"]] = t
+        deals = sorted(best.values(), key=lambda t: t["p"])[:15]
+        if not deals:
+            continue
+        rows = ""
+        for t in deals:
+            n = names.get(t["d"]) or [t["d"], ""]
+            path = t.get("link") or "/search/%s%s%s%s%s%s1" % (code, t["dep"][8:10], t["dep"][5:7], t["d"], t["ret"][8:10], t["ret"][5:7])
+            url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.blog"
+            d1 = datetime.date.fromisoformat(t["dep"]).strftime("%d %b")
+            d2 = datetime.date.fromisoformat(t["ret"]).strftime("%d %b")
+            kind = "Direct" if not t.get("tr") else "With stops"
+            label = (flag_emoji(n[1] if len(n) > 1 else "") + " " + (n[0] or t["d"])).strip()
+            rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{html.escape(label)}</span>'
+                     f'<span class="k">{kind}</span><span class="t">{d1} – {d2} · return</span><span class="go">€{round(t["p"])}</span></a>')
+        others = " · ".join(f'<a href="{deal_slug(n)}">{html.escape(n)}</a>' for k, n in DEAL_CITIES if k != code)
+        body = (f'<section class="board"><div class="wrap"><h1>Cheap flights from {city}</h1>'
+                f'<p class="sub">The cheapest return flights from {city} we found recently, sorted by price. Updated several times a day.</p>'
+                f'<div class="rows"><div class="hd"><span>Destination</span><span class="k">Flight</span><span class="t">Dates</span><span>Price</span></div>{rows}</div></div></section>'
+                f'<div class="wrap"><div class="page"><p class="meta">Prices are per person for a return economy ticket, found on Aviasales recently. Fares change quickly, so check the final price before booking. Updated {today}.</p>'
+                f'<h2>How to get the most from these fares</h2><ul><li>Be flexible: moving your trip by a day or two often saves more than any discount code.</li>'
+                f'<li>Book quickly – the lowest fares usually sell out first.</li><li>Check baggage rules: the cheapest fares often include only a small bag.</li></ul>'
+                f'<p>Get the 3 best deals from a different city every day in our Telegram channel <a href="https://t.me/tripwise_deals">@tripwise_deals</a>, or set a budget and let the <a href="{A}">budget wheel</a> pick trips for you.</p>'
+                f'<h2>Flights from other cities</h2><p>{others}</p>' + CTA + '</div></div>')
+        page(deal_slug(city), f"Cheap flights from {city} – best deals right now | Tripwise",
+             f"The cheapest return flights from {city} found in the last days: destinations, dates and prices, updated several times a day.", body)
+        made.append(city)
+    return made
+
+
+DEAL_MADE = deal_pages()
+DEALS_BLOCK = ('<section class="cs"><h2 class="country">✈️ Cheap flights from your city</h2><div class="chips">'
+               + "".join(f'<a href="{deal_slug(c)}">{html.escape(c)}</a>' for c in DEAL_MADE) + '</div></section>') if DEAL_MADE else ""
 OG["index.html"] = og_img("Barcelona")
 for g in GUIDES:
     OG[g["slug"] + ".html"] = og_img(META.get(g["slug"], ("", "", g["tag"]))[2])
@@ -214,7 +276,7 @@ page("index.html", "Tripwise Guides – practical, budget-friendly travel guides
      '<section class="board"><div class="wrap"><h1>Where are you going next?</h1><p class="sub">Practical guides to cities in Europe and beyond, written to help you spend less on flights, stays and getting around.</p>'
      '<input id="q" class="search" type="search" placeholder="Search a city or country" aria-label="Search guides">'
      f'<div class="rows"><div class="hd"><span>Destination</span><span class="k">Country</span><span class="t">Guide</span><span></span></div>{rows}</div></div></section>'
-     + f'<div class="wrap"><div class="chips">{chips}</div>{sections}' + CTA + '</div>',
+     + f'<div class="wrap"><div class="chips">{chips}</div>{DEALS_BLOCK}{sections}' + CTA + '</div>',
      '<meta name="fo-verify" content="ecc3db6a-d085-46d5-a6d7-9ad485111ee6" /><meta name="mitgo-verification" content="cc5d1230-0bb6-43c0-bda7-3593e30d9a80" />')
 
 page("about.html", "About Tripwise", "About Tripwise: a free travel assistant in Telegram and independent travel guides.",
@@ -238,7 +300,7 @@ page("privacy.html", "Privacy policy | Tripwise", "Tripwise privacy policy.",
 <h2>Telegram bot</h2><p>When you message @tripwise_hub_bot, we process your messages to answer them, using an AI service. We store your Telegram chat ID and, if you turn on a price alert, the route and dates you chose, so that we can send you updates. Send /stopalerts to remove your alerts. We do not sell personal data.</p>
 <h2>Contact</h2><p>To ask about or delete your data, write to <a href="mailto:tripwise.hub@gmail.com">tripwise.hub@gmail.com</a>.</p></div>""")
 
-urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + g["slug"] + ".html" for g in GUIDES]
+urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + deal_slug(c) for c in DEAL_MADE] + [BASE + g["slug"] + ".html" for g in GUIDES]
 with open(os.path.join(OUT, "sitemap.xml"), "w") as f:
     f.write('<?xml version="1.0" encoding="UTF-8"?>' + NL + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + NL +
             "".join(f"<url><loc>{u}</loc><lastmod>2026-10-28</lastmod></url>" + NL + "" for u in urls) + "</urlset>" + NL + "")
