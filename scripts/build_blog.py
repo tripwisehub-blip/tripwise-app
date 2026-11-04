@@ -115,7 +115,7 @@ PHOTO_JS = """<script>
 function load(t,w){var k=t+w;if(cache[k])return cache[k];cache[k]=fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t.replace(/ /g,'_'))).then(function(r){return r.ok?r.json():{}}).then(function(j){var s=(j.thumbnail&&j.thumbnail.source)||'';if(!s)return '';var p=s.split('px-');return p.length>1?p[0].slice(0,p[0].lastIndexOf('/')+1)+w+'px-'+p.slice(1).join('px-')+'"),url("'+s:s;}).catch(function(){return ''});return cache[k];}
 document.querySelectorAll('[data-photo]').forEach(function(el){var big=el.classList.contains('hero');load(el.getAttribute('data-photo'),big?1280:500).then(function(u){if(u)el.style.backgroundImage=(big?'linear-gradient(rgba(11,35,64,.1),rgba(11,35,64,.78))':'linear-gradient(transparent 50%,rgba(0,0,0,.6))')+',url("'+u+'")';});});
 var q=document.getElementById('q');if(q)q.addEventListener('input',function(){var v=q.value.toLowerCase().trim();document.querySelectorAll('.tile,.row').forEach(function(t){t.style.display=!v||t.textContent.toLowerCase().indexOf(v)>=0?'':'none';});document.querySelectorAll('section.cs').forEach(function(sc){var any=[].some.call(sc.querySelectorAll('.tile'),function(t){return t.style.display!=='none'});sc.style.display=any?'':'none';});});
-if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var A='ABCDEFGHIJKLMNOPRSTUVWZ';document.querySelectorAll('.row .c').forEach(function(el,i){var f=el.textContent,n=0,id=setInterval(function(){n++;var k=Math.floor(n/2)-i;el.textContent=f.split('').map(function(ch,j){return j<k||ch===' '?ch:A[Math.floor(Math.random()*A.length)]}).join('');if(k>=f.length){clearInterval(id);el.textContent=f;}},45);});}
+if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var A='ABCDEFGHIJKLMNOPRSTUVWZ';document.querySelectorAll('.rows:not(.deals) .row .c').forEach(function(el,i){var f=el.textContent,n=0,id=setInterval(function(){n++;var k=Math.floor(n/2)-i;el.textContent=f.split('').map(function(ch,j){return j<k||ch===' '?ch:A[Math.floor(Math.random()*A.length)]}).join('');if(k>=f.length){clearInterval(id);el.textContent=f;}},45);});}
 })();
 </script>"""
 
@@ -206,7 +206,7 @@ def deal_pages():
         others = " · ".join(f'<a href="{deal_slug(n)}">{html.escape(n)}</a>' for k, n in DEAL_CITIES if k != code)
         body = (f'<section class="board"><div class="wrap"><h1>Cheap flights from {city}</h1>'
                 f'<p class="sub">The cheapest return flights from {city} we found recently, sorted by price. Updated several times a day.</p>'
-                f'<div class="rows"><div class="hd"><span>Destination</span><span class="k">Flight</span><span class="t">Dates</span><span>Price</span></div>{rows}</div></div></section>'
+                f'<div class="rows deals"><div class="hd"><span>Destination</span><span class="k">Flight</span><span class="t">Dates</span><span>Price</span></div>{rows}</div></div></section>'
                 f'<div class="wrap"><div class="page"><p class="meta">Prices are per person for a return economy ticket, found on Aviasales recently. Fares change quickly, so check the final price before booking. Updated {today}.</p>'
                 f'<h2>How to get the most from these fares</h2><ul><li>Be flexible: moving your trip by a day or two often saves more than any discount code.</li>'
                 f'<li>Book quickly – the lowest fares usually sell out first.</li><li>Check baggage rules: the cheapest fares often include only a small bag.</li></ul>'
