@@ -60,72 +60,11 @@ jobs:
       - name: Rebuild blog (live deal pages)
         run: BLOG_OUT=blog python3 scripts/build_blog.py
         continue-on-error: true
-      - name: Save changes
-        run: |
-          git config user.name "tripwise-bot"
-          git config user.email "tripwise-bot@users.noreply.github.com"
-          git add data blog
-          git diff --cached --quiet || (git commit -m "Update prices and rates" && git push)
-name: Update prices
-
-on:
-  schedule:
-    - cron: "23 */6 * * *"
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Fetch rates and flight prices
-        run: python3 scripts/update_prices.py
-        env:
-          TP_TOKEN: ${{ secrets.TP_TOKEN }}
-      - name: Send price-drop alerts
-        run: python3 scripts/price_alerts.py
+      - name: Make and post the daily video (Reels / Shorts)
+        run: pip install --quiet pillow && python3 scripts/video_make.py
         continue-on-error: true
         env:
-          TP_TOKEN: ${{ secrets.TP_TOKEN }}
-          MAKE_TOKEN: ${{ secrets.MAKE_TOKEN }}
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-      - name: Create tour links
-        run: python3 scripts/make_links.py
-        continue-on-error: true
-        env:
-          TP_TOKEN: ${{ secrets.TP_TOKEN }}
-      - name: Ping search engines (IndexNow)
-        run: python3 scripts/indexnow.py
-        continue-on-error: true
-      - name: Post deals to the Telegram channel
-        run: python3 scripts/channel_post.py
-        continue-on-error: true
-        env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
-      - name: Hot package holidays from partner feeds
-        run: python3 scripts/tours_feed.py
-        continue-on-error: true
-        env:
-          ADMITAD_FEED_TRAVELKING: ${{ secrets.ADMITAD_FEED_TRAVELKING }}
-      - name: Post hot tours to the Telegram channel
-        run: python3 scripts/tours_post.py
-        continue-on-error: true
-        env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
-      - name: Post the guide of the day to the Telegram channel
-        run: python3 scripts/guide_post.py
-        continue-on-error: true
-        env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHANNEL: ${{ secrets.TG_CHANNEL }}
-      - name: Rebuild blog (live deal pages)
-        run: BLOG_OUT=blog python3 scripts/build_blog.py
-        continue-on-error: true
+          FB_HOOK: ${{ secrets.FB_HOOK }}
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
