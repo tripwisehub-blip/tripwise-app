@@ -7,6 +7,7 @@ import datetime
 import html
 import json
 import os
+import re
 import urllib.request
 
 TOKEN = os.environ.get("TG_BOT_TOKEN", "").strip()
@@ -66,6 +67,8 @@ lines.append("Prices from the partner site at the time of posting; availability 
 lines.append("🎡 <a href=\"%s\">More deals in the Tripwise app</a>" % APP)
 text = "\n".join(lines)
 
+# Booking buttons replace the per-offer links, so the caption fits under a photo (1024 chars)
+text = re.sub('<a href="[^"]*">See the offer on [^<]*</a>', '', text)
 MARKUP = {"inline_keyboard": [[{"text": "🏨 Deal %d · from %s" % (i + 1, money(o)), "url": o["url"]}] for i, o in enumerate(picks)] + [[
     {"text": "🎡 More deals", "url": APP},
     {"text": "📣 Share", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Ftripwise_deals"}]]}
