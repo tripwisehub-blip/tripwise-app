@@ -61,7 +61,7 @@ jobs:
         run: BLOG_OUT=blog python3 scripts/build_blog.py
         continue-on-error: true
       - name: Make and post the daily video (Reels / Shorts)
-        run: pip install --quiet pillow && python3 scripts/video_make.py
+        run: (python3 -c "import PIL" || pip install --quiet --break-system-packages pillow) && python3 scripts/video_make.py
         continue-on-error: true
         env:
           FB_HOOK: ${{ secrets.FB_HOOK }}
