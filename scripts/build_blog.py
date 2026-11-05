@@ -158,7 +158,13 @@ def page(name, title, desc, body, extra_head="", lang="en"):
 <main>{body}</main>
 <footer><div class="wrap"><p>Independent travel guides by Tripwise, 2026.</p><a href="about.html">About</a><a href="disclosure.html">Affiliate disclosure</a><a href="privacy.html">Privacy</a><a href="mailto:tripwise.hub@gmail.com">Contact</a></div></footer>
 {PHOTO_JS}</body></html>"""
-    with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
+    path = os.path.join(OUT, name)
+    try:
+        if open(path, encoding="utf-8").read() == doc:
+            return
+    except Exception:
+        pass
+    with open(path, "w", encoding="utf-8") as f:
         f.write(doc)
 
 
@@ -296,11 +302,140 @@ DEAL_MADE = [c for k, c, lg, fn in DEAL_ALL if lg == "en"]
 DEALS_BLOCK = ('<section class="cs"><h2 class="country">✈️ Cheap flights from your city</h2><div class="chips">'
                + "".join(f'<a href="{fn}">{html.escape(c if lg == "en" else lg.upper() + " · " + c)}</a>' for k, c, lg, fn in DEAL_ALL) + '</div></section>') if DEAL_ALL else ""
 
-# Route pages: one page per origin -> destination pair ("Cheap flights from Tallinn to Barcelona").
-# A registry (routes.json in the blog folder) keeps routes we have seen, so pages stay online with the last known fare
-# even when today's price feed has no data for them.
+# Route pages: one page per origin -> destination pair and language ("Cheap flights from Tallinn to Barcelona").
+# Every route gets English, Russian and the language of the departure city. A registry (routes.json in the blog folder)
+# keeps routes we have seen, so pages stay online with the last known fare even when today's feed has no data for them.
+RT = {
+    "en": dict(h1="Cheap flights from {o} to {d}", intro="Return flights from {o} to {d} from €{p}. The cheapest dates we found recently – tap a date to see the live fare and book. Updated several times a day.",
+               intro0="Return flights from {o} to {d} with live prices. Updated several times a day.", cols=("Departure", "Flight", "Return", "Price"),
+               direct="Direct", stops="With stops", back="back", nights="nights", note="Prices are per person, return, economy, found recently on Aviasales and may change. Updated",
+               tipsh="Tips for cheap {o} – {d} flights", tips=("Midweek departures (Tuesday–Thursday) are usually cheaper than Fridays and Sundays.", "The lowest fares usually include only a small cabin bag – add luggage before comparing.", "Check {month}: moving the trip by a day or two often saves more than any discount code."),
+               month="the whole month", chan="Best deals every day in our Telegram channel", more_o="More cheap flights from {o}", more_d="Flights to {d} from other cities",
+               guide="Planning what to do there? Read our guide", any="Any dates", nof="No fresh fares right now – check live prices", srch="Search", all="All routes"),
+    "ru": dict(h1="Дешёвые авиабилеты {o} — {d}", intro="Билеты туда-обратно {o} — {d} от €{p}. Самые дешёвые даты, которые мы нашли за последние дни, — нажмите на дату, чтобы увидеть актуальную цену. Обновляется несколько раз в день.",
+               intro0="Билеты туда-обратно {o} — {d} с актуальными ценами. Обновляется несколько раз в день.", cols=("Туда", "Рейс", "Обратно", "Цена"),
+               direct="Прямой", stops="С пересадкой", back="обратно", nights="ноч.", note="Цена за одного человека, туда-обратно, эконом, найдено на Aviasales, может измениться. Обновлено",
+               tipsh="Как купить дешёвый билет {o} — {d}", tips=("Вылеты в середине недели (вт–чт) обычно дешевле, чем в пятницу и воскресенье.", "В самых дешёвых тарифах обычно только ручная кладь — учитывайте багаж при сравнении.", "Смотрите {month}: сдвиг поездки на день-два часто экономит больше любого промокода."),
+               month="цены на весь месяц", chan="Лучшие предложения каждый день в нашем Telegram-канале", more_o="Ещё дешёвые билеты из города {o}", more_d="Билеты в {d} из других городов",
+               guide="Что посмотреть на месте? Наш гид (англ.)", any="Любые даты", nof="Свежих цен сейчас нет — смотрите актуальные", srch="Найти", all="Все маршруты"),
+    "et": dict(h1="Odavad lennupiletid {o} – {d}", intro="Edasi-tagasi lennud {o} – {d} alates €{p}. Odavaimad kuupäevad, mis viimati leidsime – vajuta kuupäevale, et näha hetkehinda. Uuendatakse mitu korda päevas.",
+               intro0="Edasi-tagasi lennud {o} – {d} hetkehindadega. Uuendatakse mitu korda päevas.", cols=("Minek", "Lend", "Tagasi", "Hind"),
+               direct="Otselend", stops="Ümberistumisega", back="tagasi", nights="ööd", note="Hind ühe inimese kohta, edasi-tagasi, turistiklass, leitud Aviasalesist, võib muutuda. Uuendatud",
+               tipsh="Nõuanded odavateks lendudeks {o} – {d}", tips=("Nädala keskel (T–N) väljumised on tavaliselt odavamad kui reedel ja pühapäeval.", "Odavaimates piletites on tavaliselt ainult käsipagas.", "Vaata {month}: päeva-kahe võrra nihutamine säästab sageli kõige rohkem."),
+               month="kogu kuu hindu", chan="Parimad pakkumised iga päev meie Telegrami kanalis", more_o="Veel odavaid lende: {o}", more_d="Lennud sihtkohta {d} teistest linnadest",
+               guide="Mida seal teha? Meie juhend (inglise k.)", any="Kõik kuupäevad", nof="Värskeid hindu praegu pole – vaata hetkehindu", srch="Otsi", all="Kõik marsruudid"),
+    "lv": dict(h1="Lēti lidojumi {o} – {d}", intro="Lidojumi turp un atpakaļ {o} – {d} no €{p}. Lētākie datumi, ko nesen atradām – nospiediet datumu, lai redzētu aktuālo cenu. Atjaunots vairākas reizes dienā.",
+               intro0="Lidojumi turp un atpakaļ {o} – {d} ar aktuālām cenām. Atjaunots vairākas reizes dienā.", cols=("Turp", "Lidojums", "Atpakaļ", "Cena"),
+               direct="Tiešais", stops="Ar pārsēšanos", back="atpakaļ", nights="naktis", note="Cena vienai personai, turp un atpakaļ, ekonomiskā klase, atrasta Aviasales, var mainīties. Atjaunots",
+               tipsh="Padomi lētiem lidojumiem {o} – {d}", tips=("Izlidošana nedēļas vidū (O–C) parasti ir lētāka nekā piektdienās un svētdienās.", "Lētākajās biļetēs parasti ir tikai rokas bagāža.", "Skatiet {month}: pārcelšana par dienu vai divām bieži ietaupa visvairāk."),
+               month="visa mēneša cenas", chan="Labākie piedāvājumi katru dienu mūsu Telegram kanālā", more_o="Vēl lēti lidojumi: {o}", more_d="Lidojumi uz {d} no citām pilsētām",
+               guide="Ko tur darīt? Mūsu ceļvedis (angļu val.)", any="Jebkuri datumi", nof="Pašlaik nav svaigu cenu – skatiet aktuālās", srch="Meklēt", all="Visi maršruti"),
+    "lt": dict(h1="Pigūs skrydžiai {o} – {d}", intro="Skrydžiai pirmyn ir atgal {o} – {d} nuo €{p}. Pigiausios neseniai rastos datos – spustelėkite datą ir pamatysite dabartinę kainą. Atnaujinama kelis kartus per dieną.",
+               intro0="Skrydžiai pirmyn ir atgal {o} – {d} su dabartinėmis kainomis. Atnaujinama kelis kartus per dieną.", cols=("Išvykimas", "Skrydis", "Grįžimas", "Kaina"),
+               direct="Tiesioginis", stops="Su persėdimu", back="atgal", nights="naktys", note="Kaina vienam asmeniui, pirmyn ir atgal, ekonominė klasė, rasta Aviasales, gali keistis. Atnaujinta",
+               tipsh="Patarimai pigiems skrydžiams {o} – {d}", tips=("Skrydžiai savaitės viduryje (A–K) dažniausiai pigesni nei penktadienį ir sekmadienį.", "Pigiausiuose bilietuose dažniausiai tik rankinis bagažas.", "Žiūrėkite {month}: kelionės perkėlimas diena ar dviem dažnai sutaupo daugiausia."),
+               month="viso mėnesio kainas", chan="Geriausi pasiūlymai kasdien mūsų Telegram kanale", more_o="Daugiau pigių skrydžių: {o}", more_d="Skrydžiai į {d} iš kitų miestų",
+               guide="Ką ten veikti? Mūsų gidas (anglų k.)", any="Bet kokios datos", nof="Šiuo metu naujų kainų nėra – žiūrėkite dabartines", srch="Ieškoti", all="Visi maršrutai"),
+    "fi": dict(h1="Halvat lennot {o} – {d}", intro="Meno-paluulennot {o} – {d} alkaen €{p}. Halvimmat äskettäin löytämämme päivät – napauta päivää nähdäksesi hinnan. Päivittyy useita kertoja päivässä.",
+               intro0="Meno-paluulennot {o} – {d} ajantasaisin hinnoin. Päivittyy useita kertoja päivässä.", cols=("Meno", "Lento", "Paluu", "Hinta"),
+               direct="Suora", stops="Vaihdollinen", back="paluu", nights="yötä", note="Hinta per henkilö, meno-paluu, turistiluokka, löydetty Aviasalesista, voi muuttua. Päivitetty",
+               tipsh="Vinkit halpoihin lentoihin {o} – {d}", tips=("Keskiviikon lähdöt (ti–to) ovat yleensä halvempia kuin perjantaina ja sunnuntaina.", "Halvimpiin lippuihin kuuluu yleensä vain käsimatkatavara.", "Katso {month}: päivän tai kahden siirto säästää usein eniten."),
+               month="koko kuukauden hinnat", chan="Parhaat tarjoukset joka päivä Telegram-kanavallamme", more_o="Lisää halpoja lentoja: {o}", more_d="Lennot kohteeseen {d} muista kaupungeista",
+               guide="Mitä siellä tehdä? Oppaamme (englanniksi)", any="Mitkä tahansa päivät", nof="Tuoreita hintoja ei nyt ole – katso ajantasaiset", srch="Hae", all="Kaikki reitit"),
+    "sv": dict(h1="Billiga flyg {o} – {d}", intro="Tur och retur {o} – {d} från €{p}. De billigaste datumen vi hittat nyligen – tryck på ett datum för aktuellt pris. Uppdateras flera gånger om dagen.",
+               intro0="Tur och retur {o} – {d} med aktuella priser. Uppdateras flera gånger om dagen.", cols=("Utresa", "Flyg", "Hemresa", "Pris"),
+               direct="Direkt", stops="Med byte", back="hem", nights="nätter", note="Pris per person, tur och retur, ekonomi, hittat på Aviasales, kan ändras. Uppdaterat",
+               tipsh="Tips för billiga flyg {o} – {d}", tips=("Avgångar mitt i veckan (tis–tor) är oftast billigare än fredag och söndag.", "De billigaste biljetterna har oftast bara handbagage.", "Kolla {month}: att flytta resan en dag eller två sparar ofta mest."),
+               month="hela månadens priser", chan="Bästa erbjudandena varje dag i vår Telegram-kanal", more_o="Fler billiga flyg från {o}", more_d="Flyg till {d} från andra städer",
+               guide="Vad göra där? Vår guide (engelska)", any="Alla datum", nof="Inga färska priser just nu – se aktuella", srch="Sök", all="Alla rutter"),
+    "nb": dict(h1="Billige flybilletter {o} – {d}", intro="Tur-retur {o} – {d} fra €{p}. De billigste datoene vi fant nylig – trykk på en dato for aktuell pris. Oppdateres flere ganger om dagen.",
+               intro0="Tur-retur {o} – {d} med aktuelle priser. Oppdateres flere ganger om dagen.", cols=("Utreise", "Fly", "Hjemreise", "Pris"),
+               direct="Direkte", stops="Med bytte", back="hjem", nights="netter", note="Pris per person, tur-retur, økonomi, funnet på Aviasales, kan endres. Oppdatert",
+               tipsh="Tips for billige fly {o} – {d}", tips=("Avganger midt i uka (tir–tor) er ofte billigere enn fredag og søndag.", "De billigste billettene har som regel bare håndbagasje.", "Se {month}: å flytte turen en dag eller to sparer ofte mest."),
+               month="hele månedens priser", chan="Beste tilbud hver dag i vår Telegram-kanal", more_o="Flere billige fly fra {o}", more_d="Fly til {d} fra andre byer",
+               guide="Hva gjøre der? Vår guide (engelsk)", any="Alle datoer", nof="Ingen ferske priser nå – se aktuelle", srch="Søk", all="Alle ruter"),
+    "da": dict(h1="Billige flybilletter {o} – {d}", intro="Returrejser {o} – {d} fra €{p}. De billigste datoer, vi har fundet for nylig – tryk på en dato for aktuel pris. Opdateres flere gange dagligt.",
+               intro0="Returrejser {o} – {d} med aktuelle priser. Opdateres flere gange dagligt.", cols=("Udrejse", "Fly", "Hjemrejse", "Pris"),
+               direct="Direkte", stops="Med skift", back="hjem", nights="nætter", note="Pris pr. person, retur, økonomi, fundet på Aviasales, kan ændre sig. Opdateret",
+               tipsh="Tips til billige fly {o} – {d}", tips=("Afgange midt på ugen (tir–tor) er ofte billigere end fredag og søndag.", "De billigste billetter har som regel kun håndbagage.", "Se {month}: at flytte rejsen en dag eller to sparer ofte mest."),
+               month="hele månedens priser", chan="Bedste tilbud hver dag på vores Telegram-kanal", more_o="Flere billige fly fra {o}", more_d="Fly til {d} fra andre byer",
+               guide="Hvad skal man lave der? Vores guide (engelsk)", any="Alle datoer", nof="Ingen friske priser lige nu – se aktuelle", srch="Søg", all="Alle ruter"),
+    "pl": dict(h1="Tanie loty {o} – {d}", intro="Loty w obie strony {o} – {d} od €{p}. Najtańsze daty znalezione ostatnio – kliknij datę, by zobaczyć aktualną cenę. Aktualizowane kilka razy dziennie.",
+               intro0="Loty w obie strony {o} – {d} z aktualnymi cenami. Aktualizowane kilka razy dziennie.", cols=("Wylot", "Lot", "Powrót", "Cena"),
+               direct="Bezpośredni", stops="Z przesiadką", back="powrót", nights="noce", note="Cena za osobę, w obie strony, ekonomiczna, znaleziona na Aviasales, może się zmienić. Aktualizacja",
+               tipsh="Jak tanio polecieć {o} – {d}", tips=("Wyloty w środku tygodnia (wt–czw) są zwykle tańsze niż w piątek i niedzielę.", "Najtańsze bilety zwykle obejmują tylko bagaż podręczny.", "Sprawdź {month}: przesunięcie podróży o dzień lub dwa często oszczędza najwięcej."),
+               month="ceny w całym miesiącu", chan="Najlepsze oferty codziennie na naszym kanale Telegram", more_o="Więcej tanich lotów z {o}", more_d="Loty do {d} z innych miast",
+               guide="Co tam robić? Nasz przewodnik (ang.)", any="Dowolne daty", nof="Brak świeżych cen – sprawdź aktualne", srch="Szukaj", all="Wszystkie trasy"),
+    "de": dict(h1="Günstige Flüge {o} – {d}", intro="Hin- und Rückflüge {o} – {d} ab €{p}. Die günstigsten Termine, die wir zuletzt gefunden haben – tippe auf ein Datum für den aktuellen Preis. Mehrmals täglich aktualisiert.",
+               intro0="Hin- und Rückflüge {o} – {d} mit aktuellen Preisen. Mehrmals täglich aktualisiert.", cols=("Hinflug", "Flug", "Rückflug", "Preis"),
+               direct="Direkt", stops="Mit Umstieg", back="zurück", nights="Nächte", note="Preis pro Person, hin und zurück, Economy, gefunden bei Aviasales, kann sich ändern. Aktualisiert",
+               tipsh="Tipps für günstige Flüge {o} – {d}", tips=("Abflüge unter der Woche (Di–Do) sind meist günstiger als Freitag und Sonntag.", "Die günstigsten Tarife enthalten meist nur Handgepäck.", "Prüfe {month}: ein oder zwei Tage Verschiebung sparen oft am meisten."),
+               month="die Preise im ganzen Monat", chan="Die besten Angebote täglich in unserem Telegram-Kanal", more_o="Weitere günstige Flüge ab {o}", more_d="Flüge nach {d} aus anderen Städten",
+               guide="Was dort unternehmen? Unser Guide (Englisch)", any="Beliebige Daten", nof="Gerade keine aktuellen Preise – Live-Preise prüfen", srch="Suchen", all="Alle Strecken"),
+    "nl": dict(h1="Goedkope vluchten {o} – {d}", intro="Retourvluchten {o} – {d} vanaf €{p}. De goedkoopste data die we onlangs vonden – tik op een datum voor de actuele prijs. Meerdere keren per dag bijgewerkt.",
+               intro0="Retourvluchten {o} – {d} met actuele prijzen. Meerdere keren per dag bijgewerkt.", cols=("Heen", "Vlucht", "Terug", "Prijs"),
+               direct="Direct", stops="Met overstap", back="terug", nights="nachten", note="Prijs per persoon, retour, economy, gevonden op Aviasales, kan veranderen. Bijgewerkt",
+               tipsh="Tips voor goedkope vluchten {o} – {d}", tips=("Vertrek midden in de week (di–do) is meestal goedkoper dan vrijdag en zondag.", "De goedkoopste tickets hebben meestal alleen handbagage.", "Bekijk {month}: een dag of twee schuiven bespaart vaak het meest."),
+               month="de prijzen van de hele maand", chan="Elke dag de beste deals in ons Telegram-kanaal", more_o="Meer goedkope vluchten vanaf {o}", more_d="Vluchten naar {d} vanuit andere steden",
+               guide="Wat te doen? Onze gids (Engels)", any="Alle data", nof="Nu geen verse prijzen – bekijk actuele", srch="Zoeken", all="Alle routes"),
+    "fr": dict(h1="Vols pas chers {o} – {d}", intro="Vols aller-retour {o} – {d} dès €{p}. Les dates les moins chères trouvées récemment – touchez une date pour voir le prix actuel. Mis à jour plusieurs fois par jour.",
+               intro0="Vols aller-retour {o} – {d} avec prix actuels. Mis à jour plusieurs fois par jour.", cols=("Aller", "Vol", "Retour", "Prix"),
+               direct="Direct", stops="Avec escale", back="retour", nights="nuits", note="Prix par personne, aller-retour, économie, trouvé sur Aviasales, peut changer. Mis à jour",
+               tipsh="Conseils pour des vols pas chers {o} – {d}", tips=("Les départs en milieu de semaine (mar–jeu) sont souvent moins chers que le vendredi et le dimanche.", "Les tarifs les plus bas n'incluent souvent qu'un bagage cabine.", "Consultez {month} : décaler d'un ou deux jours fait souvent économiser le plus."),
+               month="les prix du mois entier", chan="Les meilleures offres chaque jour sur notre chaîne Telegram", more_o="Plus de vols pas chers depuis {o}", more_d="Vols vers {d} depuis d'autres villes",
+               guide="Que faire sur place ? Notre guide (anglais)", any="Toutes dates", nof="Pas de prix récents – voir les prix actuels", srch="Rechercher", all="Toutes les routes"),
+    "cs": dict(h1="Levné letenky {o} – {d}", intro="Zpáteční lety {o} – {d} od €{p}. Nejlevnější termíny, které jsme nedávno našli – klepněte na datum pro aktuální cenu. Aktualizováno několikrát denně.",
+               intro0="Zpáteční lety {o} – {d} s aktuálními cenami. Aktualizováno několikrát denně.", cols=("Odlet", "Let", "Návrat", "Cena"),
+               direct="Přímý", stops="S přestupem", back="zpět", nights="nocí", note="Cena za osobu, zpáteční, ekonomická třída, nalezeno na Aviasales, může se změnit. Aktualizováno",
+               tipsh="Tipy na levné lety {o} – {d}", tips=("Odlety uprostřed týdne (út–čt) bývají levnější než v pátek a v neděli.", "Nejlevnější letenky obvykle zahrnují jen příruční zavazadlo.", "Podívejte se na {month}: posun o den či dva často ušetří nejvíc."),
+               month="ceny celého měsíce", chan="Nejlepší nabídky každý den na našem Telegram kanálu", more_o="Další levné lety z {o}", more_d="Lety do {d} z jiných měst",
+               guide="Co tam dělat? Náš průvodce (anglicky)", any="Libovolné datum", nof="Teď nejsou čerstvé ceny – podívejte se na aktuální", srch="Hledat", all="Všechny trasy"),
+    "es": dict(h1="Vuelos baratos {o} – {d}", intro="Vuelos de ida y vuelta {o} – {d} desde €{p}. Las fechas más baratas que encontramos recientemente: toca una fecha para ver el precio actual. Se actualiza varias veces al día.",
+               intro0="Vuelos de ida y vuelta {o} – {d} con precios actuales. Se actualiza varias veces al día.", cols=("Ida", "Vuelo", "Vuelta", "Precio"),
+               direct="Directo", stops="Con escala", back="vuelta", nights="noches", note="Precio por persona, ida y vuelta, turista, encontrado en Aviasales, puede cambiar. Actualizado",
+               tipsh="Consejos para vuelos baratos {o} – {d}", tips=("Las salidas entre semana (mar–jue) suelen ser más baratas que viernes y domingo.", "Las tarifas más bajas suelen incluir solo equipaje de mano.", "Mira {month}: mover el viaje uno o dos días suele ahorrar más."),
+               month="los precios de todo el mes", chan="Las mejores ofertas cada día en nuestro canal de Telegram", more_o="Más vuelos baratos desde {o}", more_d="Vuelos a {d} desde otras ciudades",
+               guide="¿Qué hacer allí? Nuestra guía (inglés)", any="Cualquier fecha", nof="No hay precios recientes – mira los actuales", srch="Buscar", all="Todas las rutas"),
+    "it": dict(h1="Voli economici {o} – {d}", intro="Voli andata e ritorno {o} – {d} da €{p}. Le date più economiche trovate di recente: tocca una data per il prezzo attuale. Aggiornato più volte al giorno.",
+               intro0="Voli andata e ritorno {o} – {d} con prezzi aggiornati. Aggiornato più volte al giorno.", cols=("Andata", "Volo", "Ritorno", "Prezzo"),
+               direct="Diretto", stops="Con scalo", back="ritorno", nights="notti", note="Prezzo a persona, andata e ritorno, economy, trovato su Aviasales, può cambiare. Aggiornato",
+               tipsh="Consigli per voli economici {o} – {d}", tips=("Le partenze a metà settimana (mar–gio) costano di solito meno di venerdì e domenica.", "Le tariffe più basse includono di solito solo il bagaglio a mano.", "Guarda {month}: spostare il viaggio di un giorno o due spesso fa risparmiare di più."),
+               month="i prezzi di tutto il mese", chan="Le migliori offerte ogni giorno sul nostro canale Telegram", more_o="Altri voli economici da {o}", more_d="Voli per {d} da altre città",
+               guide="Cosa fare lì? La nostra guida (inglese)", any="Qualsiasi data", nof="Nessun prezzo recente – guarda i prezzi attuali", srch="Cerca", all="Tutte le rotte"),
+}
+ORIGIN_LANG = {"TLL": "et", "RIX": "lv", "VNO": "lt", "HEL": "fi", "STO": "sv", "OSL": "nb", "CPH": "da", "WAW": "pl", "BER": "de", "MUC": "de",
+               "FRA": "de", "VIE": "de", "AMS": "nl", "PAR": "fr", "PRG": "cs", "BCN": "es", "MAD": "es", "ROM": "it", "MIL": "it"}
+TP_LANGS = ("ru", "de", "fr", "es", "it", "pl")  # city names in these languages come from the Travelpayouts directory
+
+
 def slugify(s):
-    return "".join(ch if ch.isalnum() else "-" for ch in s.lower().replace("'", "")).strip("-").replace("--", "-")
+    s = "".join(ch if ch.isalnum() and ch.isascii() else "-" for ch in s.lower().replace("'", ""))
+    while "--" in s:
+        s = s.replace("--", "-")
+    return s.strip("-")
+
+
+def city_names():
+    """{lang: {IATA: name}} cached in the blog folder; filled from the public Travelpayouts directory."""
+    path = os.path.join(OUT, "city_names.json")
+    try:
+        cache = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        cache = {}
+    changed = False
+    for lg in TP_LANGS:
+        if cache.get(lg):
+            continue
+        try:
+            req = urllib.request.Request("https://api.travelpayouts.com/data/%s/cities.json" % lg, headers={"User-Agent": "TripwiseBot/1.0"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                cache[lg] = {c["code"]: c["name"] for c in json.load(r) if c.get("code") and c.get("name")}
+            changed = True
+        except Exception as e:
+            print("city names", lg, e)
+    if changed:
+        json.dump(cache, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+    return cache
 
 
 def route_pages():
@@ -316,10 +451,16 @@ def route_pages():
     except Exception:
         reg = {}
     city_of = dict(DEAL_CITIES)
+    loc = city_names()
 
-    def nm(code):
+    def nm(code, lg="en"):
         n = names.get(code)
-        return (n[0] if n and n[0] else city_of.get(code, code)), (n[1] if n and len(n) > 1 else "")
+        en = n[0] if n and n[0] else city_of.get(code, code)
+        return (loc.get(lg) or {}).get(code) or en
+
+    def iso(code):
+        n = names.get(code)
+        return n[1] if n and len(n) > 1 else ""
 
     for o, trips in (prices.get("origins") or {}).items():
         for t in trips:
@@ -338,81 +479,84 @@ def route_pages():
 
     guide_for = {}
     for g in GUIDES:
-        city = META.get(g["slug"], ("", "", ""))[1].split(",")[0].strip().lower()
-        if city:
-            guide_for.setdefault(city, g)
-    made = []
+        c = META.get(g["slug"], ("", "", ""))[1].split(",")[0].strip().lower()
+        if c:
+            guide_for.setdefault(c, g)
     by_origin, by_dest = {}, {}
-    for key in reg:
+    keys = [k for k in reg if nm(k.split("-")[0]) != nm(k.split("-")[1])]
+    for key in keys:
         o, d = key.split("-")
         by_origin.setdefault(o, []).append(key)
         by_dest.setdefault(d, []).append(key)
 
-    def fname(key):
-        o, d = key.split("-")
-        return "flights-" + slugify(nm(o)[0]) + "-to-" + slugify(nm(d)[0]) + ".html"
+    def langs(key):
+        lg = ORIGIN_LANG.get(key.split("-")[0])
+        return ["en", "ru"] + ([lg] if lg and lg not in ("en", "ru") else [])
 
-    for key, r in reg.items():
+    def fname(key, lg="en"):
         o, d = key.split("-")
-        of, (dn, iso) = nm(o)[0], nm(d)
-        if of == dn:
-            continue
-        fl = flag_emoji(iso)
+        base = "flights-" + slugify(nm(o)) + "-to-" + slugify(nm(d)) + ".html"
+        return base if lg == "en" else lg + "-" + base
+
+    made = []
+    for key in keys:
+        o, d = key.split("-")
+        r = reg[key]
         fares = r["fares"]
         best = fares[0]["p"] if fares else r.get("low")
-        rows = ""
-        for f in fares:
-            path = f.get("link") or "/search/%s%s%s%s%s%s1" % (o, f["dep"][8:10], f["dep"][5:7], d, f["ret"][8:10], f["ret"][5:7])
-            url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.route"
-            x1, x2 = datetime.date.fromisoformat(f["dep"]), datetime.date.fromisoformat(f["ret"])
-            rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{x1.strftime("%a %d %b")}</span>'
-                     f'<span class="k">{"Direct" if not f.get("tr") else "With stops"}</span><span class="t">back {x2.strftime("%a %d %b")} · {(x2 - x1).days} nights</span><span class="go">€{f["p"]}</span></a>')
         search = "https://www.aviasales.com/search/%s%s1?marker=793212.route" % (o, d)
-        if not rows:
-            rows = (f'<a class="row" href="{search}" rel="sponsored noopener" target="_blank"><span class="c">Any dates</span><span class="k">–</span>'
-                    f'<span class="t">No fresh fares right now – check live prices</span><span class="go">Search</span></a>')
-        g = guide_for.get(dn.lower())
-        guide = f'<p>Planning what to do there? Read our <a href="{g["slug"]}.html">{html.escape(g["title"])}</a>.</p>' if g else ""
-        same_o = sorted([k for k in by_origin.get(o, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
-        same_d = sorted([k for k in by_dest.get(d, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
-        more_o = " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[1])[0])} €{reg[k]["low"]}</a>' for k in same_o)
-        more_d = " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[0])[0])} €{reg[k]["low"]}</a>' for k in same_d)
-        deal = f' See all <a href="{deal_slug(of)}">cheap flights from {html.escape(of)}</a>.' if o in city_of else ""
-        h1 = f"Cheap flights from {of} to {dn} {fl}".strip()
-        price_txt = f"from €{best} return" if best else "with live prices"
-        intro = (f"Return flights from {of} to {dn} {price_txt}. These are the cheapest dates we found recently on Aviasales; "
-                 f"tap a date to see the live fare and book. The list updates several times a day.")
-        body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(intro)}</p>'
-                f'<div class="rows deals"><div class="hd"><span>Departure</span><span class="k">Flight</span><span class="t">Return</span><span>Price</span></div>{rows}</div></div></section>'
-                f'<div class="wrap"><div class="page"><p class="meta">Prices are per person, return, economy, found recently and may change. Updated {today}.{deal}</p>'
-                f'<h2>Tips for cheap {html.escape(of)} – {html.escape(dn)} flights</h2><ul>'
-                f'<li>Midweek departures (Tuesday–Thursday) are usually cheaper than Fridays and Sundays.</li>'
-                f'<li>The lowest fares usually include only a small cabin bag – add luggage before comparing.</li>'
-                f'<li>Check <a href="{search}" rel="sponsored noopener" target="_blank">the whole month</a>: moving the trip by a day or two often saves more than any discount.</li>'
-                f'<li>Get the best deals every day in our Telegram channel <a href="https://t.me/tripwise_deals">@tripwise_deals</a>.</li></ul>{guide}'
-                + (f'<h2>More cheap flights from {html.escape(of)}</h2><p>{more_o}</p>' if more_o else "")
-                + (f'<h2>Flights to {html.escape(dn)} from other cities</h2><p>{more_d}</p>' if more_d else "")
-                + CTA + '</div></div>')
-        ld = json.dumps({"@context": "https://schema.org", "@type": "Product", "name": f"Flights {of} – {dn}",
-                         "offers": {"@type": "AggregateOffer", "priceCurrency": "EUR", "lowPrice": best or 0, "offerCount": max(len(fares), 1)}}, ensure_ascii=False) if best else ""
-        page(fname(key), f"Cheap flights {of} to {dn} {price_txt} | Tripwise",
-             intro, body, f'<script type="application/ld+json">{ld}</script>' if ld else "")
-        made.append(fname(key))
-    # index of all routes
+        versions = langs(key)
+        alt = "".join(f'<link rel="alternate" hreflang="{lg}" href="{BASE}{fname(key, lg)}">' for lg in versions)
+        g = guide_for.get(nm(d).lower())
+        for lg in versions:
+            T = RT[lg]
+            of, dn = nm(o, lg), nm(d, lg)
+            rows = ""
+            for f in fares:
+                path = f.get("link") or "/search/%s%s%s%s%s%s1" % (o, f["dep"][8:10], f["dep"][5:7], d, f["ret"][8:10], f["ret"][5:7])
+                url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.route"
+                x1, x2 = datetime.date.fromisoformat(f["dep"]), datetime.date.fromisoformat(f["ret"])
+                rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{x1.strftime("%d.%m.%Y")}</span>'
+                         f'<span class="k">{T["direct"] if not f.get("tr") else T["stops"]}</span><span class="t">{T["back"]} {x2.strftime("%d.%m")} · {(x2 - x1).days} {T["nights"]}</span><span class="go">€{f["p"]}</span></a>')
+            if not rows:
+                rows = (f'<a class="row" href="{search}" rel="sponsored noopener" target="_blank"><span class="c">{T["any"]}</span><span class="k">–</span>'
+                        f'<span class="t">{T["nof"]}</span><span class="go">{T["srch"]}</span></a>')
+            h1 = (T["h1"].format(o=of, d=dn) + " " + flag_emoji(iso(d))).strip()
+            intro = T["intro"].format(o=of, d=dn, p=best) if best else T["intro0"].format(o=of, d=dn)
+            same_o = sorted([k for k in by_origin.get(o, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
+            same_d = sorted([k for k in by_dest.get(d, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
+            more_o = " · ".join(f'<a href="{fname(k, lg if lg in langs(k) else "en")}">{html.escape(nm(k.split("-")[1], lg))} €{reg[k]["low"]}</a>' for k in same_o)
+            more_d = " · ".join(f'<a href="{fname(k, lg if lg in langs(k) else "en")}">{html.escape(nm(k.split("-")[0], lg))} €{reg[k]["low"]}</a>' for k in same_d)
+            other = " · ".join(f'<a href="{fname(key, x)}">{x.upper()}</a>' for x in versions if x != lg)
+            tips = "".join("<li>" + html.escape(t).replace("{month}", f'<a href="{search}" rel="sponsored noopener" target="_blank">{html.escape(T["month"])}</a>') + "</li>" for t in T["tips"])
+            body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(intro)}</p>'
+                    f'<div class="rows deals"><div class="hd">' + "".join(f'<span{c}>{x}</span>' for x, c in zip(T["cols"], ("", ' class="k"', ' class="t"', ""))) + f'</div>{rows}</div></div></section>'
+                    f'<div class="wrap"><div class="page"><p class="meta">{html.escape(T["note"])} {r.get("seen", today)}. {other} · <a href="flight-routes.html">{T["all"]}</a></p>'
+                    f'<h2>{html.escape(T["tipsh"].format(o=of, d=dn))}</h2><ul>{tips}<li>{html.escape(T["chan"])}: <a href="https://t.me/tripwise_deals">@tripwise_deals</a></li></ul>'
+                    + (f'<p>{html.escape(T["guide"])}: <a href="{g["slug"]}.html">{html.escape(g["title"])}</a>.</p>' if g else "")
+                    + (f'<h2>{html.escape(T["more_o"].format(o=of))}</h2><p>{more_o}</p>' if more_o else "")
+                    + (f'<h2>{html.escape(T["more_d"].format(d=dn))}</h2><p>{more_d}</p>' if more_d else "")
+                    + CTA + '</div></div>')
+            ld = json.dumps({"@context": "https://schema.org", "@type": "Product", "name": f"{of} – {dn}",
+                             "offers": {"@type": "AggregateOffer", "priceCurrency": "EUR", "lowPrice": best, "offerCount": max(len(fares), 1)}}, ensure_ascii=False) if best else ""
+            title = T["h1"].format(o=of, d=dn) + (f" · €{best}" if best else "") + " | Tripwise"
+            page(fname(key, lg), title, intro, body, alt + (f'<script type="application/ld+json">{ld}</script>' if ld else ""), lg)
+            made.append(fname(key, lg))
     groups = ""
-    for o in sorted(by_origin, key=lambda c: nm(c)[0]):
+    for o in sorted(by_origin, key=lambda c: nm(c)):
         ks = sorted([k for k in by_origin[o] if reg[k].get("low")], key=lambda k: reg[k]["low"])
         if ks:
-            groups += f'<h2>From {html.escape(nm(o)[0])}</h2><p>' + " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[1])[0])} €{reg[k]["low"]}</a>' for k in ks) + "</p>"
+            groups += f'<h2>From {html.escape(nm(o))}</h2><p>' + " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[1]))} €{reg[k]["low"]}</a>' for k in ks) + "</p>"
     page("flight-routes.html", "Cheap flight routes from 20 European cities | Tripwise",
          "All cheap flight routes we track: lowest return fares from Tallinn, Riga, Vilnius, Helsinki, Stockholm, London, Berlin, Paris and more.",
-         f'<div class="wrap"><div class="page"><h1>Cheap flight routes</h1><p>The lowest return fares we have seen on each route. Prices update several times a day.</p>{groups}</div></div>')
+         f'<div class="wrap"><div class="page"><h1>Cheap flight routes</h1><p>The lowest return fares we have seen on each route, in English, Russian and the language of the departure city. Prices update several times a day.</p>{groups}</div></div>')
     return made + ["flight-routes.html"]
 
 
 ROUTES = route_pages()
 DEALS_BLOCK += ('<section class="cs"><h2 class="country">🗺 All flight routes</h2><div class="chips"><a href="flight-routes.html">'
-                f'Browse {len(ROUTES) - 1} routes with prices</a></div></section>') if ROUTES else ""
+                f'Browse {len([r for r in ROUTES if r.startswith("flights-")])} routes with prices</a></div></section>') if ROUTES else ""
+
 OG["index.html"] = og_img("Barcelona")
 for g in GUIDES:
     OG[g["slug"] + ".html"] = og_img(META.get(g["slug"], ("", "", g["tag"]))[2])
