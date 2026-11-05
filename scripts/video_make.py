@@ -117,7 +117,7 @@ def span(a, b):
     return "%d %s - %d %s" % (x.day, x.strftime("%b"), y.day, y.strftime("%b"))
 
 
-SITE = "https://tripwisehub-blip.github.io/tripwise-app/"
+SITE = "https://tripwisehub-blip.github.io/tripwise-app/blog/"
 
 
 def post_pending():
