@@ -61,7 +61,7 @@ jobs:
         run: BLOG_OUT=blog python3 scripts/build_blog.py
         continue-on-error: true
       - name: Make and post the daily video (Reels / Shorts)
-        run: (python3 -c "import PIL" || pip install --quiet --break-system-packages pillow) && python3 scripts/video_make.py
+        run: (which ffmpeg && python3 -c "import PIL" && ls /usr/share/fonts/truetype/dejavu) || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core python3-pil); python3 scripts/video_make.py
         continue-on-error: true
         env:
           FB_HOOK: ${{ secrets.FB_HOOK }}
