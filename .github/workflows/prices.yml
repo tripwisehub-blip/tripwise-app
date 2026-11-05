@@ -65,6 +65,11 @@ jobs:
         continue-on-error: true
         env:
           FB_HOOK: ${{ secrets.FB_HOOK }}
+      - name: Pinterest drip (one pin per run)
+        run: python3 scripts/pin_post.py
+        continue-on-error: true
+        env:
+          FB_HOOK: ${{ secrets.FB_HOOK }}
       - name: Save changes
         run: |
           git config user.name "tripwise-bot"
