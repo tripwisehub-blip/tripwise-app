@@ -295,6 +295,124 @@ DEAL_ALL = deal_pages()
 DEAL_MADE = [c for k, c, lg, fn in DEAL_ALL if lg == "en"]
 DEALS_BLOCK = ('<section class="cs"><h2 class="country">✈️ Cheap flights from your city</h2><div class="chips">'
                + "".join(f'<a href="{fn}">{html.escape(c if lg == "en" else lg.upper() + " · " + c)}</a>' for k, c, lg, fn in DEAL_ALL) + '</div></section>') if DEAL_ALL else ""
+
+# Route pages: one page per origin -> destination pair ("Cheap flights from Tallinn to Barcelona").
+# A registry (routes.json in the blog folder) keeps routes we have seen, so pages stay online with the last known fare
+# even when today's price feed has no data for them.
+def slugify(s):
+    return "".join(ch if ch.isalnum() else "-" for ch in s.lower().replace("'", "")).strip("-").replace("--", "-")
+
+
+def route_pages():
+    try:
+        prices = json.load(open(PRICES_FILE, encoding="utf-8"))
+    except Exception:
+        return []
+    names = prices.get("names") or {}
+    today = datetime.date.today().isoformat()
+    reg_path = os.path.join(OUT, "routes.json")
+    try:
+        reg = json.load(open(reg_path, encoding="utf-8"))
+    except Exception:
+        reg = {}
+    city_of = dict(DEAL_CITIES)
+
+    def nm(code):
+        n = names.get(code)
+        return (n[0] if n and n[0] else city_of.get(code, code)), (n[1] if n and len(n) > 1 else "")
+
+    for o, trips in (prices.get("origins") or {}).items():
+        for t in trips:
+            if t.get("dep", "") <= today:
+                continue
+            key = o + "-" + t["d"]
+            r = reg.setdefault(key, {"fares": [], "low": None})
+            fares = [f for f in r["fares"] if f["dep"] > today and not (f["dep"] == t["dep"] and f["ret"] == t["ret"])]
+            fares.append({"p": round(t["p"]), "dep": t["dep"], "ret": t["ret"], "tr": t.get("tr", 0), "link": t.get("link", "")})
+            r["fares"] = sorted(fares, key=lambda f: f["p"])[:6]
+            r["low"] = min([x for x in [r.get("low"), round(t["p"])] if x is not None])
+            r["seen"] = today
+    for r in reg.values():
+        r["fares"] = [f for f in r["fares"] if f["dep"] > today]
+    json.dump(reg, open(reg_path, "w", encoding="utf-8"), ensure_ascii=False)
+
+    guide_for = {}
+    for g in GUIDES:
+        city = META.get(g["slug"], ("", "", ""))[1].split(",")[0].strip().lower()
+        if city:
+            guide_for.setdefault(city, g)
+    made = []
+    by_origin, by_dest = {}, {}
+    for key in reg:
+        o, d = key.split("-")
+        by_origin.setdefault(o, []).append(key)
+        by_dest.setdefault(d, []).append(key)
+
+    def fname(key):
+        o, d = key.split("-")
+        return "flights-" + slugify(nm(o)[0]) + "-to-" + slugify(nm(d)[0]) + ".html"
+
+    for key, r in reg.items():
+        o, d = key.split("-")
+        of, (dn, iso) = nm(o)[0], nm(d)
+        if of == dn:
+            continue
+        fl = flag_emoji(iso)
+        fares = r["fares"]
+        best = fares[0]["p"] if fares else r.get("low")
+        rows = ""
+        for f in fares:
+            path = f.get("link") or "/search/%s%s%s%s%s%s1" % (o, f["dep"][8:10], f["dep"][5:7], d, f["ret"][8:10], f["ret"][5:7])
+            url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.route"
+            x1, x2 = datetime.date.fromisoformat(f["dep"]), datetime.date.fromisoformat(f["ret"])
+            rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{x1.strftime("%a %d %b")}</span>'
+                     f'<span class="k">{"Direct" if not f.get("tr") else "With stops"}</span><span class="t">back {x2.strftime("%a %d %b")} · {(x2 - x1).days} nights</span><span class="go">€{f["p"]}</span></a>')
+        search = "https://www.aviasales.com/search/%s%s1?marker=793212.route" % (o, d)
+        if not rows:
+            rows = (f'<a class="row" href="{search}" rel="sponsored noopener" target="_blank"><span class="c">Any dates</span><span class="k">–</span>'
+                    f'<span class="t">No fresh fares right now – check live prices</span><span class="go">Search</span></a>')
+        g = guide_for.get(dn.lower())
+        guide = f'<p>Planning what to do there? Read our <a href="{g["slug"]}.html">{html.escape(g["title"])}</a>.</p>' if g else ""
+        same_o = sorted([k for k in by_origin.get(o, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
+        same_d = sorted([k for k in by_dest.get(d, []) if k != key and reg[k].get("low")], key=lambda k: reg[k]["low"])[:12]
+        more_o = " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[1])[0])} €{reg[k]["low"]}</a>' for k in same_o)
+        more_d = " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[0])[0])} €{reg[k]["low"]}</a>' for k in same_d)
+        deal = f' See all <a href="{deal_slug(of)}">cheap flights from {html.escape(of)}</a>.' if o in city_of else ""
+        h1 = f"Cheap flights from {of} to {dn} {fl}".strip()
+        price_txt = f"from €{best} return" if best else "with live prices"
+        intro = (f"Return flights from {of} to {dn} {price_txt}. These are the cheapest dates we found recently on Aviasales; "
+                 f"tap a date to see the live fare and book. The list updates several times a day.")
+        body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(intro)}</p>'
+                f'<div class="rows deals"><div class="hd"><span>Departure</span><span class="k">Flight</span><span class="t">Return</span><span>Price</span></div>{rows}</div></div></section>'
+                f'<div class="wrap"><div class="page"><p class="meta">Prices are per person, return, economy, found recently and may change. Updated {today}.{deal}</p>'
+                f'<h2>Tips for cheap {html.escape(of)} – {html.escape(dn)} flights</h2><ul>'
+                f'<li>Midweek departures (Tuesday–Thursday) are usually cheaper than Fridays and Sundays.</li>'
+                f'<li>The lowest fares usually include only a small cabin bag – add luggage before comparing.</li>'
+                f'<li>Check <a href="{search}" rel="sponsored noopener" target="_blank">the whole month</a>: moving the trip by a day or two often saves more than any discount.</li>'
+                f'<li>Get the best deals every day in our Telegram channel <a href="https://t.me/tripwise_deals">@tripwise_deals</a>.</li></ul>{guide}'
+                + (f'<h2>More cheap flights from {html.escape(of)}</h2><p>{more_o}</p>' if more_o else "")
+                + (f'<h2>Flights to {html.escape(dn)} from other cities</h2><p>{more_d}</p>' if more_d else "")
+                + CTA + '</div></div>')
+        ld = json.dumps({"@context": "https://schema.org", "@type": "Product", "name": f"Flights {of} – {dn}",
+                         "offers": {"@type": "AggregateOffer", "priceCurrency": "EUR", "lowPrice": best or 0, "offerCount": max(len(fares), 1)}}, ensure_ascii=False) if best else ""
+        page(fname(key), f"Cheap flights {of} to {dn} {price_txt} | Tripwise",
+             intro, body, f'<script type="application/ld+json">{ld}</script>' if ld else "")
+        made.append(fname(key))
+    # index of all routes
+    groups = ""
+    for o in sorted(by_origin, key=lambda c: nm(c)[0]):
+        ks = sorted([k for k in by_origin[o] if reg[k].get("low")], key=lambda k: reg[k]["low"])
+        if ks:
+            groups += f'<h2>From {html.escape(nm(o)[0])}</h2><p>' + " · ".join(f'<a href="{fname(k)}">{html.escape(nm(k.split("-")[1])[0])} €{reg[k]["low"]}</a>' for k in ks) + "</p>"
+    page("flight-routes.html", "Cheap flight routes from 20 European cities | Tripwise",
+         "All cheap flight routes we track: lowest return fares from Tallinn, Riga, Vilnius, Helsinki, Stockholm, London, Berlin, Paris and more.",
+         f'<div class="wrap"><div class="page"><h1>Cheap flight routes</h1><p>The lowest return fares we have seen on each route. Prices update several times a day.</p>{groups}</div></div>')
+    return made + ["flight-routes.html"]
+
+
+ROUTES = route_pages()
+DEALS_BLOCK += ('<section class="cs"><h2 class="country">🗺 All flight routes</h2><div class="chips"><a href="flight-routes.html">'
+                f'Browse {len(ROUTES) - 1} routes with prices</a></div></section>') if ROUTES else ""
 OG["index.html"] = og_img("Barcelona")
 for g in GUIDES:
     OG[g["slug"] + ".html"] = og_img(META.get(g["slug"], ("", "", g["tag"]))[2])
@@ -374,10 +492,10 @@ page("privacy.html", "Privacy policy | Tripwise", "Tripwise privacy policy.",
 <h2>Telegram bot</h2><p>When you message @tripwise_hub_bot, we process your messages to answer them, using an AI service. We store your Telegram chat ID and, if you turn on a price alert, the route and dates you chose, so that we can send you updates. Send /stopalerts to remove your alerts. We do not sell personal data.</p>
 <h2>Contact</h2><p>To ask about or delete your data, write to <a href="mailto:tripwise.hub@gmail.com">tripwise.hub@gmail.com</a>.</p></div>""")
 
-urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + fn for k, c, lg, fn in DEAL_ALL] + [BASE + g["slug"] + ".html" for g in GUIDES]
+urls = [BASE] + [BASE + p for p in ["about.html", "disclosure.html", "privacy.html"]] + [BASE + fn for k, c, lg, fn in DEAL_ALL] + [BASE + g["slug"] + ".html" for g in GUIDES] + [BASE + r for r in ROUTES]
 with open(os.path.join(OUT, "sitemap.xml"), "w") as f:
     f.write('<?xml version="1.0" encoding="UTF-8"?>' + NL + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + NL +
-            "".join(f"<url><loc>{u}</loc><lastmod>2026-10-28</lastmod></url>" + NL + "" for u in urls) + "</urlset>" + NL + "")
+            "".join(f"<url><loc>{u}</loc><lastmod>{datetime.date.today().isoformat()}</lastmod></url>" + NL + "" for u in urls) + "</urlset>" + NL + "")
 items = "".join(f"<item><title>{html.escape(g['title'])}</title><link>{BASE}{g['slug']}.html</link><guid>{BASE}{g['slug']}.html</guid><description>{html.escape(g['desc'])}</description></item>" for g in GUIDES)
 with open(os.path.join(OUT, "feed.xml"), "w", encoding="utf-8") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Tripwise Guides</title><link>{BASE}</link><description>Practical, budget-friendly travel guides</description>{items}</channel></rss>')
