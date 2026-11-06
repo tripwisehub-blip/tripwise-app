@@ -28,6 +28,7 @@ h1,h2,h3{line-height:1.12;letter-spacing:-.015em}
 .board{background:var(--navy);color:#fff;padding:28px 0 40px}
 .board h1{font-size:clamp(34px,6.4vw,64px);font-weight:800;margin:6px 0 10px;max-width:14ch}
 .board p.sub{color:#B9C9DA;font-size:18px;margin:0 0 22px;max-width:52ch}
+.kiwi{background:#EAF6F4;border-radius:10px;padding:12px 14px;margin:0 0 14px}
 .search{width:100%;max-width:560px;font:inherit;font-size:17px;padding:14px 16px;border-radius:10px;border:2px solid transparent;background:#fff;color:#10202F}
 .search:focus{outline:0;border-color:var(--sign)}
 .rows{margin-top:30px;border-top:1px solid var(--navy2)}
@@ -443,6 +444,29 @@ def city_names():
     return cache
 
 
+# Second flight partner on route pages: Kiwi.com deep links made by scripts/make_links.py (data/kiwi_routes.json)
+try:
+    KIWI = json.load(open("data/kiwi_routes.json"))
+except Exception:
+    KIWI = {}
+KIWI_TXT = {"en": "Also compare this route on Kiwi.com — it combines low-cost airlines into one trip:",
+            "ru": "Сравните этот маршрут и на Kiwi.com — он собирает поездку из рейсов разных лоукостеров:",
+            "uk": "Порівняйте цей маршрут і на Kiwi.com — він поєднує рейси різних лоукостерів:",
+            "et": "Võrdle seda marsruuti ka Kiwi.com-is — see ühendab odavlennufirmade lende:",
+            "fi": "Vertaa reittiä myös Kiwi.comissa — se yhdistää halpalentoyhtiöiden lentoja:",
+            "lv": "Salīdziniet šo maršrutu arī Kiwi.com — tas apvieno lētās aviokompanijas:",
+            "lt": "Palyginkite šį maršrutą ir Kiwi.com — jis sujungia pigių skrydžių bendroves:",
+            "pl": "Porównaj tę trasę także na Kiwi.com — łączy loty tanich linii w jedną podróż:",
+            "de": "Vergleiche die Strecke auch auf Kiwi.com — dort werden Billigflüge kombiniert:",
+            "fr": "Comparez aussi ce trajet sur Kiwi.com, qui combine les vols low-cost :",
+            "es": "Compara también esta ruta en Kiwi.com, que combina vuelos low-cost:",
+            "it": "Confronta questa tratta anche su Kiwi.com, che combina voli low cost:",
+            "sv": "Jämför även rutten på Kiwi.com — den kombinerar lågprisflyg:",
+            "no": "Sammenlign ruten også på Kiwi.com — den kombinerer lavprisfly:",
+            "da": "Sammenlign ruten på Kiwi.com — den kombinerer lavprisfly:",
+            "nl": "Vergelijk deze route ook op Kiwi.com — het combineert prijsvechters:"}
+
+
 def route_pages():
     try:
         prices = json.load(open(PRICES_FILE, encoding="utf-8"))
@@ -534,9 +558,11 @@ def route_pages():
             more_d = " · ".join(f'<a href="{fname(k, lg if lg in langs(k) else "en")}">{html.escape(nm(k.split("-")[0], lg))} €{reg[k]["low"]}</a>' for k in same_d)
             other = " · ".join(f'<a href="{fname(key, x)}">{x.upper()}</a>' for x in versions if x != lg)
             tips = "".join("<li>" + html.escape(t).replace("{month}", f'<a href="{search}" rel="sponsored noopener" target="_blank">{html.escape(T["month"])}</a>') + "</li>" for t in T["tips"])
+            kw = KIWI.get(key)
+            kiwi = (f'<p class="kiwi">{html.escape(KIWI_TXT.get(lg, KIWI_TXT["en"]))} <a href="{html.escape(kw)}" rel="sponsored noopener" target="_blank">Kiwi.com →</a></p>' if kw else "")
             body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(intro)}</p>'
                     f'<div class="rows deals"><div class="hd">' + "".join(f'<span{c}>{x}</span>' for x, c in zip(T["cols"], ("", ' class="k"', ' class="t"', ""))) + f'</div>{rows}</div></div></section>'
-                    f'<div class="wrap"><div class="page"><p class="meta">{html.escape(T["note"])} {r.get("seen", today)}. {other} · <a href="flight-routes.html">{T["all"]}</a></p>'
+                    f'<div class="wrap"><div class="page">{kiwi}<p class="meta">{html.escape(T["note"])} {r.get("seen", today)}. {other} · <a href="flight-routes.html">{T["all"]}</a></p>'
                     f'<h2>{html.escape(T["tipsh"].format(o=of, d=dn))}</h2><ul>{tips}<li>{html.escape(T["chan"])}: <a href="https://t.me/tripwise_deals">@tripwise_deals</a></li></ul>'
                     + (f'<p>{html.escape(T["guide"])}: <a href="{g["slug"]}.html">{html.escape(g["title"])}</a>.</p>' if g else "")
                     + (f'<h2>{html.escape(T["more_o"].format(o=of))}</h2><p>{more_o}</p>' if more_o else "")
