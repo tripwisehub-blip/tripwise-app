@@ -202,8 +202,8 @@ for r in alerts:
     last = float((r.get("data") or {}).get("session") or 0)
     trip = "%s → %s, %s–%s" % (city(orig, lang), city(dest, lang), dep.strftime("%d.%m"), ret.strftime("%d.%m.%Y"))
     m = MSG[lang]
-    url = "https://www.aviasales.com/search/%s%s%s%s%s?marker=%s.alert&currency=eur" % (
-        orig, dep.strftime("%d%m"), dest, ret.strftime("%d%m"), pax, MARKER)
+    url = "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=%s.alert&u=%s" % (MARKER, urllib.parse.quote(
+        "https://www.aviasales.com/search/%s%s%s%s%s?currency=eur" % (orig, dep.strftime("%d%m"), dest, ret.strftime("%d%m"), pax), safe=""))
     if last <= 0:
         text = m[0].format(trip=trip, p=int(price)) + "\n" + m[2]
     elif price <= last * (1 - DROP_MIN):
