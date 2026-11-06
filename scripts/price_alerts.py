@@ -27,8 +27,13 @@ DROP_MIN = 0.02  # notify only when the price drops by at least 2 %
 TP = os.environ.get("TP_TOKEN", "").strip()
 MAKE = os.environ.get("MAKE_TOKEN", "").strip()
 BOT = os.environ.get("TG_BOT_TOKEN", "").strip()
-if not (TP and MAKE and BOT):
-    print("Alerts are off: set the TP_TOKEN, MAKE_TOKEN and TG_BOT_TOKEN secrets.")
+import hashlib
+
+# Alerts live in the Cloudflare bot worker (data/bot_worker.txt) once it is deployed, otherwise in the Make data store.
+WORKER = open("data/bot_worker.txt").read().strip() if os.path.exists("data/bot_worker.txt") else ""
+WKEY = hashlib.sha256(BOT.encode()).hexdigest()
+if not (TP and BOT and (WORKER or MAKE)):
+    print("Alerts are off: set the TP_TOKEN, TG_BOT_TOKEN and MAKE_TOKEN secrets (or deploy the bot worker).")
     sys.exit(0)
 
 
@@ -47,7 +52,18 @@ def make(method, path, body=None):
     return call(method, MAKE_API + path, body, {"Authorization": "Token " + MAKE})
 
 
-def records():
+def worker(method, body=None):
+    return call(method, WORKER + "/store", body, {"X-Key": WKEY})
+
+
+def put(key, value):
+    if WORKER:
+        worker("POST", {"put": {key: value}})
+    else:
+        make("PUT", "/data-stores/%d/data/%s" % (STORE_ID, urllib.parse.quote(key)), {"session": value})
+
+
+def make_records():
     out, offset = [], 0
     while True:
         page = make("GET", "/data-stores/%d/data?pg%%5Blimit%%5D=100&pg%%5Boffset%%5D=%d" % (STORE_ID, offset))
@@ -58,9 +74,27 @@ def records():
         offset += 100
 
 
+def records():
+    if not WORKER:
+        return make_records()
+    if MAKE:  # one-time move of alerts saved by the old Make bot
+        try:
+            old = [r for r in make_records() if r["key"][:1] in "ax"]
+            if old:
+                worker("POST", {"put": {r["key"]: (r.get("data") or {}).get("session") or "0" for r in old}})
+                make("DELETE", "/data-stores/%d/data" % STORE_ID, {"keys": [r["key"] for r in old]})
+                print("moved from Make:", len(old))
+        except Exception as e:
+            print("Make migration skipped:", e)
+    return worker("GET").get("records") or []
+
+
 def delete(keys):
     if keys:
-        make("DELETE", "/data-stores/%d/data" % STORE_ID, {"keys": list(keys)})
+        if WORKER:
+            worker("POST", {"delete": list(keys)})
+        else:
+            make("DELETE", "/data-stores/%d/data" % STORE_ID, {"keys": list(keys)})
         print("deleted", len(keys))
 
 
@@ -210,10 +244,10 @@ for r in alerts:
         text = m[1].format(trip=trip, p=int(price), old=int(last)) + "\n" + m[2]
     else:
         if price > last:  # remember the new level so the next drop is measured from it
-            make("PUT", "/data-stores/%d/data/%s" % (STORE_ID, urllib.parse.quote(key)), {"session": str(price)})
+            put(key, str(price))
         continue
     if send(chat, text, url, m[3]):
-        make("PUT", "/data-stores/%d/data/%s" % (STORE_ID, urllib.parse.quote(key)), {"session": str(price)})
+        put(key, str(price))
         sent += 1
     else:
         remove.add(key)
