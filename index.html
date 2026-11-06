@@ -1163,7 +1163,7 @@ return String(S.adults) + (children || infants ? String(children) + (infants ? S
 function flightUrl(dest, when) {
 var keep = S.when; if (when) S.when = when;
 var d = tripDates(); S.when = keep;
-return "https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?marker=" + MARKER + ".miniapp" + curParam();
+return tp("https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + ddmm(d[1]) + passengers() + "?x=1" + curParam(), "miniapp");
 }
 function curParam() { return CRYPTO[S.currency] ? "" : "&currency=" + S.currency.toLowerCase(); }
 var HOTEL_AID = ""; // Booking.com affiliate ID: fill in after the partner account is approved
@@ -1181,7 +1181,10 @@ return BOT_LINK + "?start=a_" + S.origin + "_" + dest + "_" + yymmdd(dep) + "_" 
 function searchAlert() { var d = tripDates(); return alertLink(S.city, iso(d[0]), iso(d[1])); }
 function tripUrl(trip) {
 var link = trip.link || ("/search/" + S.origin + trip.dep.slice(8, 10) + trip.dep.slice(5, 7) + trip.d + trip.ret.slice(8, 10) + trip.ret.slice(5, 7) + "1");
-return "https://www.aviasales.com" + link + (link.indexOf("?") >= 0 ? "&" : "?") + "marker=" + MARKER + ".wheel" + curParam();
+return tp("https://www.aviasales.com" + link + (link.indexOf("?") >= 0 ? "&" : "?") + "x=1" + curParam(), "wheel");
+}
+function tp(u, sub) {
+return "https://tp.media/r?campaign_id=100&p=4114&trs=589578&marker=" + MARKER + "." + sub + "&u=" + encodeURIComponent(u);
 }
 function placeName(code) {
 var n = PRICES && PRICES.names && PRICES.names[code];
