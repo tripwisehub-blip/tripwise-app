@@ -80,7 +80,7 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LI
 - Compensation for a delayed or cancelled flight: https://airhelp.tpx.lu/65MarJSz
 - Hotels: no booking link yet — give advice on areas and what to look for, and suggest comparing prices on the big booking sites.
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
-Give at most 2 links per message, each on its own line with a short label written in the reply language. Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
+COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line with a short label written in the reply language. Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
 function systemPrompt(lang) {
   return `You are Tripwise, a friendly travel assistant in Telegram that helps people anywhere in the world find good-value hotels, tours, car rentals, transfers, flights and travel extras for trips to any country. The user has already seen your greeting.
@@ -137,6 +137,7 @@ async function ask(env, chat, user, text) {
 }
 
 // ---------- Live flight prices (Travelpayouts Data API) ----------
+const tpKiwi = () => "https://kiwi.tpx.lu/mSYPrCCe"; // Kiwi.com affiliate link (Website project)
 const tpUrl = (u) => "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=793212.bot&u=" + encodeURIComponent(u);
 
 async function iata(term) {
@@ -152,7 +153,7 @@ async function liveFares(env, hist, text) {
   if (!env.TP_TOKEN) return "";
   const recent = hist.slice(-4).map((m) => m.role + ": " + m.content).join("\n") + "\nuser: " + text;
   const ex = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", { max_tokens: 120, messages: [
-    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty"}. If the user does not talk about a trip, answer {}.' },
+    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true if the user wants only one direction}. If the user does not talk about a trip, answer {}.' },
     { role: "user", content: recent }] });
   const m = String((ex && ex.response) || "").match(/\{[\s\S]*\}/);
   if (!m) return "";
@@ -162,18 +163,33 @@ async function liveFares(env, hist, text) {
   if (!o || !d || o.code === d.code) return "";
   const dep = q.depart || q.month || "";
   const ret = q.return || (q.month && !q.depart ? q.month : "");
-  const params = new URLSearchParams({ origin: o.code, destination: d.code, currency: "eur", sorting: "price", limit: "5", one_way: "false", token: env.TP_TOKEN });
-  if (dep) params.set("departure_at", dep);
-  if (ret) params.set("return_at", ret);
-  const res = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + params);
-  const rows = ((await res.json().catch(() => ({}))).data || []).filter((x) => x.price).slice(0, 3);
-  if (!rows.length) return `LIVE FARES: no cached fares found for ${o.name} → ${d.name}. Say so honestly and give the flight search link https://aviasales.tpx.lu/sjlt4H8o`;
+  // Try the exact dates first, then the month, then any date; return trips first, then one-way.
+  const tries = [];
+  const oneWayFirst = q.oneway === true || q.oneway === "true";
+  for (const ow of oneWayFirst ? ["true", "false"] : ["false", "true"]) {
+    if (dep) tries.push([ow, dep, ow === "false" ? ret : ""]);
+    if (dep && dep.length > 7) tries.push([ow, dep.slice(0, 7), ow === "false" && ret ? ret.slice(0, 7) : ""]);
+    tries.push([ow, "", ""]);
+  }
+  let rows = [], used = null;
+  for (const [ow, a, b] of tries) {
+    const params = new URLSearchParams({ origin: o.code, destination: d.code, currency: "eur", sorting: "price", limit: "5", one_way: ow, token: env.TP_TOKEN });
+    if (a) params.set("departure_at", a);
+    if (b) params.set("return_at", b);
+    const res = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + params);
+    rows = ((await res.json().catch(() => ({}))).data || []).filter((x) => x.price).slice(0, 3);
+    if (rows.length) { used = { ow, a }; break; }
+  }
+  const kiwi = tpKiwi(o.code, d.code);
+  if (!rows.length) return `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly and give these search links to compare: Aviasales https://aviasales.tpx.lu/sjlt4H8o and Kiwi.com ${kiwi}`;
+  const note = used.a === dep ? "" : (dep ? " (no fares cached for the exact dates the user asked; these are the closest cheapest dates found — say so)" : "");
   const lines = rows.map((x) => {
     const a = (x.departure_at || "").slice(0, 10), b = (x.return_at || "").slice(0, 10);
     const link = tpUrl("https://www.aviasales.com" + (x.link || `/search/${o.code}${a.slice(8, 10)}${a.slice(5, 7)}${d.code}${b.slice(8, 10)}${b.slice(5, 7)}1`));
-    return `- ${a} → back ${b}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} return per person. Book: ${link}`;
+    const way = used.ow === "true" ? "one-way" : "return, back " + b;
+    return `- ${a}, ${way}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} per person. Book: ${link}`;
   });
-  return `LIVE FARES (real prices found minutes ago, per person, return, may change). Show the best 2–3 of them to the user with the exact price, dates and their booking link (these links replace the generic flight link), then continue helping:\n${o.name} → ${d.name}\n` + lines.join("\n");
+  return `LIVE FARES (real prices from our partner search, per person, may change)${note}. Show the best 2–3 of them with the exact price, dates and their booking link, and add one line "Compare on Kiwi.com: ${kiwi}" (Kiwi combines low-cost airlines). These links replace the generic flight link:\n${o.name} → ${d.name}\n` + lines.join("\n");
 }
 
 async function transcribe(env, fileId) {
