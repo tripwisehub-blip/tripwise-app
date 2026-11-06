@@ -37,6 +37,19 @@ jobs:
             ID=$(curl -s -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d '{"title":"tripwise-bot"}' "$API" | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['id'])")
           fi
           sed -i "s/KV_ID/$ID/" wrangler.toml
+      - name: workers.dev subdomain
+        run: |
+          API=https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain
+          SUB=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" | python3 -c "import sys,json; print((json.load(sys.stdin).get('result') or {}).get('subdomain') or '')")
+          if [ -z "$SUB" ]; then
+            for name in tripwise-hub tripwise-deals tripwise-bot-hub; do
+              SUB=$(curl -s -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d "{\"subdomain\":\"$name\"}" "$API" | python3 -c "import sys,json; print((json.load(sys.stdin).get('result') or {}).get('subdomain') or '')")
+              [ -n "$SUB" ] && break
+            done
+          fi
+          [ -n "$SUB" ] || { echo "could not register a workers.dev subdomain"; exit 1; }
+          echo "WORKER_URL=https://tripwise-bot.$SUB.workers.dev" >> $GITHUB_ENV
+          echo "subdomain: $SUB"
       - name: Deploy
         working-directory: worker
         run: |
@@ -45,8 +58,11 @@ jobs:
       - name: Point Telegram webhook to the worker
         working-directory: worker
         run: |
-          URL=$(grep -o 'https://tripwise-bot[^ ]*workers.dev' deploy.log | head -1)
-          [ -n "$URL" ] || { echo "worker URL not found"; exit 1; }
+          URL="$WORKER_URL"
+          curl -s -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d '{"enabled":true}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/tripwise-bot/subdomain" > /dev/null
+          sleep 15
+          curl -s "$URL/" ; echo
           SECRET=$(printf '%s' "$TG_BOT_TOKEN" | sha256sum | cut -c1-32)
           curl -s "https://api.telegram.org/bot$TG_BOT_TOKEN/setWebhook" \
             --data-urlencode "url=$URL/tg" -d "secret_token=$SECRET" -d 'allowed_updates=["message","callback_query"]' -d drop_pending_updates=false
