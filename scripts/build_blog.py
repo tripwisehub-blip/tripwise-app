@@ -2,6 +2,11 @@ import os, sys, html, json, datetime, urllib.request, urllib.parse
 sys.path.insert(0, os.path.dirname(__file__))
 from blog_content import GUIDES, A, BOT, L
 
+
+def tp(url, sub, trs=589578):
+    """Wrap an Aviasales URL in a tracked Travelpayouts redirect (clicks show up in the TP report)."""
+    return "https://tp.media/r?campaign_id=100&p=4114&trs=%d&marker=793212.%s&u=%s" % (trs, sub, urllib.parse.quote(url, safe=""))
+
 NL = chr(10)
 OUT = os.environ.get("BLOG_OUT") or os.path.join(os.path.dirname(__file__), "out", "blog")
 os.makedirs(OUT, exist_ok=True)
@@ -278,7 +283,7 @@ def deal_pages():
             for t in deals:
                 n = names.get(t["d"]) or [t["d"], ""]
                 path = t.get("link") or "/search/%s%s%s%s%s%s1" % (code, t["dep"][8:10], t["dep"][5:7], t["d"], t["ret"][8:10], t["ret"][5:7])
-                url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.blog"
+                url = tp("https://www.aviasales.com" + path, "blog")
                 x1, x2 = datetime.date.fromisoformat(t["dep"]), datetime.date.fromisoformat(t["ret"])
                 dates = (x1.strftime("%d %b") + " – " + x2.strftime("%d %b")) if lang == "en" else (x1.strftime("%d.%m") + " – " + x2.strftime("%d.%m"))
                 kind = T[5] if not t.get("tr") else T[6]
@@ -504,7 +509,7 @@ def route_pages():
         r = reg[key]
         fares = r["fares"]
         best = fares[0]["p"] if fares else r.get("low")
-        search = "https://www.aviasales.com/search/%s%s1?marker=793212.route" % (o, d)
+        search = tp("https://www.aviasales.com/search/%s%s1" % (o, d), "route")
         versions = langs(key)
         alt = "".join(f'<link rel="alternate" hreflang="{lg}" href="{BASE}{fname(key, lg)}">' for lg in versions)
         g = guide_for.get(nm(d).lower())
@@ -514,7 +519,7 @@ def route_pages():
             rows = ""
             for f in fares:
                 path = f.get("link") or "/search/%s%s%s%s%s%s1" % (o, f["dep"][8:10], f["dep"][5:7], d, f["ret"][8:10], f["ret"][5:7])
-                url = "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=793212.route"
+                url = tp("https://www.aviasales.com" + path, "route")
                 x1, x2 = datetime.date.fromisoformat(f["dep"]), datetime.date.fromisoformat(f["ret"])
                 rows += (f'<a class="row" href="{html.escape(url)}" rel="sponsored noopener" target="_blank"><span class="c">{x1.strftime("%d.%m.%Y")}</span>'
                          f'<span class="k">{T["direct"] if not f.get("tr") else T["stops"]}</span><span class="t">{T["back"]} {x2.strftime("%d.%m")} · {(x2 - x1).days} {T["nights"]}</span><span class="go">€{f["p"]}</span></a>')
