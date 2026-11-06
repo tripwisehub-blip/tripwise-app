@@ -70,7 +70,7 @@ const STOPPED = {
 const SORRY = "Sorry, something went wrong on my side. Please try again in a moment.";
 const NOVOICE = "Sorry, I couldn't hear that. Please type your question in any language and I'll help right away!";
 
-const LINKS = `BOOKING LINKS (use ONLY these exact URLs, never invent or change links):
+const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LIVE FARES, never invent or change links):
 - Car rental: https://localrent.tpx.lu/EfbBHrJ5 (alternative: https://getrentacar.tpx.lu/iwSAxi5F)
 - Tickets, museums, tours and activities: https://tiqets.tpx.lu/AT5p2SuI
 - Audio guides and self-guided tours: https://wegotrip.tpx.lu/PFwel7W8
@@ -93,7 +93,7 @@ FLOW: 1) Find out destination, dates, number of travellers and budget or wishes 
 
 ${LINKS}
 
-RULES: Never mention the current date or time unless the user asks. Never invent exact prices, hotel names, addresses or availability — give general guidance and tell the user to check current prices. Plain text only, no Markdown symbols like ** or #. Keep answers under 150 words. Be warm and concise, and write naturally and correctly in the reply language.`;
+RULES: Never mention the current date or time unless the user asks. Never invent prices, hotel names, addresses or availability. The only prices you may quote are the ones given in a LIVE FARES message; otherwise give general guidance and tell the user to check current prices. Plain text only, no Markdown symbols like ** or #. Keep answers under 150 words. Be warm and concise, and write naturally and correctly in the reply language.`;
 }
 
 const pick = (obj, lang) => obj[lang] || obj.en;
@@ -117,6 +117,10 @@ async function getUser(env, chat, from) {
 async function ask(env, chat, user, text) {
   const hist = (await env.BOT.get("h" + chat, "json")) || [];
   const messages = [{ role: "system", content: systemPrompt(user.lang) }, ...hist, { role: "user", content: text }];
+  try {
+    const fares = await liveFares(env, hist, text);
+    if (fares) messages.splice(messages.length - 1, 0, { role: "system", content: fares });
+  } catch (e) { console.log("fares", String(e)); }
   let answer = "";
   for (const model of ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fast"]) {
     try {
@@ -130,6 +134,46 @@ async function ask(env, chat, user, text) {
   const next = [...hist, { role: "user", content: text }, { role: "assistant", content: answer }].slice(-20);
   await env.BOT.put("h" + chat, JSON.stringify(next), { expirationTtl: 60 * 60 * 24 * 30 });
   return send(env, chat, answer);
+}
+
+// ---------- Live flight prices (Travelpayouts Data API) ----------
+const tpUrl = (u) => "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=793212.bot&u=" + encodeURIComponent(u);
+
+async function iata(term) {
+  if (!term) return null;
+  if (/^[A-Z]{3}$/.test(term)) return { code: term, name: term };
+  const r = await fetch("https://autocomplete.travelpayouts.com/places2?locale=en&types[]=city&types[]=airport&term=" + encodeURIComponent(term));
+  const list = await r.json().catch(() => []);
+  const p = list && list[0];
+  return p ? { code: p.city_code || p.code, name: p.city_name || p.name } : null;
+}
+
+async function liveFares(env, hist, text) {
+  if (!env.TP_TOKEN) return "";
+  const recent = hist.slice(-4).map((m) => m.role + ": " + m.content).join("\n") + "\nuser: " + text;
+  const ex = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", { max_tokens: 120, messages: [
+    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty"}. If the user does not talk about a trip, answer {}.' },
+    { role: "user", content: recent }] });
+  const m = String((ex && ex.response) || "").match(/\{[\s\S]*\}/);
+  if (!m) return "";
+  let q; try { q = JSON.parse(m[0]); } catch { return ""; }
+  if (!q.from || !q.to) return "";
+  const [o, d] = await Promise.all([iata(q.from), iata(q.to)]);
+  if (!o || !d || o.code === d.code) return "";
+  const dep = q.depart || q.month || "";
+  const ret = q.return || (q.month && !q.depart ? q.month : "");
+  const params = new URLSearchParams({ origin: o.code, destination: d.code, currency: "eur", sorting: "price", limit: "5", one_way: "false", token: env.TP_TOKEN });
+  if (dep) params.set("departure_at", dep);
+  if (ret) params.set("return_at", ret);
+  const res = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + params);
+  const rows = ((await res.json().catch(() => ({}))).data || []).filter((x) => x.price).slice(0, 3);
+  if (!rows.length) return `LIVE FARES: no cached fares found for ${o.name} → ${d.name}. Say so honestly and give the flight search link https://aviasales.tpx.lu/sjlt4H8o`;
+  const lines = rows.map((x) => {
+    const a = (x.departure_at || "").slice(0, 10), b = (x.return_at || "").slice(0, 10);
+    const link = tpUrl("https://www.aviasales.com" + (x.link || `/search/${o.code}${a.slice(8, 10)}${a.slice(5, 7)}${d.code}${b.slice(8, 10)}${b.slice(5, 7)}1`));
+    return `- ${a} → back ${b}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} return per person. Book: ${link}`;
+  });
+  return `LIVE FARES (real prices found minutes ago, per person, return, may change). Show the best 2–3 of them to the user with the exact price, dates and their booking link (these links replace the generic flight link), then continue helping:\n${o.name} → ${d.name}\n` + lines.join("\n");
 }
 
 async function transcribe(env, fileId) {
