@@ -80,7 +80,7 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LI
 - Compensation for a delayed or cancelled flight: https://airhelp.tpx.lu/65MarJSz
 - Hotels: no booking link yet — give advice on areas and what to look for, and suggest comparing prices on the big booking sites.
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
-COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line with a short label written in the reply language. Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
+COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line after a short label written in the reply language (the link itself is shown to the user as the partner name, so write e.g. "Rent a car:" then the URL). Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
 function systemPrompt(lang) {
   return `You are Tripwise, a friendly travel assistant in Telegram that helps people anywhere in the world find good-value hotels, tours, car rentals, transfers, flights and travel extras for trips to any country. The user has already seen your greeting.
@@ -105,6 +105,31 @@ async function tg(env, method, body) {
 }
 
 const send = (env, chat, text, markup) => tg(env, "sendMessage", { chat_id: chat, text, disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
+
+// Turn long affiliate URLs into short clickable names ("Aviasales ↗") and send as HTML.
+const BRANDS = [["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
+  ["tiqets", "Tiqets"], ["wegotrip", "WeGoTrip"], ["airalo", "Airalo"], ["airhelp", "AirHelp"], ["klook", "Klook"], ["kkday", "KKday"],
+  ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"]];
+const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function brand(url) {
+  let u = url;
+  try { const p = new URL(url); u = (p.searchParams.get("u") || "") + " " + p.hostname + p.pathname; } catch (e) {}
+  u = u.toLowerCase();
+  const b = BRANDS.find(([k]) => u.includes(k));
+  return b ? b[1] : "Link";
+}
+function pretty(text) {
+  const parts = text.split(/(https?:\/\/[^\s)\]]+)/g);
+  return parts.map((p, i) => {
+    if (i % 2 === 0) return esc(p);
+    const url = p.replace(/[.,;:!?]+$/, "");
+    const tail = p.slice(url.length);
+    return `<a href="${esc(url)}">${brand(url)} ↗</a>${esc(tail)}`;
+  }).join("");
+}
+const sendPretty = (env, chat, text, buttons) => tg(env, "sendMessage", { chat_id: chat, text: pretty(text), parse_mode: "HTML", disable_web_page_preview: true,
+  ...(buttons && buttons.length ? { reply_markup: { inline_keyboard: buttons } } : {}) })
+  .then((r) => (r && r.ok ? r : send(env, chat, text, buttons && buttons.length ? { inline_keyboard: buttons } : null)));
 const appButton = (lang) => ({ inline_keyboard: [[{ text: pick(OPEN, lang), web_app: { url: APP + "?lang=" + lang } }]] });
 
 async function getUser(env, chat, from) {
@@ -117,9 +142,13 @@ async function getUser(env, chat, from) {
 async function ask(env, chat, user, text) {
   const hist = (await env.BOT.get("h" + chat, "json")) || [];
   const messages = [{ role: "system", content: systemPrompt(user.lang) }, ...hist, { role: "user", content: text }];
+  let buttons = null;
   try {
     const fares = await liveFares(env, hist, text);
-    if (fares) messages.splice(messages.length - 1, 0, { role: "system", content: fares });
+    if (fares && fares.text) {
+      messages.splice(messages.length - 1, 0, { role: "system", content: fares.text });
+      buttons = fares.buttons;
+    }
   } catch (e) { console.log("fares", String(e)); }
   let answer = "";
   for (const model of ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.1-8b-instruct-fast"]) {
@@ -133,7 +162,7 @@ async function ask(env, chat, user, text) {
   answer = answer.replace(/\*\*|__|^#+\s*/gm, "");
   const next = [...hist, { role: "user", content: text }, { role: "assistant", content: answer }].slice(-20);
   await env.BOT.put("h" + chat, JSON.stringify(next), { expirationTtl: 60 * 60 * 24 * 30 });
-  return send(env, chat, answer);
+  return sendPretty(env, chat, answer, buttons);
 }
 
 // ---------- Live flight prices (Travelpayouts Data API) ----------
@@ -188,15 +217,20 @@ async function liveFares(env, hist, text, log = () => {}) {
     if (rows.length) { used = { ow, a }; break; }
   }
   const kiwi = tpKiwi(o.code, d.code);
-  if (!rows.length) return `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly and give these search links to compare: Aviasales https://aviasales.tpx.lu/sjlt4H8o and Kiwi.com ${kiwi}`;
+  const search = tpUrl(`https://www.aviasales.com/search/${o.code}${d.code}1`);
+  if (!rows.length) return { text: `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly in one sentence and say the search buttons below show today's prices. Do not paste any flight links.`,
+    buttons: [[{ text: "🔎 Aviasales", url: search }, { text: "🔎 Kiwi.com", url: kiwi }]] };
   const note = used.a === dep ? "" : (dep ? " (no fares cached for the exact dates the user asked; these are the closest cheapest dates found — say so)" : "");
+  const buttons = [];
   const lines = rows.map((x) => {
     const a = (x.departure_at || "").slice(0, 10), b = (x.return_at || "").slice(0, 10);
     const link = tpUrl("https://www.aviasales.com" + (x.link || `/search/${o.code}${a.slice(8, 10)}${a.slice(5, 7)}${d.code}${b.slice(8, 10)}${b.slice(5, 7)}1`));
     const way = used.ow === "true" ? "one-way" : "return, back " + b;
-    return `- ${a}, ${way}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} per person. Book: ${link}`;
+    buttons.push([{ text: `✈️ ${a.slice(8, 10)}.${a.slice(5, 7)}${b && used.ow !== "true" ? "–" + b.slice(8, 10) + "." + b.slice(5, 7) : ""} · €${x.price} · ${x.transfers ? x.transfers + "×🔄" : "direct"}`, url: link }]);
+    return `- ${a}, ${way}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} per person`;
   });
-  return `LIVE FARES (real prices from our partner search, per person, may change)${note}. Show the best 2–3 of them with the exact price, dates and their booking link, and add one line "Compare on Kiwi.com: ${kiwi}" (Kiwi combines low-cost airlines). These links replace the generic flight link:\n${o.name} → ${d.name}\n` + lines.join("\n");
+  buttons.push([{ text: "🔎 Kiwi.com", url: kiwi }, { text: "🔎 Aviasales", url: search }]);
+  return { buttons, text: `LIVE FARES (real prices from our partner search, per person, may change)${note}. Briefly list the best 2–3 with price and dates, and say that booking buttons and a Kiwi.com comparison are attached below. Do NOT paste any flight links yourself:\n${o.name} → ${d.name}\n` + lines.join("\n") };
 }
 
 async function transcribe(env, fileId) {
@@ -297,6 +331,7 @@ export default {
       const q = (url.searchParams.get("q") || "").slice(0, 200);
       const trace = [];
       const out = await liveFares(env, [], q, (...a) => trace.push(a)).catch((e) => "ERR " + e);
+      if (out && out.buttons) out.buttons = out.buttons.map((r) => r.map((b) => b.text));
       return Response.json({ trace, out });
     }
     if (url.pathname === "/tg" && req.method === "POST") {
