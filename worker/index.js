@@ -82,7 +82,49 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LI
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
 COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line after a short label written in the reply language (the link itself is shown to the user as the partner name, so write e.g. "Rent a car:" then the URL). Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
-function systemPrompt(lang) {
+// More partners (Travelpayouts). Links are created once through the Links API with TP_TOKEN and cached in KV.
+const PARTNERS = [
+  ["Car rental worldwide, compare prices", "Economybookings", "https://www.economybookings.com/"],
+  ["Car rental worldwide, compare prices", "QEEQ", "https://www.qeeq.com/"],
+  ["Car rental in Europe and the UK", "AutoEurope", "https://www.autoeurope.eu/"],
+  ["Scooters and motorbikes (Asia, islands, beach towns)", "BikesBooking", "https://bikesbooking.com/"],
+  ["Airport and city transfers worldwide", "GetTransfer", "https://gettransfer.com/en"],
+  ["Meet-and-greet airport pickups", "Welcome Pickups", "https://www.welcomepickups.com/"],
+  ["Transfers", "Intui", "https://intui.travel/"],
+  ["Tours and attractions, best in Asia", "Klook", "https://www.klook.com/"],
+  ["Tours and attractions, best in Asia", "KKday", "https://www.kkday.com/"],
+  ["City passes: many attractions in one ticket", "Go City", "https://gocity.com/"],
+  ["eSIM", "Yesim", "https://yesim.app/"],
+  ["eSIM", "Saily", "https://saily.com/"],
+  ["eSIM", "GigSky", "https://www.gigsky.com/"],
+  ["Physical travel SIM card", "Drimsim", "https://drimsim.com/"],
+  ["Luggage storage in cities", "Radical Storage", "https://radicalstorage.com/"],
+  ["Flight delay compensation, alternative", "Compensair", "https://www.compensair.com/"],
+];
+
+async function partnerLinks(env) {
+  const map = (await env.BOT.get("plinks", "json").catch(() => null)) || {};
+  if (PARTNERS.some((p) => !map[p[2]]) && env.TP_TOKEN && !(await env.BOT.get("plinks_try"))) {
+    await env.BOT.put("plinks_try", "1", { expirationTtl: 3600 });
+    for (const trs of [588570, 589578]) {
+      const left = PARTNERS.filter((p) => !map[p[2]]);
+      for (let i = 0; i < left.length; i += 10) {
+        const part = left.slice(i, i + 10);
+        const r = await fetch("https://api.travelpayouts.com/links/v1/create", { method: "POST",
+          headers: { "X-Access-Token": env.TP_TOKEN, "Content-Type": "application/json" },
+          body: JSON.stringify({ trs, marker: 793212, shorten: true, links: part.map((p) => ({ url: p[2], sub_id: "bot" })) }) });
+        const j = await r.json().catch(() => ({}));
+        ((j.result || {}).links || []).forEach((l, k) => { if (l.code === "success" && l.partner_url && part[k]) map[part[k][2]] = l.partner_url; });
+      }
+    }
+    await env.BOT.put("plinks", JSON.stringify(map));
+  }
+  const lines = PARTNERS.filter((p) => map[p[2]]).map((p) => `- ${p[0]}: ${p[1]} ${map[p[2]]}`);
+  if (!lines.length) return "";
+  return "MORE PARTNERS (same rules; pick what fits the user's destination: in South-East and East Asia prefer Klook or KKday for tours and BikesBooking for scooters; in Europe AutoEurope is a good extra for cars; to compare car rental offer two of Localrent, GetRentacar, Economybookings, QEEQ; for transfers Kiwitaxi, GetTransfer, Welcome Pickups or Intui; for eSIM Airalo, Yesim, Saily or GigSky):\n" + lines.join("\n");
+}
+
+function systemPrompt(lang, extra) {
   return `You are Tripwise, a friendly travel assistant in Telegram that helps people anywhere in the world find good-value hotels, tours, car rentals, transfers, flights and travel extras for trips to any country. The user has already seen your greeting.
 
 LANGUAGE (very important): Reply in the language of the user's own words in their latest message. Ignore place names, dates and brand names when deciding the language. If the latest message is short, mixed or only data (dates, cities, numbers), keep the language you have been using in this conversation; if there is no earlier conversation, use the user's chosen language, which has the code: ${lang}. Never switch to a language the user has not written in.
@@ -92,6 +134,7 @@ COMMANDS: /hotels, /tours, /car, /transfer, /esim mean the user wants help with 
 FLOW: 1) Find out destination, dates, number of travellers and budget or wishes — ask at most 3 short questions at once, skip what the user already told you. 2) When you have enough, give 3–5 concrete, practical suggestions: which area to stay in and why, what type of accommodation or tour fits, money-saving tips, when prices are lower. 3) When the user is ready to book or asks where to book, give the matching booking link from the list below. 4) Offer related help (a car, a transfer, a tour, an eSIM) in one short line.
 
 ${LINKS}
+${extra || ""}
 
 RULES: Never mention the current date or time unless the user asks. Never invent prices, hotel names, addresses or availability. The only prices you may quote are the ones given in a LIVE FARES message; otherwise give general guidance and tell the user to check current prices. Plain text only, no Markdown symbols like ** or #. Keep answers under 150 words. Be warm and concise, and write naturally and correctly in the reply language.`;
 }
@@ -109,7 +152,9 @@ const send = (env, chat, text, markup) => tg(env, "sendMessage", { chat_id: chat
 // Turn long affiliate URLs into short clickable names ("Aviasales ↗") and send as HTML.
 const BRANDS = [["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
   ["tiqets", "Tiqets"], ["wegotrip", "WeGoTrip"], ["airalo", "Airalo"], ["airhelp", "AirHelp"], ["klook", "Klook"], ["kkday", "KKday"],
-  ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"]];
+  ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"],
+  ["gettransfer", "GetTransfer"], ["welcomepickups", "Welcome Pickups"], ["intui", "Intui"], ["gigsky", "GigSky"], ["saily", "Saily"], ["drimsim", "Drimsim"],
+  ["gocity", "Go City"], ["bikesbooking", "BikesBooking"], ["autoeurope", "AutoEurope"], ["radicalstorage", "Radical Storage"], ["compensair", "Compensair"]];
 const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function brand(url) {
   let u = url;
@@ -141,7 +186,8 @@ async function getUser(env, chat, from) {
 
 async function ask(env, chat, user, text) {
   const hist = (await env.BOT.get("h" + chat, "json")) || [];
-  const messages = [{ role: "system", content: systemPrompt(user.lang) }, ...hist, { role: "user", content: text }];
+  const extra = await partnerLinks(env).catch((e) => { console.log("partners", String(e)); return ""; });
+  const messages = [{ role: "system", content: systemPrompt(user.lang, extra) }, ...hist, { role: "user", content: text }];
   let buttons = null;
   try {
     const fares = await liveFares(env, hist, text);
@@ -327,6 +373,7 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === "/store") return store(req, env, url);
+    if (url.pathname === "/debug-partners") return new Response(await partnerLinks(env).catch((e) => "ERR " + e));
     if (url.pathname === "/debug-fares") { // diagnostics only: shows how a message is turned into a fare search (no secrets)
       const q = (url.searchParams.get("q") || "").slice(0, 200);
       const trace = [];
