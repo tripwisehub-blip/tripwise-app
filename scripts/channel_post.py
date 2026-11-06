@@ -68,7 +68,7 @@ def flag(code):
 
 def link(t):
     path = t.get("link") or "/search/%s%s%s%s%s%s1" % (origin, t["dep"][8:10], t["dep"][5:7], t["d"], t["ret"][8:10], t["ret"][5:7])
-    return "https://www.aviasales.com" + path + ("&" if "?" in path else "?") + "marker=" + MARKER + ".channel"
+    return "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=" + MARKER + ".channel&u=" + urllib.parse.quote("https://www.aviasales.com" + path, safe="")
 
 
 def span(a, b):
