@@ -163,3 +163,37 @@ for i in range(0, len(failed), 10):
     time.sleep(0.8)
 json.dump(plinks, open(OUT2, "w"), ensure_ascii=False, indent=0, sort_keys=True)
 print("partner pages saved:", sum(len(v) for v in plinks.values()))
+
+
+# ---------- Kiwi.com deep link for every flight route page (data/kiwi_routes.json, Website project) ----------
+KOUT = "data/kiwi_routes.json"
+try:
+    kiwi = json.load(open(KOUT))
+except Exception:
+    kiwi = {}
+try:
+    routes = json.load(open("blog/routes.json"))
+except Exception:
+    routes = {}
+ktodo = [k for k in sorted(routes) if k not in kiwi][:400]
+print("kiwi routes to create:", len(ktodo))
+for i in range(0, len(ktodo), 10):
+    batch = ktodo[i:i + 10]
+    body = {"trs": TRS2, "marker": MARKER, "shorten": True,
+            "links": [{"url": "https://www.kiwi.com/deep?from=%s&to=%s&currency=EUR" % tuple(k.split("-")), "sub_id": "kiwi_route"} for k in batch]}
+    req = urllib.request.Request("https://api.travelpayouts.com/links/v1/create", data=json.dumps(body).encode(),
+                                 headers={"X-Access-Token": TOKEN, "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            res = json.load(r)
+    except Exception as e:
+        print("kiwi request failed:", e)
+        break
+    for k, x in zip(batch, (res.get("result") or {}).get("links") or []):
+        if x.get("code") == "success" and x.get("partner_url"):
+            kiwi[k] = x["partner_url"]
+        else:
+            print("kiwi failed:", k, x.get("code"), x.get("message", ""))
+    time.sleep(0.8)
+json.dump(dict(sorted(kiwi.items())), open(KOUT, "w"), indent=0)
+print("kiwi routes saved:", len(kiwi))
