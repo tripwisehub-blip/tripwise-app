@@ -80,7 +80,7 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs, never invent or change 
 - Compensation for a delayed or cancelled flight: https://airhelp.tpx.lu/65MarJSz
 - Hotels: no booking link yet — give advice on areas and what to look for, and suggest comparing prices on the big booking sites.
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
-Give at most 2 links per message, each on its own line with a short label written in the reply language. When you share a link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same."`;
+Give at most 2 links per message, each on its own line with a short label written in the reply language. Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
 function systemPrompt(lang) {
   return `You are Tripwise, a friendly travel assistant in Telegram that helps people anywhere in the world find good-value hotels, tours, car rentals, transfers, flights and travel extras for trips to any country. The user has already seen your greeting.
