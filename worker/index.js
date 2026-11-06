@@ -152,8 +152,8 @@ async function iata(term) {
 async function liveFares(env, hist, text, log = () => {}) {
   if (!env.TP_TOKEN) { log("no TP_TOKEN"); return ""; }
   const recent = hist.slice(-4).map((m) => m.role + ": " + m.content).join("\n") + "\nuser: " + text;
-  const ex = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", { max_tokens: 120, messages: [
-    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true or false (true if the user wants only one direction)}. If the user does not talk about a trip, answer {}.' },
+  const ex = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { max_tokens: 150, messages: [
+    { role: "system", content: 'Extract the flight trip the user is planning from the conversation (any language; convert city names to their English nominative form, e.g. "из Вильнюса" -> "Vilnius"). Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true or false (true if the user wants only one direction)}. If the user does not talk about a trip, answer {}.' },
     { role: "user", content: recent }] });
   const raw = ex && ex.response;
   let q = raw && typeof raw === "object" ? raw : null;
