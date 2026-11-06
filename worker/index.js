@@ -149,17 +149,22 @@ async function iata(term) {
   return p ? { code: p.city_code || p.code, name: p.city_name || p.name } : null;
 }
 
-async function liveFares(env, hist, text) {
-  if (!env.TP_TOKEN) return "";
+async function liveFares(env, hist, text, log = () => {}) {
+  if (!env.TP_TOKEN) { log("no TP_TOKEN"); return ""; }
   const recent = hist.slice(-4).map((m) => m.role + ": " + m.content).join("\n") + "\nuser: " + text;
   const ex = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", { max_tokens: 120, messages: [
-    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true if the user wants only one direction}. If the user does not talk about a trip, answer {}.' },
+    { role: "system", content: 'Extract the flight trip the user is planning from the conversation. Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true or false (true if the user wants only one direction)}. If the user does not talk about a trip, answer {}.' },
     { role: "user", content: recent }] });
-  const m = String((ex && ex.response) || "").match(/\{[\s\S]*\}/);
-  if (!m) return "";
-  let q; try { q = JSON.parse(m[0]); } catch { return ""; }
-  if (!q.from || !q.to) return "";
+  const raw = ex && ex.response;
+  let q = raw && typeof raw === "object" ? raw : null;
+  if (!q) {
+    const m = String(raw || "").match(/\{[\s\S]*\}/);
+    try { q = m ? JSON.parse(m[0].replace(/:\s*true if[^,}]*/g, ":true")) : null; } catch { q = null; }
+  }
+  log("extract", raw, q);
+  if (!q || !q.from || !q.to) return "";
   const [o, d] = await Promise.all([iata(q.from), iata(q.to)]);
+  log("iata", o, d);
   if (!o || !d || o.code === d.code) return "";
   const dep = q.depart || q.month || "";
   const ret = q.return || (q.month && !q.depart ? q.month : "");
@@ -177,7 +182,9 @@ async function liveFares(env, hist, text) {
     if (a) params.set("departure_at", a);
     if (b) params.set("return_at", b);
     const res = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + params);
-    rows = ((await res.json().catch(() => ({}))).data || []).filter((x) => x.price).slice(0, 3);
+    const js = await res.json().catch(() => ({}));
+    rows = (js.data || []).filter((x) => x.price).slice(0, 3);
+    log("prices", ow, a, b, res.status, rows.length, js.error || "");
     if (rows.length) { used = { ow, a }; break; }
   }
   const kiwi = tpKiwi(o.code, d.code);
@@ -286,6 +293,12 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === "/store") return store(req, env, url);
+    if (url.pathname === "/debug-fares") { // diagnostics only: shows how a message is turned into a fare search (no secrets)
+      const q = (url.searchParams.get("q") || "").slice(0, 200);
+      const trace = [];
+      const out = await liveFares(env, [], q, (...a) => trace.push(a)).catch((e) => "ERR " + e);
+      return Response.json({ trace, out });
+    }
     if (url.pathname === "/tg" && req.method === "POST") {
       const secret = (await sha(env.TG_BOT_TOKEN)).slice(0, 32);
       if (req.headers.get("X-Telegram-Bot-Api-Secret-Token") !== secret) return new Response("forbidden", { status: 403 });
