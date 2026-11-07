@@ -78,7 +78,7 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LI
 - eSIM / mobile internet abroad: https://airalo.tpx.lu/PfdD9FnS
 - Flights: https://aviasales.tpx.lu/sjlt4H8o
 - Compensation for a delayed or cancelled flight: https://airhelp.tpx.lu/65MarJSz
-- Hotels: no booking link yet — give advice on areas and what to look for, and suggest comparing prices on the big booking sites.
+- Hotels anywhere in the world (compares Booking.com, Agoda, Expedia, Hotels.com, Vrbo and more): https://www.stay22.com/allez/roam?aid=tripwise&campaign=bot&address=CITY — replace CITY with the destination city name in English (spaces as %20). Add &checkin=YYYY-MM-DD&checkout=YYYY-MM-DD when the user gave dates. Also advise which areas to stay in.
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
 COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line after a short label written in the reply language (the link itself is shown to the user as the partner name, so write e.g. "Rent a car:" then the URL). Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
@@ -150,7 +150,7 @@ async function tg(env, method, body) {
 const send = (env, chat, text, markup) => tg(env, "sendMessage", { chat_id: chat, text, disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
 
 // Turn long affiliate URLs into short clickable names ("Aviasales ↗") and send as HTML.
-const BRANDS = [["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
+const BRANDS = [["stay22", "Hotels"], ["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
   ["tiqets", "Tiqets"], ["wegotrip", "WeGoTrip"], ["airalo", "Airalo"], ["airhelp", "AirHelp"], ["klook", "Klook"], ["kkday", "KKday"],
   ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"],
   ["gettransfer", "GetTransfer"], ["welcomepickups", "Welcome Pickups"], ["intui", "Intui"], ["gigsky", "GigSky"], ["saily", "Saily"], ["drimsim", "Drimsim"],
@@ -212,6 +212,7 @@ async function ask(env, chat, user, text) {
 }
 
 // ---------- Live flight prices (Travelpayouts Data API) ----------
+const hotelLink = (city, ci, co) => "https://www.stay22.com/allez/roam?aid=tripwise&campaign=bot&address=" + encodeURIComponent(city) + (ci && co ? "&checkin=" + ci + "&checkout=" + co : "");
 const tpKiwi = () => "https://kiwi.tpx.lu/mSYPrCCe"; // Kiwi.com affiliate link (Website project)
 const tpUrl = (u) => "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=793212.bot&u=" + encodeURIComponent(u);
 
@@ -276,6 +277,10 @@ async function liveFares(env, hist, text, log = () => {}) {
     return `- ${a}, ${way}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} per person`;
   });
   buttons.push([{ text: "🔎 Kiwi.com", url: kiwi }, { text: "🔎 Aviasales", url: search }]);
+  const r0 = rows[0], ci = (r0.departure_at || "").slice(0, 10);
+  let co = (r0.return_at || "").slice(0, 10);
+  if (!co && ci) { const t = new Date(ci + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + 3); co = t.toISOString().slice(0, 10); }
+  buttons.push([{ text: `🏨 ${d.name}: hotels`, url: hotelLink(d.name, ci, co) }]);
   return { buttons, text: `LIVE FARES (real prices from our partner search, per person, may change)${note}. Briefly list the best 2–3 with price and dates, and say that booking buttons and a Kiwi.com comparison are attached below. Do NOT paste any flight links yourself:\n${o.name} → ${d.name}\n` + lines.join("\n") };
 }
 
