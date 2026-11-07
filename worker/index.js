@@ -67,6 +67,52 @@ const STOPPED = {
   es: "Listo: todas tus alertas de precio se eliminarán en unas horas. Puedes crear nuevas en la app Tripwise con el botón de la campana.",
   it: "Fatto: tutti gli avvisi di prezzo verranno rimossi entro poche ore. Puoi crearne di nuovi nell'app Tripwise con il pulsante della campanella.",
 };
+const PKG = {
+  en: ["📖 How to use", "5️⃣ Whole trip in one go 🧳 — write everything in one message, for example: \"London to Barcelona 10–14 December, 2 adults, hotel, car and airport transfer\". I'll find the cheapest flights and build a package: buttons for hotels in that city on your dates, car rental, airport transfer, tours and eSIM. Or just tap /trip."],
+  ru: ["📖 Инструкция", "5️⃣ Поездка «под ключ» 🧳 — напишите всё одним сообщением, например: «Из Таллина в Барселону 10–14 декабря, двое взрослых, отель, машина и трансфер». Я найду самые дешёвые билеты и соберу пакет: кнопки на отели в этом городе на ваши даты, аренду авто, трансфер из аэропорта, экскурсии и eSIM. Или нажмите /trip."],
+  uk: ["📖 Інструкція", "5️⃣ Поїздка «під ключ» 🧳 — напишіть усе одним повідомленням, наприклад: «З Варшави до Барселони 10–14 грудня, двоє дорослих, готель, авто й трансфер». Я знайду найдешевші квитки й зберу пакет: кнопки на готелі в цьому місті на ваші дати, оренду авто, трансфер з аеропорту, екскурсії та eSIM. Або натисніть /trip."],
+  et: ["📖 Juhend", "5️⃣ Terve reis korraga 🧳 — kirjuta kõik ühte sõnumisse, näiteks: „Tallinnast Barcelonasse 10.–14. detsember, 2 täiskasvanut, hotell, auto ja lennujaamatransfeer“. Leian odavaimad lennud ja koostan paketi: nupud hotellidele selles linnas sinu kuupäevadel, autorendile, transfeerile, ekskursioonidele ja eSIM-ile. Või vajuta /trip."],
+  fi: ["📖 Ohjeet", "5️⃣ Koko matka kerralla 🧳 — kirjoita kaikki yhteen viestiin, esimerkiksi: ”Helsingistä Barcelonaan 10.–14. joulukuuta, 2 aikuista, hotelli, auto ja lentokenttäkuljetus”. Etsin halvimmat lennot ja kokoan paketin: painikkeet saman kaupungin hotelleihin päivillesi, autonvuokraan, kuljetukseen, retkiin ja eSIMiin. Tai napauta /trip."],
+  lv: ["📖 Instrukcija", "5️⃣ Viss ceļojums uzreiz 🧳 — uzrakstiet visu vienā ziņā, piemēram: “No Rīgas uz Barselonu 10.–14. decembrī, 2 pieaugušie, viesnīca, auto un transfērs”. Atradīšu lētākos lidojumus un salikšu paketi: pogas uz viesnīcām tajā pilsētā jūsu datumos, auto nomu, transfēru no lidostas, ekskursijām un eSIM. Vai nospiediet /trip."],
+  lt: ["📖 Instrukcija", "5️⃣ Visa kelionė iš karto 🧳 — parašykite viską viena žinute, pavyzdžiui: „Iš Vilniaus į Barseloną gruodžio 10–14 d., 2 suaugę, viešbutis, automobilis ir pervežimas“. Rasiu pigiausius skrydžius ir sudėsiu paketą: mygtukai viešbučiams tame mieste jūsų datomis, automobilių nuomai, pervežimui iš oro uosto, ekskursijoms ir eSIM. Arba paspauskite /trip."],
+  pl: ["📖 Instrukcja", "5️⃣ Cała podróż za jednym razem 🧳 — napisz wszystko w jednej wiadomości, np.: „Z Warszawy do Barcelony 10–14 grudnia, 2 dorosłych, hotel, auto i transfer z lotniska”. Znajdę najtańsze loty i złożę pakiet: przyciski do hoteli w tym mieście na Twoje daty, wynajmu auta, transferu, wycieczek i eSIM. Albo kliknij /trip."],
+  de: ["📖 Anleitung", "5️⃣ Die ganze Reise auf einmal 🧳 — schreib alles in eine Nachricht, z. B.: „Berlin nach Barcelona 10.–14. Dezember, 2 Erwachsene, Hotel, Mietwagen und Flughafentransfer“. Ich finde die günstigsten Flüge und stelle ein Paket zusammen: Buttons für Hotels in der Stadt zu deinen Daten, Mietwagen, Transfer, Touren und eSIM. Oder tippe /trip."],
+  fr: ["📖 Mode d'emploi", "5️⃣ Tout le voyage d'un coup 🧳 — écrivez tout en un message, par exemple : « Paris → Barcelone du 10 au 14 décembre, 2 adultes, hôtel, voiture et transfert aéroport ». Je trouve les vols les moins chers et je compose un pack : boutons pour les hôtels de la ville à vos dates, la location de voiture, le transfert, les visites et l'eSIM. Ou touchez /trip."],
+  es: ["📖 Instrucciones", "5️⃣ Todo el viaje de una vez 🧳 — escríbelo todo en un mensaje, por ejemplo: «Madrid a Roma del 10 al 14 de diciembre, 2 adultos, hotel, coche y traslado». Busco los vuelos más baratos y armo un paquete: botones para hoteles en esa ciudad en tus fechas, alquiler de coche, traslado desde el aeropuerto, tours y eSIM. O toca /trip."],
+  it: ["📖 Istruzioni", "5️⃣ Tutto il viaggio in un colpo 🧳 — scrivi tutto in un messaggio, per esempio: «Milano–Barcellona 10–14 dicembre, 2 adulti, hotel, auto e transfer». Trovo i voli più economici e preparo un pacchetto: pulsanti per gli hotel in città nelle tue date, noleggio auto, transfer dall'aeroporto, tour ed eSIM. Oppure tocca /trip."],
+  tr: ["📖 Kullanım kılavuzu", "5️⃣ Tüm seyahat tek seferde 🧳 — her şeyi tek mesajda yaz, örneğin: \"İstanbul'dan Roma'ya 10–14 Aralık, 2 yetişkin, otel, araç ve havalimanı transferi\". En ucuz uçuşları bulur ve bir paket hazırlarım: tarihlerine göre o şehirdeki oteller, araç kiralama, transfer, turlar ve eSIM için butonlar. Ya da /trip'e dokun."],
+  ar: ["📖 طريقة الاستخدام", "5️⃣ الرحلة كاملة دفعة واحدة 🧳 — اكتب كل شيء في رسالة واحدة، مثلًا: «من دبي إلى إسطنبول من 10 إلى 14 ديسمبر، شخصان بالغان، فندق وسيارة ونقل من المطار». سأجد أرخص الرحلات وأجهّز لك باقة: أزرار للفنادق في المدينة نفسها بتواريخك، وتأجير السيارات، والنقل من المطار، والجولات، وeSIM. أو اضغط /trip."],
+  hi: ["📖 कैसे इस्तेमाल करें", "5️⃣ पूरी यात्रा एक साथ 🧳 — सब कुछ एक संदेश में लिखें, जैसे: \"दिल्ली से दुबई 10–14 दिसंबर, 2 वयस्क, होटल, कार और एयरपोर्ट ट्रांसफ़र\"। मैं सबसे सस्ती फ़्लाइट ढूँढकर पैकेज बनाऊँगा: आपकी तारीखों पर उसी शहर के होटल, कार किराया, ट्रांसफ़र, टूर और eSIM के बटन। या /trip दबाएँ।"],
+  zh: ["📖 使用说明", "5️⃣ 一次搞定整趟旅行 🧳 —— 把需求写在一条消息里，例如：“12月10日至14日 上海到曼谷，2位成人，酒店、租车和接机”。我会找到最便宜的机票并组合成套餐：按你的日期提供该城市酒店、租车、接送机、游览和 eSIM 的按钮。或点击 /trip。"],
+  ja: ["📖 使い方", "5️⃣ 旅行をまるごと手配 🧳 —— 1つのメッセージにまとめて書いてください。例：「12月10〜14日 東京からソウル、大人2名、ホテル・レンタカー・空港送迎」。最安の航空券を探し、日程に合わせた現地のホテル、レンタカー、送迎、ツアー、eSIM のボタンをまとめたパッケージを作ります。/trip をタップしてもOKです。"],
+  ko: ["📖 사용 방법", "5️⃣ 여행 전체를 한 번에 🧳 — 한 메시지에 모두 적어 주세요. 예: \"12월 10~14일 서울에서 도쿄, 성인 2명, 호텔, 렌터카, 공항 픽업\". 가장 저렴한 항공권을 찾고 날짜에 맞춘 현지 호텔, 렌터카, 픽업, 투어, eSIM 버튼을 패키지로 묶어 드려요. /trip 을 눌러도 돼요."],
+  th: ["📖 วิธีใช้งาน", "5️⃣ จัดทริปทั้งหมดในครั้งเดียว 🧳 — พิมพ์ทุกอย่างในข้อความเดียว เช่น \"กรุงเทพฯ ไปโตเกียว 10–14 ธันวาคม ผู้ใหญ่ 2 คน โรงแรม รถเช่า และรถรับส่งสนามบิน\" ฉันจะหาตั๋วที่ถูกที่สุดและจัดแพ็กเกจให้: ปุ่มโรงแรมในเมืองนั้นตามวันที่ของคุณ รถเช่า รถรับส่ง ทัวร์ และ eSIM หรือแตะ /trip"],
+  vi: ["📖 Hướng dẫn", "5️⃣ Cả chuyến đi trong một lần 🧳 — viết tất cả trong một tin nhắn, ví dụ: \"Hà Nội đi Bangkok 10–14 tháng 12, 2 người lớn, khách sạn, thuê xe và đưa đón sân bay\". Mình sẽ tìm vé rẻ nhất và gói thành một gói: nút khách sạn ở thành phố đó theo ngày của bạn, thuê xe, đưa đón, tour và eSIM. Hoặc chạm /trip."],
+  id: ["📖 Cara pakai", "5️⃣ Seluruh perjalanan sekaligus 🧳 — tulis semuanya dalam satu pesan, misalnya: \"Jakarta ke Singapura 10–14 Desember, 2 dewasa, hotel, mobil dan antar-jemput bandara\". Aku cari tiket termurah dan menyusun paket: tombol hotel di kota itu sesuai tanggalmu, sewa mobil, antar-jemput, tur dan eSIM. Atau ketuk /trip."],
+};
+const helpText = (lang) => pick(HELLO, lang).replace("\n\n🎙", "\n\n" + pick(PKG, lang)[1] + "\n\n🎙");
+const COMMANDS = [["trip", "Plan a whole trip: flights, hotel, car, transfer"], ["help", "How to use Tripwise"], ["start", "Restart and choose language"], ["stopalerts", "Stop price alerts"]];
+const COMMANDS_RU = [["trip", "Собрать поездку: билеты, отель, авто, трансфер"], ["help", "Инструкция: как пользоваться"], ["start", "Начать заново и выбрать язык"], ["stopalerts", "Отключить уведомления о ценах"]];
+
+// Trip package: partner buttons for everything around the flight
+const PKG_LINKS = { car: ["Localrent", "https://localrent.tpx.lu/EfbBHrJ5"], car2: ["Economybookings", "https://economybookings.tpx.lu/kXoTnTBP"],
+  transfer: ["Kiwitaxi", "https://kiwitaxi.tpx.lu/Z8An788O"], transfer2: ["GetTransfer", "https://gettransfer.tpx.lu/6FptLkP3"],
+  tours: ["Tiqets", "https://tiqets.tpx.lu/AT5p2SuI"], tours2: ["Klook", "https://klook.tpx.lu/ROOwP7L7"], esim: ["Airalo", "https://airalo.tpx.lu/PfdD9FnS"] };
+function packageRows(q, city, ci, co) {
+  const want = new Set((Array.isArray(q.want) ? q.want : []).map((w) => String(w).toLowerCase()));
+  const all = q.package === true || q.package === "true";
+  if (!all && !want.size) return null;
+  const has = (k) => all || want.has(k);
+  const adults = Math.max(1, Math.min(9, parseInt(q.adults) || 1));
+  const rows = [];
+  if (has("hotel")) rows.push([{ text: `🏨 ${city}: hotels`, url: "https://www.stay22.com/allez/roam?aid=tripwise&campaign=trip&address=" + encodeURIComponent(city) + (ci && co ? "&checkin=" + ci + "&checkout=" + co : "") + "&adults=" + adults }]);
+  if (has("car")) rows.push([{ text: "🚗 " + PKG_LINKS.car[0], url: PKG_LINKS.car[1] }, { text: "🚗 " + PKG_LINKS.car2[0], url: PKG_LINKS.car2[1] }]);
+  if (has("transfer")) rows.push([{ text: "🚕 " + PKG_LINKS.transfer[0], url: PKG_LINKS.transfer[1] }, { text: "🚕 " + PKG_LINKS.transfer2[0], url: PKG_LINKS.transfer2[1] }]);
+  if (has("tours")) rows.push([{ text: "🎟 " + PKG_LINKS.tours[0], url: PKG_LINKS.tours[1] }, { text: "🎟 " + PKG_LINKS.tours2[0], url: PKG_LINKS.tours2[1] }]);
+  if (has("esim")) rows.push([{ text: "📶 eSIM " + PKG_LINKS.esim[0], url: PKG_LINKS.esim[1] }]);
+  return { rows, adults, note: `\nTRIP PACKAGE: the user wants a combined trip (${[...(all ? ["hotel", "car", "transfer", "tours", "esim"] : want)].join(", ")}) for ${adults} adult(s), dates ${ci || "?"} – ${co || "?"}. Write a short, well-structured package summary in the reply language: 1) flights with the cheapest price per person and the total for ${adults} adult(s); 2) one line each for the other parts saying the buttons below open offers for ${city} on these dates. Never invent hotel, car or tour prices. Do NOT paste links.` };
+}
+
 const SORRY = "Sorry, something went wrong on my side. Please try again in a moment.";
 const NOVOICE = "Sorry, I couldn't hear that. Please type your question in any language and I'll help right away!";
 
@@ -175,7 +221,7 @@ function pretty(text) {
 const sendPretty = (env, chat, text, buttons) => tg(env, "sendMessage", { chat_id: chat, text: pretty(text), parse_mode: "HTML", disable_web_page_preview: true,
   ...(buttons && buttons.length ? { reply_markup: { inline_keyboard: buttons } } : {}) })
   .then((r) => (r && r.ok ? r : send(env, chat, text, buttons && buttons.length ? { inline_keyboard: buttons } : null)));
-const appButton = (lang) => ({ inline_keyboard: [[{ text: pick(OPEN, lang), web_app: { url: APP + "?lang=" + lang } }]] });
+const appButton = (lang) => ({ inline_keyboard: [[{ text: pick(OPEN, lang), web_app: { url: APP + "?lang=" + lang } }], [{ text: pick(PKG, lang)[0], callback_data: "help" }]] });
 
 async function getUser(env, chat, from) {
   const u = await env.BOT.get("c" + chat, "json");
@@ -229,7 +275,7 @@ async function liveFares(env, hist, text, log = () => {}) {
   if (!env.TP_TOKEN) { log("no TP_TOKEN"); return ""; }
   const recent = hist.slice(-4).map((m) => m.role + ": " + m.content).join("\n") + "\nuser: " + text;
   const ex = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { max_tokens: 150, messages: [
-    { role: "system", content: 'Extract the flight trip the user is planning from the conversation (any language; convert city names to their English nominative form, e.g. "из Вильнюса" -> "Vilnius"). Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true or false (true if the user wants only one direction)}. If the user does not talk about a trip, answer {}.' },
+    { role: "system", content: 'Extract the flight trip the user is planning from the conversation (any language; convert city names to their English nominative form, e.g. "из Вильнюса" -> "Vilnius"). Today is ' + new Date().toISOString().slice(0, 10) + '. Answer ONLY with JSON: {"from":"departure city in English or empty","to":"destination city in English or empty","month":"YYYY-MM or empty","depart":"YYYY-MM-DD or empty","return":"YYYY-MM-DD or empty","oneway":true or false (true if the user wants only one direction),"adults":number of travellers or 1,"package":true if the user asks for a whole trip / package / everything,"want":list of extras the user asks for, from ["hotel","car","transfer","tours","esim"]}. If the user does not talk about a trip, answer {}.' },
     { role: "user", content: recent }] });
   const raw = ex && ex.response;
   let q = raw && typeof raw === "object" ? raw : null;
@@ -265,8 +311,11 @@ async function liveFares(env, hist, text, log = () => {}) {
   }
   const kiwi = tpKiwi(o.code, d.code);
   const search = tpUrl(`https://www.aviasales.com/search/${o.code}${d.code}1`);
-  if (!rows.length) return { text: `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly in one sentence and say the search buttons below show today's prices. Do not paste any flight links.`,
-    buttons: [[{ text: "🔎 Aviasales", url: search }, { text: "🔎 Kiwi.com", url: kiwi }]] };
+  if (!rows.length) {
+    const pk0 = packageRows(q, d.name, q.depart || "", q.return || "");
+    return { text: `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly in one sentence and say the search buttons below show today's prices. Do not paste any flight links.` + (pk0 ? pk0.note : ""),
+      buttons: [[{ text: "🔎 Aviasales", url: search }, { text: "🔎 Kiwi.com", url: kiwi }], ...(pk0 ? pk0.rows : [])] };
+  }
   const note = used.a === dep ? "" : (dep ? " (no fares cached for the exact dates the user asked; these are the closest cheapest dates found — say so)" : "");
   const buttons = [];
   const lines = rows.map((x) => {
@@ -280,8 +329,9 @@ async function liveFares(env, hist, text, log = () => {}) {
   const r0 = rows[0], ci = (r0.departure_at || "").slice(0, 10);
   let co = (r0.return_at || "").slice(0, 10);
   if (!co && ci) { const t = new Date(ci + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + 3); co = t.toISOString().slice(0, 10); }
-  buttons.push([{ text: `🏨 ${d.name}: hotels`, url: hotelLink(d.name, ci, co) }]);
-  return { buttons, text: `LIVE FARES (real prices from our partner search, per person, may change)${note}. Briefly list the best 2–3 with price and dates, and say that booking buttons and a Kiwi.com comparison are attached below. Do NOT paste any flight links yourself:\n${o.name} → ${d.name}\n` + lines.join("\n") };
+  const pk = packageRows(q, d.name, ci, co);
+  if (pk) buttons.push(...pk.rows); else buttons.push([{ text: `🏨 ${d.name}: hotels`, url: hotelLink(d.name, ci, co) }]);
+  return { buttons, text: (pk ? pk.note + "\n" : "") + `LIVE FARES (real prices from our partner search, per person, may change)${note}. Briefly list the best 2–3 with price and dates, and say that booking buttons and a Kiwi.com comparison are attached below. Do NOT paste any flight links yourself:\n${o.name} → ${d.name}\n` + lines.join("\n") };
 }
 
 async function transcribe(env, fileId) {
@@ -300,12 +350,19 @@ async function handle(env, upd) {
   if (cb) {
     tg(env, "answerCallbackQuery", { callback_query_id: cb.id });
     const chat = cb.message && cb.message.chat.id;
-    if (!chat || !(cb.data || "").startsWith("lang:")) return;
+    if (!chat) return;
+    if (cb.data === "help") {
+      const u = await getUser(env, chat, cb.from);
+      return send(env, chat, helpText(u.lang), { inline_keyboard: [[{ text: pick(OPEN, u.lang), web_app: { url: APP + "?lang=" + u.lang } }]] });
+    }
+    if (!(cb.data || "").startsWith("lang:")) return;
     const lang = HELLO[cb.data.slice(5)] ? cb.data.slice(5) : "en";
     await env.BOT.put("c" + chat, JSON.stringify({ lang, s: String(Date.now()) }));
     await env.BOT.delete("h" + chat);
     await send(env, chat, HELLO[lang], appButton(lang));
     await tg(env, "setChatMenuButton", { chat_id: chat, menu_button: { type: "web_app", text: "Open App", web_app: { url: APP + "?lang=" + lang } } });
+    await tg(env, "setMyCommands", { commands: COMMANDS.map(([command, description]) => ({ command, description })) });
+    await tg(env, "setMyCommands", { commands: COMMANDS_RU.map(([command, description]) => ({ command, description })), language_code: "ru" });
     return;
   }
   const m = upd.message;
@@ -314,6 +371,7 @@ async function handle(env, upd) {
   const text = (m.text || "").trim();
   const user = await getUser(env, chat, m.from);
 
+  if (text === "/start trip") return send(env, chat, helpText(user.lang), appButton(user.lang));
   if (text.startsWith("/start a_")) {
     const route = text.slice(9, 70);
     await env.BOT.put("a" + chat + "_" + route, "0");
@@ -329,6 +387,13 @@ async function handle(env, upd) {
     await env.BOT.put("c" + chat, JSON.stringify({ lang: user.lang, s: String(Date.now()) }));
     await env.BOT.delete("h" + chat);
     return send(env, chat, "🌍 Choose your language\nВыберите язык · اختر لغتك · 选择语言 · 言語を選択", { inline_keyboard: rows });
+  }
+  if (text.startsWith("/help")) return send(env, chat, helpText(user.lang), appButton(user.lang));
+  if (text.startsWith("/trip")) {
+    const rest = text.replace(/^\/trip(@\w+)?/, "").trim();
+    if (!rest) return send(env, chat, pick(PKG, user.lang)[1].replace(/^5️⃣\s*/, "").replace(/\s*\/trip\.?\s*$/, "").replace(/[^.!?。]*$/, ""));
+    tg(env, "sendChatAction", { chat_id: chat, action: "typing" });
+    return ask(env, chat, user, rest + " (whole trip package: flights, hotel, car, transfer, tours, eSIM)");
   }
   if (text.startsWith("/stopalerts")) {
     await env.BOT.put("x" + chat, "stop");
@@ -378,6 +443,15 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === "/store") return store(req, env, url);
+    if (url.pathname === "/help") {
+      const al = (req.headers.get("Accept-Language") || "en").slice(0, 2).toLowerCase();
+      const lang = HELLO[url.searchParams.get("lang")] ? url.searchParams.get("lang") : (HELLO[al] ? al : "en");
+      const esc2 = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      const body = esc2(helpText(lang)).replace(/@tripwise_deals/g, '<a href="https://t.me/tripwise_deals">@tripwise_deals</a>').replace(/\/trip/g, '<a href="https://t.me/tripwise_hub_bot?start=trip">/trip</a>').split("\n\n").map((p) => "<p>" + p.replace(/\n/g, "<br>") + "</p>").join("");
+      const langs = LANGS.map(([c, n]) => `<a href="?lang=${c}"${c === lang ? ' class="on"' : ""}>${n}</a>`).join(" ");
+      const html = `<!doctype html><html lang="${lang}"${lang === "ar" ? ' dir="rtl"' : ""}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripwise — ${esc2(pick(PKG, lang)[0].replace("📖 ", ""))}</title><style>body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#F4F7FB;color:#14213D}main{max-width:640px;margin:0 auto;padding:20px 16px 40px}h1{font-size:22px;margin:6px 0 14px}p{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.langs{font-size:13px;margin:0 0 14px;line-height:2}.langs a{color:#1E5EFF;text-decoration:none;margin-right:6px;white-space:nowrap}.langs a.on{font-weight:700;color:#14213D}.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.cta a{flex:1;min-width:150px;text-align:center;background:#1E5EFF;color:#fff;text-decoration:none;padding:12px;border-radius:12px;font-weight:600}.cta a.alt{background:#FF7A59}</style></head><body><main><h1>${esc2(pick(PKG, lang)[0])}</h1><div class="langs">${langs}</div>${body}<div class="cta"><a href="https://t.me/tripwise_hub_bot">🤖 @tripwise_hub_bot</a><a class="alt" href="${APP}?lang=${lang}">✈️ Tripwise app</a></div></main></body></html>`;
+      return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
+    }
     if (url.pathname === "/debug-partners") return new Response(await partnerLinks(env).catch((e) => "ERR " + e));
     if (url.pathname === "/debug-fares") { // diagnostics only: shows how a message is turned into a fare search (no secrets)
       const q = (url.searchParams.get("q") || "").slice(0, 200);
