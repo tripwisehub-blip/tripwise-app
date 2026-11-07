@@ -124,7 +124,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 <div id="app">
 <header>
 <div><div class="t">Tripwise</div><div class="s" id="subtitle"></div></div>
-<div style="display:flex;gap:6px;flex-shrink:0"><button class="pill" id="langbtn" data-act="langopen" aria-haspopup="listbox"><span id="langcode">EN</span><span class="caret" aria-hidden="true">▼</span></button><button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button></div>
+<div style="display:flex;gap:6px;flex-shrink:0"><a class="pill" id="helpbtn" href="https://tripwise-bot.tripwise-hub.workers.dev/help" target="_blank" rel="noopener" aria-label="How to use Tripwise" title="How to use" style="text-decoration:none;font-weight:800;min-width:34px;justify-content:center">?</a><button class="pill" id="langbtn" data-act="langopen" aria-haspopup="listbox"><span id="langcode">EN</span><span class="caret" aria-hidden="true">▼</span></button><button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button></div>
 </header>
 <main id="main"></main>
 <nav id="nav"></nav>
@@ -1066,6 +1066,7 @@ if (vars) Object.keys(vars).forEach(function (n) { s = s.split("{" + n + "}").jo
 return s;
 }
 buildDict(S.lang);
+(function () { var hb = document.getElementById("helpbtn"); if (hb) hb.href = "https://tripwise-bot.tripwise-hub.workers.dev/help?lang=" + S.lang; })();
 
 var dnCache = {};
 function dn(lang, type) {
@@ -1340,7 +1341,7 @@ opts[box._act].scrollIntoView({ block: "nearest" });
 function pick(name, v) {
 if (name === "country") { var p = v.split(":"); S.country = p[0]; S.city = p[1] || BY_ISO[p[0]].cities[0][1]; S.searched = false; }
 else if (name === "origin") { S.origin = v; save("origin", v); S.searched = false; S.wheel = null; }
-else if (name === "lang") { S.lang = v; save("lang3", v); buildDict(v); applyLinks(); loadToursLang(); closeSheet(); }
+else if (name === "lang") { S.lang = v; save("lang3", v); var hb = document.getElementById("helpbtn"); if (hb) hb.href = "https://tripwise-bot.tripwise-hub.workers.dev/help?lang=" + v; buildDict(v); applyLinks(); loadToursLang(); closeSheet(); }
 else if (name === "currency") { S.currency = v; save("currency", v); closeSheet(); }
 haptic();
 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
