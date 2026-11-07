@@ -1168,10 +1168,11 @@ return tp("https://www.aviasales.com/search/" + S.origin + ddmm(d[0]) + dest + d
 function curParam() { return CRYPTO[S.currency] ? "" : "&currency=" + S.currency.toLowerCase(); }
 var HOTEL_AID = ""; // Booking.com affiliate ID: fill in after the partner account is approved
 function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+// Hotels via Stay22 (aid tripwise): compares Booking.com, Agoda, Expedia, Hotels.com, Vrbo and sends to the best offer
 function hotelUrl(city, dep, ret) {
-return "https://www.booking.com/searchresults.html?ss=" + encodeURIComponent(city) + "&checkin=" + dep + "&checkout=" + ret +
-"&group_adults=" + S.adults + "&no_rooms=1" + (S.kids.length ? "&group_children=" + S.kids.length + S.kids.map(function (a) { return "&age=" + a; }).join("") : "") +
-"&lang=" + encodeURIComponent(S.lang) + (CRYPTO[S.currency] ? "" : "&selected_currency=" + S.currency) + (HOTEL_AID ? "&aid=" + HOTEL_AID : "");
+return "https://www.stay22.com/allez/roam?aid=tripwise&campaign=miniapp&address=" + encodeURIComponent(city) + "&checkin=" + dep + "&checkout=" + ret +
+"&adults=" + S.adults + (S.kids.length ? "&children=" + S.kids.length + "&childrenAges=" + S.kids.join(",") : "") +
+"&lang=" + encodeURIComponent(S.lang) + (CRYPTO[S.currency] ? "" : "&currency=" + S.currency);
 }
 // Price alert: opens the bot with /start a_ORIG_DEST_YYMMDD_YYMMDD_PAX (saved by the Make scenario)
 function alertLink(dest, dep, ret) {
@@ -1233,7 +1234,7 @@ return [from(0, n / 3), from(n / 3, 2 * n / 3), from(2 * n / 3, n)];
 function hotelBand(i) { var b = S.budget, lo = Math.round(b * i / 3), hi = Math.round(b * (i + 1) / 3); return [i ? lo : 0, hi]; }
 function cheapHotelUrl(city, dep, ret, band) {
 band = band || [0, S.budget];
-return hotelUrl(city, dep, ret) + "&order=price&nflt=" + encodeURIComponent("price=EUR-" + (band[0] || "min") + "-" + band[1] + "-1");
+return hotelUrl(city, dep, ret);
 }
 function cityName() {
 var c = BY_ISO[S.country].cities.filter(function (x) { return x[1] === S.city; })[0];
