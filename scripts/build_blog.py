@@ -168,7 +168,7 @@ def page(name, title, desc, body, extra_head="", lang="en"):
 <header class="top"><div class="wrap"><a class="logo" href="index.html">Trip<i>wise</i></a><nav><a href="index.html">Guides</a><a class="hide-s" href="https://t.me/tripwise_deals">Deals channel</a><a class="hide-s" href="about.html">About</a><a class="tg" href="{BOT}">Telegram bot</a></nav></div></header>
 <main>{body}</main>
 <footer><div class="wrap"><p>Independent travel guides by Tripwise, 2026.</p><a href="about.html">About</a><a href="disclosure.html">Affiliate disclosure</a><a href="privacy.html">Privacy</a><a href="mailto:tripwise.hub@gmail.com">Contact</a></div></footer>
-{PHOTO_JS}</body></html>"""
+{PHOTO_JS}<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{{"token": "590bb91f5e574f058a8d1ac62f0b92b4"}}'></script></body></html>"""
     path = os.path.join(OUT, name)
     try:
         if open(path, encoding="utf-8").read() == doc:
