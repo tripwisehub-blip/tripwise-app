@@ -108,7 +108,7 @@ function packageRows(q, city, ci, co) {
   if (has("hotel")) rows.push([{ text: `🏨 ${city}: hotels`, url: "https://www.stay22.com/allez/roam?aid=tripwise&campaign=trip&address=" + encodeURIComponent(city) + (ci && co ? "&checkin=" + ci + "&checkout=" + co : "") + "&adults=" + adults }]);
   if (has("car")) rows.push([{ text: "🚗 " + PKG_LINKS.car[0], url: PKG_LINKS.car[1] }, { text: "🚗 " + PKG_LINKS.car2[0], url: PKG_LINKS.car2[1] }]);
   if (has("transfer")) rows.push([{ text: "🚕 " + PKG_LINKS.transfer[0], url: PKG_LINKS.transfer[1] }, { text: "🚕 " + PKG_LINKS.transfer2[0], url: PKG_LINKS.transfer2[1] }]);
-  if (has("tours")) rows.push([{ text: `🎟 ${city}: GetYourGuide`, url: "https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=trip&q=" + encodeURIComponent(city) + (ci && co ? "&date_from=" + ci + "&date_to=" + co : "") }, { text: "🎟 " + PKG_LINKS.tours2[0], url: PKG_LINKS.tours2[1] }]);
+  if (has("tours")) rows.push([{ text: `🎟 ${city}: GetYourGuide`, url: "https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=trip&q=" + encodeURIComponent(city) + (ci && co ? "&date_from=" + ci + "&date_to=" + co : "") }, { text: "🎟 Viator", url: "https://www.viator.com/searchResults/all?pid=P00330541&mcid=42383&medium=link&campaign=trip&text=" + encodeURIComponent(city) }, { text: "🎟 " + PKG_LINKS.tours2[0], url: PKG_LINKS.tours2[1] }]);
   if (has("esim")) rows.push([{ text: "📶 eSIM " + PKG_LINKS.esim[0], url: PKG_LINKS.esim[1] }]);
   return { rows, adults, note: `\nTRIP PACKAGE: the user wants a combined trip (${[...(all ? ["hotel", "car", "transfer", "tours", "esim"] : want)].join(", ")}) for ${adults} adult(s), dates ${ci || "?"} – ${co || "?"}. Write a short, well-structured package summary in the reply language: 1) flights with the cheapest price per person and the total for ${adults} adult(s); 2) one line each for the other parts saying the buttons below open offers for ${city} on these dates. Never invent hotel, car or tour prices. Do NOT paste links.` };
 }
@@ -118,7 +118,7 @@ const NOVOICE = "Sorry, I couldn't hear that. Please type your question in any l
 
 const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LIVE FARES, never invent or change links):
 - Car rental worldwide (best choice, free cancellation, compares all rental companies): https://www.discovercars.com/?a_aid=tripwisehub (alternatives: Localrent https://localrent.tpx.lu/EfbBHrJ5, GetRentacar https://getrentacar.tpx.lu/iwSAxi5F)
-- Tours, day trips and activities worldwide (best choice): https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=bot&q=CITY — replace CITY with the destination city in English (spaces as %20).
+- Tours, day trips and activities worldwide (best choice): https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=bot&q=CITY — replace CITY with the destination city in English (spaces as %20). Second choice for tours: https://www.viator.com/searchResults/all?pid=P00330541&mcid=42383&medium=link&campaign=bot&text=CITY (Viator).
 - Tickets and museums: https://tiqets.tpx.lu/AT5p2SuI
 - Audio guides and self-guided tours: https://wegotrip.tpx.lu/PFwel7W8
 - Airport and city transfers: https://kiwitaxi.tpx.lu/Z8An788O
@@ -197,7 +197,7 @@ async function tg(env, method, body) {
 const send = (env, chat, text, markup) => tg(env, "sendMessage", { chat_id: chat, text, disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
 
 // Turn long affiliate URLs into short clickable names ("Aviasales ↗") and send as HTML.
-const BRANDS = [["getyourguide", "GetYourGuide"], ["discovercars", "DiscoverCars"], ["stay22", "Hotels"], ["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
+const BRANDS = [["getyourguide", "GetYourGuide"], ["viator", "Viator"], ["discovercars", "DiscoverCars"], ["stay22", "Hotels"], ["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
   ["tiqets", "Tiqets"], ["wegotrip", "WeGoTrip"], ["airalo", "Airalo"], ["airhelp", "AirHelp"], ["klook", "Klook"], ["kkday", "KKday"],
   ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"],
   ["gettransfer", "GetTransfer"], ["welcomepickups", "Welcome Pickups"], ["intui", "Intui"], ["gigsky", "GigSky"], ["saily", "Saily"], ["drimsim", "Drimsim"],
