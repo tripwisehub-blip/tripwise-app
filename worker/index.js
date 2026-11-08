@@ -440,9 +440,30 @@ async function store(req, env, url) {
   return Response.json({ ok: true });
 }
 
+// ---------- Short pretty links: tripwise-bot.tripwise-hub.workers.dev/<name>[?c=City] ----------
+const SITE = "https://tripwisehub-blip.github.io/tripwise-app/";
+function goLink(path, c) {
+  const q = encodeURIComponent(c || "");
+  const m = {
+    car: "https://www.discovercars.com/?a_aid=tripwisehub",
+    tours: c ? "https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=go&q=" + q : "https://www.getyourguide.com/?partner_id=MKPCOP9&cmp=go",
+    viator: c ? "https://www.viator.com/searchResults/all?pid=P00330541&mcid=42383&medium=link&campaign=go&text=" + q : "https://www.viator.com/?pid=P00330541&mcid=42383&medium=link&campaign=go",
+    hotels: "https://www.stay22.com/allez/roam?aid=tripwise&campaign=go" + (c ? "&address=" + q : ""),
+    esim: "https://airalo.tpx.lu/PfdD9FnS",
+    transfer: "https://kiwitaxi.tpx.lu/Z8An788O",
+    flights: SITE, app: SITE, blog: SITE + "blog/",
+    bot: "https://t.me/tripwise_hub_bot", deals: "https://t.me/tripwise_deals",
+  };
+  if (m[path]) return m[path];
+  if (path.startsWith("b/") && /^[a-z0-9-]+$/.test(path.slice(2))) return SITE + "blog/" + path.slice(2) + ".html";
+  return null;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    const go = goLink(url.pathname.replace(/^\/+|\/+$/g, "").toLowerCase(), url.searchParams.get("c"));
+    if (go) return Response.redirect(go, 302);
     if (url.pathname === "/store") return store(req, env, url);
     if (url.pathname === "/help") {
       const al = (req.headers.get("Accept-Language") || "en").slice(0, 2).toLowerCase();
