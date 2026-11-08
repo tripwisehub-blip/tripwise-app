@@ -1586,7 +1586,7 @@ h += '<section class="card"><div class="row"><div class="h">' + esc(t("badges"))
 return h;
 }
 function render() {
-document.getElementById("subtitle").textContent = t("sub_" + S.tab);
+document.getElementById("subtitle").textContent = S.tab === "map" ? t("hotelsIn", { c: cityName() }) : t("sub_" + S.tab);
 document.getElementById("curcode").textContent = curSymbol(S.currency) === S.currency ? S.currency : curSymbol(S.currency) + " " + S.currency;
 document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " + S.currency);
 document.getElementById("langcode").textContent = "🌐 " + S.lang.toUpperCase();
