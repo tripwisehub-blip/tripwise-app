@@ -8,3 +8,7 @@ Tripwise is a free travel assistant that helps you find good-value trips from an
 - **Travel guides:** [Tripwise Guides](https://tripwisehub-blip.github.io/tripwise-app/blog/) — practical city guides by country: Paris, London, Rome, Barcelona, Lisbon, Vienna, Budapest, Prague, Kraków, Istanbul, Antalya, Dubai, Hurghada, Bangkok, Bali, Tenerife, Madeira, the Baltics and more.
 
 Some links are affiliate links; prices for travellers stay the same.
+
+## Short links
+`https://tripwise-bot.tripwise-hub.workers.dev/<name>` redirects to partner pages (see `goLink` in `worker/index.js`):
+`/car`, `/hotels?c=City`, `/tours?c=City`, `/viator?c=City`, `/esim`, `/transfer`, `/bot`, `/deals`, `/app`, `/blog`, `/b/<article-slug>`.
