@@ -316,7 +316,7 @@ async function liveFares(env, hist, text, log = () => {}) {
     return { text: `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly in one sentence and say the search buttons below show today's prices. Do not paste any flight links.` + (pk0 ? pk0.note : ""),
       buttons: [[{ text: "🔎 Aviasales", url: search }, { text: "🔎 Kiwi.com", url: kiwi }], ...(pk0 ? pk0.rows : [])] };
   }
-  const note = used.a === dep ? "" : (dep ? " (no fares cached for the exact dates the user asked; these are the closest cheapest dates found — say so)" : "");
+  const note = used.a === dep ? "" : (dep ? ` (IMPORTANT: there are no fares for the exact dates the user asked (${q.depart || q.month}${q.return ? " – " + q.return : ""}). Start the reply by saying this clearly, then give the closest cheapest dates EXACTLY as written in the lines below — never present them as the requested dates)` : "");
   const buttons = [];
   const lines = rows.map((x) => {
     const a = (x.departure_at || "").slice(0, 10), b = (x.return_at || "").slice(0, 10);
