@@ -93,4 +93,4 @@ document.querySelectorAll('[data-photo]').forEach(function(el){var big=el.classL
 var q=document.getElementById('q');if(q)q.addEventListener('input',function(){var v=q.value.toLowerCase().trim();document.querySelectorAll('.tile,.row').forEach(function(t){t.style.display=!v||t.textContent.toLowerCase().indexOf(v)>=0?'':'none';});document.querySelectorAll('section.cs').forEach(function(sc){var any=[].some.call(sc.querySelectorAll('.tile'),function(t){return t.style.display!=='none'});sc.style.display=any?'':'none';});});
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var A='ABCDEFGHIJKLMNOPRSTUVWZ';document.querySelectorAll('.rows:not(.deals) .row .c').forEach(function(el,i){var f=el.textContent,n=0,id=setInterval(function(){n++;var k=Math.floor(n/2)-i;el.textContent=f.split('').map(function(ch,j){return j<k||ch===' '?ch:A[Math.floor(Math.random()*A.length)]}).join('');if(k>=f.length){clearInterval(id);el.textContent=f;}},45);});}
 })();
-</script></body></html>
+</script><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "590bb91f5e574f058a8d1ac62f0b92b4"}'></script></body></html>
