@@ -1559,28 +1559,19 @@ h += '<section class="card"><div class="h">' + esc(t("delayed")) + '</div><div c
 return h;
 }
 function screenMap() {
-var pins = PINS.map(function (p, i) { p.i = i; return p; }).filter(function (p) { return S.filter === "all" || p.cat === S.filter; });
-if (!pins.some(function (p) { return p.i === S.deal; }) && pins[0]) S.deal = pins[0].i;
-var h = '<div style="border-radius:16px;background:var(--ink);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px">' +
-'<span style="color:var(--sun)">' + svg(ICON.bell) + '</span><div style="font-size:13px;font-weight:700">' + esc(t("mapBanner")) + "</div></div>";
-h += '<div style="display:flex;gap:6px;overflow-x:auto">' + ["all","food","spa","beauty","fun"].map(function (f) {
-return '<button class="chip' + (S.filter === f ? " on" : "") + '" style="flex:none;padding:0 14px" data-act="filter" data-v="' + f + '">' + esc(t(f)) + "</button>";
-}).join("") + "</div>";
-h += '<div class="map"><div class="road" style="left:0;top:0;width:140px;height:110px;background:var(--sky)"></div>' +
-'<div class="road" style="left:0;right:0;top:122px;height:16px"></div><div class="road" style="top:0;bottom:0;left:180px;width:14px"></div>' +
-'<div class="road" style="left:0;right:0;top:220px;height:10px"></div>' +
-'<div style="position:absolute;left:162px;top:112px;height:34px;padding:0 10px;border-radius:17px;background:var(--ink);color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;border:3px solid #fff">' + esc(t("yourHotel")) + "</div>" +
-pins.map(function (p) { return '<button class="pin' + (p.i === S.deal ? " on" : "") + '" style="left:' + p.x + "px;top:" + p.y + 'px" data-act="deal" data-v="' + p.i + '" aria-label="' + esc(t(p.tk)) + '">' + p.d + "</button>"; }).join("") +
-'<span class="preview">' + esc(t("preview")) + "</span></div>";
-var d = PINS[S.deal];
-if (d) {
-h += '<div class="card" style="gap:12px"><div style="display:flex;align-items:center;gap:12px"><div style="flex:none;width:56px;height:56px;border-radius:14px;background:#FFE4DA;color:#B23A17;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center">' + d.d + "</div>" +
-'<div><div style="font-size:16px;font-weight:900">' + esc(t(d.tk)) + '</div><div class="hint">' + esc(t(d.mk)) + " · " + d.km + " km</div></div></div>" +
-'<button class="btn ghost" data-act="soon">' + esc(t("vouchersSoon")) + "</button></div>";
-}
-h += '<section class="card"><div class="h">' + esc(t("thingsNow")) + '</div><div class="grid2">' +
-'<button class="btn" data-act="open" data-v="' + LINKS.tours + '">' + esc(t("ticketsTours")) + '</button><button class="btn ghost" data-act="open" data-v="' + LINKS.audio + '">' + esc(t("audioGuides")) + "</button></div></section>";
-h += '<div class="fine">' + esc(t("mapFine")) + "</div>";
+// Real city map: hotels from Stay22 (map widget), plus tours, transfers and eSIM for the chosen city
+var city = cityName(), cv = { c: city }, hd = tripDates(), ci = iso(hd[0]), co = iso(hd[1]);
+var map = "https://www.stay22.com/embed/gm?aid=tripwise&campaign=miniappmap&address=" + encodeURIComponent(city) + "&checkin=" + ci + "&checkout=" + co + "&adults=" + (S.adults || 2);
+var h = '<section class="card" style="padding:0;overflow:hidden"><div class="h" style="padding:12px 14px 0">' + esc(t("hotelsIn", cv)) + '</div>' +
+'<iframe src="' + esc(map) + '" title="' + esc(t("hotelsIn", cv)) + '" loading="lazy" style="width:100%;height:340px;border:0;display:block;margin-top:10px"></iframe></section>';
+h += '<section class="card"><div class="grid2">' +
+'<button class="btn" data-act="open" data-v="' + esc(hotelUrl(city, ci, co)) + '">🏨 ' + esc(t("c_hotels")) + '</button>' +
+'<button class="btn" data-act="open" data-v="' + esc(toursUrl(city)) + '">🎟 ' + esc(t("c_tours")) + '</button>' +
+'<button class="btn ghost" data-act="open" data-v="' + esc(LINKS.transfer) + '">🚕 ' + esc(t("c_transfer")) + '</button>' +
+'<button class="btn ghost" data-act="open" data-v="' + esc(LINKS.esim) + '">📶 ' + esc(t("c_esim")) + '</button>' +
+'</div></section>';
+h += '<section class="card"><div class="h">' + esc(t("toursIn", cv)) + '</div><div class="grid2">' +
+'<button class="btn" data-act="open" data-v="' + esc(toursUrl(city)) + '">' + esc(t("ticketsTours")) + '</button><button class="btn ghost" data-act="open" data-v="' + esc(LINKS.audio) + '">' + esc(t("audioGuides")) + "</button></div></section>";
 return h;
 }
 function screenProfile() {
