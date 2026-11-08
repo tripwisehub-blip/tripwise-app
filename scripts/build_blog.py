@@ -116,7 +116,7 @@ META = {
     "singapore-stopover": ("Singapore", "Singapore", "Gardens by the Bay"),
     "seoul-first-time": ("South Korea", "Seoul", "Gyeongbokgung"),
     "marrakech-guide": ("Morocco", "Marrakech", "Jemaa el-Fnaa"),
-    "rent-a-car-no-deposit-no-credit-card": ("Travel tips", "Car rental", "Road trip"),
+    "rent-a-car-no-deposit-no-credit-card": ("Travel tips", "Car rental", "Big Sur"),
     "how-to-find-cheap-flights": ("Travel tips", "Cheap flights", "Airliner"),
     "esim-for-travel": ("Travel tips", "eSIM", "SIM card"),
     "flight-delay-compensation": ("Travel tips", "Flight delays", "Frankfurt Airport"),
