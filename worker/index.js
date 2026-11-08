@@ -95,7 +95,7 @@ const COMMANDS = [["trip", "Plan a whole trip: flights, hotel, car, transfer"], 
 const COMMANDS_RU = [["trip", "Собрать поездку: билеты, отель, авто, трансфер"], ["help", "Инструкция: как пользоваться"], ["start", "Начать заново и выбрать язык"], ["stopalerts", "Отключить уведомления о ценах"]];
 
 // Trip package: partner buttons for everything around the flight
-const PKG_LINKS = { car: ["Localrent", "https://localrent.tpx.lu/EfbBHrJ5"], car2: ["Economybookings", "https://economybookings.tpx.lu/kXoTnTBP"],
+const PKG_LINKS = { car: ["DiscoverCars", "https://www.discovercars.com/?a_aid=tripwisehub"], car2: ["Localrent", "https://localrent.tpx.lu/EfbBHrJ5"],
   transfer: ["Kiwitaxi", "https://kiwitaxi.tpx.lu/Z8An788O"], transfer2: ["GetTransfer", "https://gettransfer.tpx.lu/6FptLkP3"],
   tours: ["Tiqets", "https://tiqets.tpx.lu/AT5p2SuI"], tours2: ["Klook", "https://klook.tpx.lu/ROOwP7L7"], esim: ["Airalo", "https://airalo.tpx.lu/PfdD9FnS"] };
 function packageRows(q, city, ci, co) {
@@ -117,7 +117,7 @@ const SORRY = "Sorry, something went wrong on my side. Please try again in a mom
 const NOVOICE = "Sorry, I couldn't hear that. Please type your question in any language and I'll help right away!";
 
 const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LIVE FARES, never invent or change links):
-- Car rental: https://localrent.tpx.lu/EfbBHrJ5 (alternative: https://getrentacar.tpx.lu/iwSAxi5F)
+- Car rental worldwide (best choice, free cancellation, compares all rental companies): https://www.discovercars.com/?a_aid=tripwisehub (alternatives: Localrent https://localrent.tpx.lu/EfbBHrJ5, GetRentacar https://getrentacar.tpx.lu/iwSAxi5F)
 - Tickets, museums, tours and activities: https://tiqets.tpx.lu/AT5p2SuI
 - Audio guides and self-guided tours: https://wegotrip.tpx.lu/PFwel7W8
 - Airport and city transfers: https://kiwitaxi.tpx.lu/Z8An788O
@@ -126,7 +126,7 @@ const LINKS = `BOOKING LINKS (use ONLY these exact URLs or the links given in LI
 - Compensation for a delayed or cancelled flight: https://airhelp.tpx.lu/65MarJSz
 - Hotels anywhere in the world (compares Booking.com, Agoda, Expedia, Hotels.com, Vrbo and more): https://www.stay22.com/allez/roam?aid=tripwise&campaign=bot&address=CITY — replace CITY with the destination city name in English (spaces as %20). Add &checkin=YYYY-MM-DD&checkout=YYYY-MM-DD when the user gave dates. Also advise which areas to stay in.
 - The Tripwise app (flight search, budget wheel, price-drop alerts): tell the user to tap the Open App button at the bottom of the chat.
-COMPARE PARTNERS: for car rental give two links so the user can compare prices (Localrent and GetRentacar); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line after a short label written in the reply language (the link itself is shown to the user as the partner name, so write e.g. "Rent a car:" then the URL). Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
+COMPARE PARTNERS: for car rental give two links so the user can compare prices (DiscoverCars and Localrent); for flights use LIVE FARES when given. Give at most 3 links per message, each on its own line after a short label written in the reply language (the link itself is shown to the user as the partner name, so write e.g. "Rent a car:" then the URL). Only in a message that actually contains a booking link, add once per conversation, in the reply language: "Some links are affiliate links — your price stays the same." Never add this note to a message without a link.`;
 
 // More partners (Travelpayouts). Links are created once through the Links API with TP_TOKEN and cached in KV.
 const PARTNERS = [
@@ -196,7 +196,7 @@ async function tg(env, method, body) {
 const send = (env, chat, text, markup) => tg(env, "sendMessage", { chat_id: chat, text, disable_web_page_preview: true, ...(markup ? { reply_markup: markup } : {}) });
 
 // Turn long affiliate URLs into short clickable names ("Aviasales ↗") and send as HTML.
-const BRANDS = [["stay22", "Hotels"], ["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
+const BRANDS = [["discovercars", "DiscoverCars"], ["stay22", "Hotels"], ["aviasales", "Aviasales"], ["kiwitaxi", "Kiwitaxi"], ["kiwi", "Kiwi.com"], ["localrent", "Localrent"], ["getrentacar", "GetRentacar"],
   ["tiqets", "Tiqets"], ["wegotrip", "WeGoTrip"], ["airalo", "Airalo"], ["airhelp", "AirHelp"], ["klook", "Klook"], ["kkday", "KKday"],
   ["economybookings", "Economybookings"], ["qeeq", "QEEQ"], ["yesim", "Yesim"], ["t.me/tripwise_deals", "@tripwise_deals"], ["tripwise-app", "Tripwise"],
   ["gettransfer", "GetTransfer"], ["welcomepickups", "Welcome Pickups"], ["intui", "Intui"], ["gigsky", "GigSky"], ["saily", "Saily"], ["drimsim", "Drimsim"],
