@@ -176,7 +176,7 @@ var PRICES = null; // data/prices.json, refreshed by GitHub Actions
 var TOURS = {}; // data/tours.json: city -> affiliate link to tours in that city
 var TOURS_L = {}, TOURS_LANGS = ["de", "es", "fr", "it", "ru", "pl", "ja", "ko", "zh"]; // data/tours_<lang>.json
 function loadToursLang() { var l = S.lang; if (TOURS_LANGS.indexOf(l) < 0 || TOURS_L[l]) return; TOURS_L[l] = {}; loadJSON("data/tours_" + l + ".json").then(function (d) { TOURS_L[l] = d || {}; }).catch(function () {}); }
-function toursUrl(name) { return (name && ((TOURS_L[S.lang] || {})[name] || TOURS[name])) || LINKS.tours; }
+function toursUrl(name) { return (name && ((TOURS_L[S.lang] || {})[name] || TOURS[name])) || (name ? "https://www.getyourguide.com/s/?partner_id=MKPCOP9&cmp=miniapp&q=" + encodeURIComponent(name) : LINKS.tours); }
 var LINKS0 = Object.assign({}, LINKS), PLINKS = {}; // data/links.json: partner pages in each language
 function applyLinks() { Object.keys(LINKS0).forEach(function (k) { var m = PLINKS[k]; LINKS[k] = (m && (m[S.lang] || m.en)) || LINKS0[k]; }); }
 var BOT_LINK = "https://t.me/tripwise_hub_bot";
