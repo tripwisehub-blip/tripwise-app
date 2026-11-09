@@ -117,6 +117,7 @@ META = {
     "seoul-first-time": ("South Korea", "Seoul", "Gyeongbokgung"),
     "marrakech-guide": ("Morocco", "Marrakech", "Jemaa el-Fnaa"),
     "rent-a-car-no-deposit-no-credit-card": ("Travel tips", "Car rental", "Big Sur"),
+    "winter-sun-from-europe": ("Travel tips", "Winter sun", "Maspalomas"),
     "how-to-find-cheap-flights": ("Travel tips", "Cheap flights", "Airliner"),
     "esim-for-travel": ("Travel tips", "eSIM", "SIM card"),
     "flight-delay-compensation": ("Travel tips", "Flight delays", "Frankfurt Airport"),
