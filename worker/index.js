@@ -311,14 +311,20 @@ async function liveFares(env, hist, text, log = () => {}) {
     if (rows.length) { used = { ow, a }; break; }
   }
   const kiwi = tpKiwi(o.code, d.code);
-  const search = tpUrl(`https://www.aviasales.com/search/${o.code}${d.code}1`);
+  const ad = Math.min(9, Math.max(1, parseInt(q.adults) || 1));
+  const search = tpUrl(`https://www.aviasales.com/search/${o.code}${d.code}${ad}`);
+  const fd = /^\d{4}-\d{2}-\d{2}$/.test(q.depart || "") ? q.depart : "";
+  const fr = !oneWayFirst && /^\d{4}-\d{2}-\d{2}$/.test(q.return || "") ? q.return : "";
+  // Live Aviasales search with the user's exact dates already filled in.
+  const dated = fd ? tpUrl(`https://www.aviasales.com/search/${o.code}${fd.slice(8, 10)}${fd.slice(5, 7)}${d.code}${fr ? fr.slice(8, 10) + fr.slice(5, 7) : ""}${ad}`) : search;
+  const asked = (q.depart || q.month || "") + (q.return ? " – " + q.return : "");
   if (!rows.length) {
     const pk0 = packageRows(q, d.name, q.depart || "", q.return || "");
-    return { text: `LIVE FARES: no recent fares found for ${o.name} → ${d.name}. Say so honestly in one sentence and say the search buttons below show today's prices. Do not paste any flight links.` + (pk0 ? pk0.note : ""),
-      buttons: [[{ text: "🔎 Aviasales", url: search }, { text: "🔎 Kiwi.com", url: kiwi }], ...(pk0 ? pk0.rows : [])] };
+    return { text: `LIVE FARES: our price base has no fresh fares for ${o.name} → ${d.name}${asked ? " (" + asked + ")" : ""}. NEVER say there are no tickets or no flights. Say in one sentence: fresh prices for these dates are not in our base yet — open the live search below, the dates are already filled in and it shows real availability and today's prices. Do not paste any flight links.` + (pk0 ? pk0.note : ""),
+      buttons: [[{ text: "🔎 Aviasales" + (fd ? " · " + fd.slice(8, 10) + "." + fd.slice(5, 7) : ""), url: dated }, { text: "🔎 Kiwi.com", url: kiwi }], ...(pk0 ? pk0.rows : [])] };
   }
-  const note = used.a === dep ? "" : (dep ? ` (IMPORTANT: there are no fares for the exact dates the user asked (${q.depart || q.month}${q.return ? " – " + q.return : ""}). Start the reply by saying this clearly, then give the closest cheapest dates EXACTLY as written in the lines below — never present them as the requested dates)` : "");
-  const buttons = [];
+  const note = used.a === dep ? "" : (dep ? ` (IMPORTANT: our price base has no fresh fares for the exact dates the user asked (${asked}). NEVER say there are no tickets for these dates. Start the reply by saying: fresh prices for these exact dates are not in our base yet — the live search buttons at the top (Aviasales, Kiwi.com) have the dates filled in and show real availability. Then, ONLY as an extra option, mention the nearby dates with known prices EXACTLY as written in the lines below — never present them as the requested dates)` : "");
+  const buttons = note ? [[{ text: "🔎 Aviasales" + (fd ? " · " + fd.slice(8, 10) + "." + fd.slice(5, 7) : ""), url: dated }, { text: "🔎 Kiwi.com", url: kiwi }]] : [];
   const lines = rows.map((x) => {
     const a = (x.departure_at || "").slice(0, 10), b = (x.return_at || "").slice(0, 10);
     const link = tpUrl("https://www.aviasales.com" + (x.link || `/search/${o.code}${a.slice(8, 10)}${a.slice(5, 7)}${d.code}${b.slice(8, 10)}${b.slice(5, 7)}1`));
@@ -326,7 +332,7 @@ async function liveFares(env, hist, text, log = () => {}) {
     buttons.push([{ text: `✈️ ${a.slice(8, 10)}.${a.slice(5, 7)}${b && used.ow !== "true" ? "–" + b.slice(8, 10) + "." + b.slice(5, 7) : ""} · €${x.price} · ${x.transfers ? x.transfers + "×🔄" : "direct"}`, url: link }]);
     return `- ${a}, ${way}, ${x.transfers ? x.transfers + " stop(s)" : "direct"}, ${x.airline || ""}: €${x.price} per person`;
   });
-  buttons.push([{ text: "🔎 Kiwi.com", url: kiwi }, { text: "🔎 Aviasales", url: search }]);
+  if (!note) buttons.push([{ text: "🔎 Kiwi.com", url: kiwi }, { text: "🔎 Aviasales", url: search }]);
   const r0 = rows[0], ci = (r0.departure_at || "").slice(0, 10);
   let co = (r0.return_at || "").slice(0, 10);
   if (!co && ci) { const t = new Date(ci + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + 3); co = t.toISOString().slice(0, 10); }
