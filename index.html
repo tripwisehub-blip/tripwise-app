@@ -313,8 +313,8 @@ var LANGS = "en,et,fi,lv,lt,pl,de,fr,es,it,ru,uk,ar,tr,zh,ja,ko,th,vi,hi,id,pt,n
 
 // ---------- Interface texts. Each language: 28 groups in the order of KEYS. ----------
 var KEYS = [
-["sub_search","sub_coupons","sub_map","sub_profile"],
-["tab_search","tab_coupons","tab_map","tab_profile"],
+["sub_search","sub_coupons","sub_map","sub_profile","sub_prices","sub_favs"],
+["tab_search","tab_coupons","tab_map","tab_profile","tab_prices","tab_favs"],
 ["c_flights","c_hotels","c_car","c_tours","c_transfer","c_esim"],
 ["from","to","typeCountry","typeCity","city","nothing","popular"],
 ["when","weekend","nextweek","pick","dfrom","dto"],
@@ -369,8 +369,8 @@ id: ["Ketik mata uang","{n} perjalanan sesuai anggaran","Saat ini tidak ada perj
 };
 var TR = {
 en: [
-["Where are we going?","Spin, save, go","Deals around your hotel","Your travel profile"],
-["Search","Coupons","Map","Profile"],
+["Where are we going?", "Spin the wheel, pick a trip", "Deals around your hotel", "Your travel profile", "Track flight prices", "Your saved trips"],
+["Home", "Wheel", "Map", "Profile", "Prices", "Saved"],
 ["Flights","Hotels","Cars","Tours","Transfers","eSIM"],
 ["Flying from","Where to?","Type a country or city","Type a city","City","Nothing found","Popular"],
 ["When","Weekend","Next week","Pick dates","From","To"],
@@ -399,8 +399,8 @@ en: [
 ["Price alerts are coming soon — we'll message you in the chat.","Vouchers are coming soon.","Please pick valid travel dates","Planning a trip? Tripwise finds good-value flights, cars, tours and more."]
 ],
 et: [
-["Kuhu me läheme?","Keeruta, säästa, reisi","Pakkumised hotelli lähedal","Sinu reisiprofiil"],
-["Otsing","Kupongid","Kaart","Profiil"],
+["Kuhu me läheme?", "Keeruta ratast, vali reis", "Pakkumised hotelli lähedal", "Sinu reisiprofiil", "Jälgi lennuhindu", "Sinu salvestatud reisid"],
+["Avaleht", "Ratas", "Kaart", "Profiil", "Hinnad", "Lemmikud"],
 ["Lennud","Hotellid","Autod","Ekskursioonid","Transfeerid","eSIM"],
 ["Kust lendame","Kuhu?","Sisesta riik või linn","Sisesta linn","Linn","Midagi ei leitud","Populaarsed"],
 ["Millal","Nädalavahetus","Järgmine nädal","Vali kuupäevad","Alates","Kuni"],
@@ -429,8 +429,8 @@ et: [
 ["Hinnateavitused on tulekul — kirjutame sulle vestlusesse.","Vautšerid on tulekul.","Palun vali kehtivad reisikuupäevad","Planeerid reisi? Tripwise leiab soodsad lennud, autod, ekskursioonid ja muud."]
 ],
 fi: [
-["Minne mennään?","Pyöräytä, säästä, lähde","Tarjoukset hotellisi lähellä","Matkaprofiilisi"],
-["Haku","Kupongit","Kartta","Profiili"],
+["Minne mennään?", "Pyöräytä kiekkoa, valitse matka", "Tarjoukset hotellisi lähellä", "Matkaprofiilisi", "Seuraa lentojen hintoja", "Tallennetut matkasi"],
+["Koti", "Kiekko", "Kartta", "Profiili", "Hinnat", "Suosikit"],
 ["Lennot","Hotellit","Autot","Retket","Kuljetukset","eSIM"],
 ["Lähtö","Minne?","Kirjoita maa tai kaupunki","Kirjoita kaupunki","Kaupunki","Ei tuloksia","Suositut"],
 ["Milloin","Viikonloppu","Ensi viikko","Valitse päivät","Alkaen","Asti"],
@@ -459,8 +459,8 @@ fi: [
 ["Hintahälytykset tulossa — viestimme sinulle chatissa.","Lahjakortit tulossa pian.","Valitse kelvolliset matkapäivät","Suunnitteletko matkaa? Tripwise löytää edulliset lennot, autot, retket ja paljon muuta."]
 ],
 lv: [
-["Kurp dodamies?","Griez, ietaupi, ceļo","Atlaides pie viesnīcas","Tavs ceļotāja profils"],
-["Meklēt","Kuponi","Karte","Profils"],
+["Kurp dodamies?", "Griez ratu, izvēlies ceļojumu", "Atlaides pie viesnīcas", "Tavs ceļotāja profils", "Seko aviobiļešu cenām", "Tavi saglabātie ceļojumi"],
+["Sākums", "Rats", "Karte", "Profils", "Cenas", "Izlase"],
 ["Lidojumi","Viesnīcas","Auto","Ekskursijas","Transfēri","eSIM"],
 ["Izlidošana no","Uz kurieni?","Ievadi valsti vai pilsētu","Ievadi pilsētu","Pilsēta","Nekas nav atrasts","Populāri"],
 ["Kad","Brīvdienas","Nākamnedēļ","Izvēlēties datumus","No","Līdz"],
@@ -489,8 +489,8 @@ lv: [
 ["Cenu paziņojumi drīzumā — rakstīsim tev čatā.","Vaučeri drīzumā.","Lūdzu, izvēlies derīgus datumus","Plāno ceļojumu? Tripwise atrod izdevīgus lidojumus, auto, ekskursijas un vēl."]
 ],
 lt: [
-["Kur keliaujame?","Suk, taupyk, keliauk","Pasiūlymai prie viešbučio","Tavo keliautojo profilis"],
-["Paieška","Kuponai","Žemėlapis","Profilis"],
+["Kur keliaujame?", "Suk ratą, išsirink kelionę", "Pasiūlymai prie viešbučio", "Tavo keliautojo profilis", "Sek lėktuvų bilietų kainas", "Tavo išsaugotos kelionės"],
+["Pradžia", "Ratas", "Žemėlapis", "Profilis", "Kainos", "Mėgstami"],
 ["Skrydžiai","Viešbučiai","Automobiliai","Ekskursijos","Pervežimai","eSIM"],
 ["Išvykimas iš","Kur?","Įvesk šalį ar miestą","Įvesk miestą","Miestas","Nieko nerasta","Populiaru"],
 ["Kada","Savaitgalis","Kita savaitė","Pasirinkti datas","Nuo","Iki"],
@@ -519,8 +519,8 @@ lt: [
 ["Kainų pranešimai netrukus — parašysime tau pokalbyje.","Kuponai netrukus.","Pasirink tinkamas kelionės datas","Planuoji kelionę? Tripwise randa naudingus skrydžius, automobilius, ekskursijas ir dar daugiau."]
 ],
 pl: [
-["Dokąd jedziemy?","Kręć, oszczędzaj, podróżuj","Okazje w pobliżu hotelu","Twój profil podróżnika"],
-["Szukaj","Kupony","Mapa","Profil"],
+["Dokąd jedziemy?", "Zakręć kołem, wybierz podróż", "Okazje w pobliżu hotelu", "Twój profil podróżnika", "Śledź ceny lotów", "Twoje zapisane podróże"],
+["Start", "Koło", "Mapa", "Profil", "Ceny", "Ulubione"],
 ["Loty","Hotele","Auta","Wycieczki","Transfery","eSIM"],
 ["Wylot z","Dokąd?","Wpisz kraj lub miasto","Wpisz miasto","Miasto","Nic nie znaleziono","Popularne"],
 ["Kiedy","Weekend","Przyszły tydzień","Wybierz daty","Od","Do"],
@@ -549,8 +549,8 @@ pl: [
 ["Alerty cenowe wkrótce — napiszemy do Ciebie na czacie.","Vouchery już wkrótce.","Wybierz poprawne daty podróży","Planujesz podróż? Tripwise znajduje tanie loty, auta, wycieczki i nie tylko."]
 ],
 de: [
-["Wohin geht's?","Drehen, sparen, los","Angebote rund um dein Hotel","Dein Reiseprofil"],
-["Suche","Gutscheine","Karte","Profil"],
+["Wohin geht's?", "Dreh das Rad, wähl eine Reise", "Angebote rund um dein Hotel", "Dein Reiseprofil", "Flugpreise verfolgen", "Deine gespeicherten Reisen"],
+["Start", "Rad", "Karte", "Profil", "Preise", "Favoriten"],
 ["Flüge","Hotels","Mietwagen","Touren","Transfers","eSIM"],
 ["Abflug von","Wohin?","Land oder Stadt eingeben","Stadt eingeben","Stadt","Nichts gefunden","Beliebt"],
 ["Wann","Wochenende","Nächste Woche","Daten wählen","Von","Bis"],
@@ -579,8 +579,8 @@ de: [
 ["Preisalarme kommen bald — wir schreiben dir im Chat.","Gutscheine kommen bald.","Bitte gültige Reisedaten wählen","Reise geplant? Tripwise findet günstige Flüge, Mietwagen, Touren und mehr."]
 ],
 fr: [
-["On part où ?","Tournez, économisez, partez","Bons plans près de votre hôtel","Votre profil voyageur"],
-["Recherche","Coupons","Carte","Profil"],
+["On part où ?", "Tournez la roue, choisissez un voyage", "Bons plans près de votre hôtel", "Votre profil voyageur", "Suivre les prix des vols", "Vos voyages enregistrés"],
+["Accueil", "Roue", "Carte", "Profil", "Prix", "Favoris"],
 ["Vols","Hôtels","Voitures","Visites","Transferts","eSIM"],
 ["Départ de","Où aller ?","Tapez un pays ou une ville","Tapez une ville","Ville","Aucun résultat","Populaires"],
 ["Quand","Week-end","Semaine pro","Choisir les dates","Du","Au"],
@@ -609,8 +609,8 @@ fr: [
 ["Les alertes prix arrivent bientôt — on vous écrira dans le chat.","Les bons arrivent bientôt.","Choisissez des dates valides","Un voyage en vue ? Tripwise trouve des vols, voitures, visites et plus à bon prix."]
 ],
 es: [
-["¿A dónde vamos?","Gira, ahorra, viaja","Ofertas cerca de tu hotel","Tu perfil de viajero"],
-["Buscar","Cupones","Mapa","Perfil"],
+["¿A dónde vamos?", "Gira la ruleta, elige un viaje", "Ofertas cerca de tu hotel", "Tu perfil de viajero", "Sigue los precios de vuelos", "Tus viajes guardados"],
+["Inicio", "Ruleta", "Mapa", "Perfil", "Precios", "Favoritos"],
 ["Vuelos","Hoteles","Coches","Tours","Traslados","eSIM"],
 ["Salida desde","¿A dónde?","Escribe un país o ciudad","Escribe una ciudad","Ciudad","No hay resultados","Populares"],
 ["Cuándo","Finde","Próxima semana","Elegir fechas","Desde","Hasta"],
@@ -639,8 +639,8 @@ es: [
 ["Las alertas de precio llegan pronto — te escribiremos en el chat.","Los vales llegan pronto.","Elige fechas de viaje válidas","¿Planeas un viaje? Tripwise encuentra vuelos, coches, tours y más a buen precio."]
 ],
 it: [
-["Dove andiamo?","Gira, risparmia, parti","Offerte vicino al tuo hotel","Il tuo profilo di viaggio"],
-["Cerca","Coupon","Mappa","Profilo"],
+["Dove andiamo?", "Gira la ruota, scegli un viaggio", "Offerte vicino al tuo hotel", "Il tuo profilo di viaggio", "Monitora i prezzi dei voli", "I tuoi viaggi salvati"],
+["Home", "Ruota", "Mappa", "Profilo", "Prezzi", "Preferiti"],
 ["Voli","Hotel","Auto","Tour","Transfer","eSIM"],
 ["Partenza da","Dove?","Scrivi un paese o una città","Scrivi una città","Città","Nessun risultato","Popolari"],
 ["Quando","Weekend","Settimana prossima","Scegli le date","Dal","Al"],
@@ -669,8 +669,8 @@ it: [
 ["Gli avvisi di prezzo arrivano presto — ti scriveremo in chat.","I voucher arrivano presto.","Scegli date di viaggio valide","Pianifichi un viaggio? Tripwise trova voli, auto, tour e altro a buon prezzo."]
 ],
 ru: [
-["Куда отправимся?","Крути, экономь, путешествуй","Скидки рядом с отелем","Ваш профиль путешественника"],
-["Поиск","Купоны","Карта","Профиль"],
+["Куда отправимся?", "Крути колесо — выбирай поездку", "Скидки рядом с отелем", "Ваш профиль путешественника", "Отслеживание цен на авиабилеты", "Сохранённые поездки"],
+["Главная", "Колесо", "Карта", "Профиль", "Цены", "Избранное"],
 ["Авиабилеты","Отели","Авто","Экскурсии","Трансферы","eSIM"],
 ["Откуда летим","Куда?","Введите страну или город","Введите город","Город","Ничего не найдено","Популярное"],
 ["Когда","Выходные","След. неделя","Выбрать даты","С","По"],
@@ -699,8 +699,8 @@ ru: [
 ["Уведомления о ценах скоро — мы напишем вам в чат.","Ваучеры скоро появятся.","Выберите корректные даты","Планируете поездку? Tripwise находит выгодные билеты, авто, экскурсии и многое другое."]
 ],
 uk: [
-["Куди вирушаємо?","Крути, заощаджуй, мандруй","Знижки біля готелю","Ваш профіль мандрівника"],
-["Пошук","Купони","Мапа","Профіль"],
+["Куди вирушаємо?", "Крути колесо — обирай поїздку", "Знижки біля готелю", "Ваш профіль мандрівника", "Відстеження цін на авіаквитки", "Збережені поїздки"],
+["Головна", "Колесо", "Мапа", "Профіль", "Ціни", "Обране"],
 ["Авіаквитки","Готелі","Авто","Екскурсії","Трансфери","eSIM"],
 ["Звідки летимо","Куди?","Введіть країну або місто","Введіть місто","Місто","Нічого не знайдено","Популярне"],
 ["Коли","Вихідні","Наст. тиждень","Обрати дати","З","По"],
@@ -729,8 +729,8 @@ uk: [
 ["Сповіщення про ціни скоро — ми напишемо вам у чат.","Ваучери скоро з'являться.","Оберіть коректні дати","Плануєте подорож? Tripwise знаходить вигідні квитки, авто, екскурсії та багато іншого."]
 ],
 ar: [
-["إلى أين نذهب؟","أدر، وفّر، سافر","عروض قرب فندقك","ملفك السياحي"],
-["بحث","كوبونات","الخريطة","الملف"],
+["إلى أين نذهب؟", "أدر العجلة واختر رحلة", "عروض قرب فندقك", "ملفك السياحي", "تتبّع أسعار الطيران", "رحلاتك المحفوظة"],
+["الرئيسية", "العجلة", "الخريطة", "الملف", "الأسعار", "المفضلة"],
 ["طيران","فنادق","سيارات","جولات","نقل","eSIM"],
 ["السفر من","إلى أين؟","اكتب دولة أو مدينة","اكتب مدينة","المدينة","لا توجد نتائج","الأكثر شيوعًا"],
 ["متى","نهاية الأسبوع","الأسبوع القادم","اختر التواريخ","من","إلى"],
@@ -759,8 +759,8 @@ ar: [
 ["تنبيهات الأسعار قريبًا — سنراسلك في المحادثة.","القسائم قريبًا.","يرجى اختيار تواريخ سفر صحيحة","تخطط لرحلة؟ Tripwise يجد رحلات طيران وسيارات وجولات بأسعار جيدة والمزيد."]
 ],
 tr: [
-["Nereye gidiyoruz?","Çevir, kazan, gez","Otelinin yakınındaki fırsatlar","Seyahat profilin"],
-["Ara","Kuponlar","Harita","Profil"],
+["Nereye gidiyoruz?", "Çarkı çevir, seyahatini seç", "Otelinin yakınındaki fırsatlar", "Seyahat profilin", "Uçuş fiyatlarını takip et", "Kayıtlı seyahatlerin"],
+["Ana sayfa", "Çark", "Harita", "Profil", "Fiyatlar", "Favoriler"],
 ["Uçuşlar","Oteller","Araçlar","Turlar","Transferler","eSIM"],
 ["Kalkış","Nereye?","Ülke veya şehir yaz","Şehir yaz","Şehir","Sonuç yok","Popüler"],
 ["Ne zaman","Hafta sonu","Gelecek hafta","Tarih seç","Başlangıç","Bitiş"],
@@ -789,8 +789,8 @@ tr: [
 ["Fiyat alarmları yakında — sana sohbette yazacağız.","Kuponlar yakında.","Lütfen geçerli tarihler seç","Seyahat mi planlıyorsun? Tripwise uygun uçuş, araç, tur ve daha fazlasını bulur."]
 ],
 zh: [
-["我们去哪儿？","转一转，省一省，出发","酒店附近优惠","你的旅行档案"],
-["搜索","优惠券","地图","我的"],
+["我们去哪儿？", "转动转盘，挑选行程", "酒店附近优惠", "你的旅行档案", "追踪机票价格", "你保存的行程"],
+["首页", "转盘", "地图", "我的", "价格", "收藏"],
 ["机票","酒店","租车","游览","接送","eSIM"],
 ["出发地","去哪儿？","输入国家或城市","输入城市","城市","未找到结果","热门"],
 ["何时","周末","下周","选择日期","开始","结束"],
@@ -819,8 +819,8 @@ zh: [
 ["价格提醒即将推出——我们会在聊天中通知你。","代金券即将推出。","请选择有效的出行日期","计划旅行？Tripwise 帮你找到超值机票、租车、游览等。"]
 ],
 ja: [
-["どこへ行く？","回して、節約して、出発","ホテル周辺のお得情報","あなたの旅プロフィール"],
-["検索","クーポン","マップ","プロフィール"],
+["どこへ行く？", "ルーレットを回して旅を選ぼう", "ホテル周辺のお得情報", "あなたの旅プロフィール", "航空券の価格を追跡", "保存した旅行"],
+["ホーム", "ルーレット", "マップ", "プロフィール", "価格", "お気に入り"],
 ["航空券","ホテル","レンタカー","ツアー","送迎","eSIM"],
 ["出発地","行き先は？","国名または都市名を入力","都市名を入力","都市","見つかりません","人気"],
 ["いつ","週末","来週","日付を選択","開始","終了"],
@@ -849,8 +849,8 @@ ja: [
 ["価格アラートは近日公開 — チャットでお知らせします。","バウチャーは近日公開です。","正しい旅行日を選んでください","旅行の計画中？Tripwiseがお得な航空券、レンタカー、ツアーなどを見つけます。"]
 ],
 ko: [
-["어디로 갈까요?","돌리고, 아끼고, 떠나요","호텔 주변 할인","나의 여행 프로필"],
-["검색","쿠폰","지도","프로필"],
+["어디로 갈까요?", "룰렛을 돌려 여행을 고르세요", "호텔 주변 할인", "나의 여행 프로필", "항공권 가격 추적", "저장한 여행"],
+["홈", "룰렛", "지도", "프로필", "가격", "즐겨찾기"],
 ["항공권","호텔","렌터카","투어","픽업","eSIM"],
 ["출발지","어디로?","국가 또는 도시 입력","도시 입력","도시","결과 없음","인기"],
 ["언제","주말","다음 주","날짜 선택","시작","종료"],
@@ -879,8 +879,8 @@ ko: [
 ["가격 알림이 곧 출시돼요 — 채팅으로 알려드릴게요.","바우처가 곧 출시돼요.","올바른 여행 날짜를 선택하세요","여행 계획 중인가요? Tripwise가 합리적인 항공권, 렌터카, 투어 등을 찾아드려요."]
 ],
 th: [
-["ไปไหนดี?","หมุน ประหยัด ออกเดินทาง","ดีลใกล้โรงแรมของคุณ","โปรไฟล์การเดินทางของคุณ"],
-["ค้นหา","คูปอง","แผนที่","โปรไฟล์"],
+["ไปไหนดี?", "หมุนวงล้อ เลือกทริป", "ดีลใกล้โรงแรมของคุณ", "โปรไฟล์การเดินทางของคุณ", "ติดตามราคาตั๋วเครื่องบิน", "ทริปที่บันทึกไว้"],
+["หน้าแรก", "วงล้อ", "แผนที่", "โปรไฟล์", "ราคา", "รายการโปรด"],
 ["เที่ยวบิน","โรงแรม","รถเช่า","ทัวร์","รถรับส่ง","eSIM"],
 ["บินจาก","ไปที่ไหน?","พิมพ์ประเทศหรือเมือง","พิมพ์เมือง","เมือง","ไม่พบผลลัพธ์","ยอดนิยม"],
 ["เมื่อไร","สุดสัปดาห์","สัปดาห์หน้า","เลือกวันที่","ตั้งแต่","ถึง"],
@@ -909,8 +909,8 @@ th: [
 ["การแจ้งเตือนราคาเร็วๆ นี้ — เราจะส่งข้อความในแชท","บัตรกำนัลเร็วๆ นี้","กรุณาเลือกวันเดินทางที่ถูกต้อง","กำลังวางแผนทริป? Tripwise หาตั๋วเครื่องบิน รถเช่า ทัวร์ และอื่นๆ ในราคาคุ้มค่า"]
 ],
 vi: [
-["Mình đi đâu đây?","Quay, tiết kiệm, lên đường","Ưu đãi quanh khách sạn","Hồ sơ du lịch của bạn"],
-["Tìm kiếm","Ưu đãi","Bản đồ","Hồ sơ"],
+["Mình đi đâu đây?", "Quay vòng quay, chọn chuyến đi", "Ưu đãi quanh khách sạn", "Hồ sơ du lịch của bạn", "Theo dõi giá vé máy bay", "Chuyến đi đã lưu"],
+["Trang chủ", "Vòng quay", "Bản đồ", "Hồ sơ", "Giá", "Yêu thích"],
 ["Chuyến bay","Khách sạn","Thuê xe","Tour","Đưa đón","eSIM"],
 ["Bay từ","Đi đâu?","Nhập quốc gia hoặc thành phố","Nhập thành phố","Thành phố","Không tìm thấy","Phổ biến"],
 ["Khi nào","Cuối tuần","Tuần sau","Chọn ngày","Từ","Đến"],
@@ -939,8 +939,8 @@ vi: [
 ["Cảnh báo giá sắp có — chúng tôi sẽ nhắn bạn trong chat.","Voucher sắp có.","Vui lòng chọn ngày đi hợp lệ","Đang lên kế hoạch? Tripwise tìm vé bay, thuê xe, tour và hơn thế với giá tốt."]
 ],
 hi: [
-["कहाँ चलें?","घुमाओ, बचाओ, चलो","आपके होटल के पास ऑफ़र","आपकी यात्रा प्रोफ़ाइल"],
-["खोज","कूपन","नक्शा","प्रोफ़ाइल"],
+["कहाँ चलें?", "पहिया घुमाएँ, यात्रा चुनें", "आपके होटल के पास ऑफ़र", "आपकी यात्रा प्रोफ़ाइल", "हवाई किराया ट्रैक करें", "आपकी सहेजी यात्राएँ"],
+["होम", "पहिया", "नक्शा", "प्रोफ़ाइल", "कीमतें", "पसंदीदा"],
 ["फ़्लाइट","होटल","कार","टूर","ट्रांसफ़र","eSIM"],
 ["कहाँ से","कहाँ जाना है?","देश या शहर लिखें","शहर लिखें","शहर","कुछ नहीं मिला","लोकप्रिय"],
 ["कब","वीकेंड","अगला हफ़्ता","तारीख चुनें","से","तक"],
@@ -969,8 +969,8 @@ hi: [
 ["कीमत अलर्ट जल्द — हम चैट में संदेश भेजेंगे।","वाउचर जल्द आ रहे हैं।","कृपया सही यात्रा तारीखें चुनें","यात्रा की योजना है? Tripwise किफ़ायती फ़्लाइट, कार, टूर और बहुत कुछ ढूँढता है।"]
 ],
 id: [
-["Mau ke mana?","Putar, hemat, berangkat","Promo di sekitar hotelmu","Profil perjalananmu"],
-["Cari","Kupon","Peta","Profil"],
+["Mau ke mana?", "Putar roda, pilih perjalanan", "Promo di sekitar hotelmu", "Profil perjalananmu", "Pantau harga tiket pesawat", "Perjalanan tersimpan"],
+["Beranda", "Roda", "Peta", "Profil", "Harga", "Favorit"],
 ["Penerbangan","Hotel","Mobil","Tur","Antar-jemput","eSIM"],
 ["Berangkat dari","Ke mana?","Ketik negara atau kota","Ketik kota","Kota","Tidak ditemukan","Populer"],
 ["Kapan","Akhir pekan","Minggu depan","Pilih tanggal","Dari","Sampai"],
@@ -1098,12 +1098,15 @@ esim: "M7 3h7l4 4v14H7zM10 12h5M10 16h5",
 search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",
 coupons: "M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4zM10 6v12",
 map: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+wheel: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4",
+prices: "M4 19V5M4 19h16M7 15l4-4 3 3 5-6",
+favs: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z",
 profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
 bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0",
 globe: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9M12 3c-2.5 2.6-3.8 5.6-3.8 9s1.3 6.4 3.8 9"
 };
 var CATS = ["flights","hotels","car","tours","transfer","esim"];
-var TABS = ["search","coupons","map","profile"];
+var TABS = ["search","coupons","prices","favs","profile"];
 var WHEEL_CITIES = [["Riga","RIX"],["Vilnius","VNO"],["Krakow","KRK"],["Prague","PRG"],["Budapest","BUD"],["Gdansk","GDN"],["Copenhagen","CPH"],["Vienna","VIE"]];
 var PINS = [
 { cat: "food", tk: "d1", mk: "restaurant", km: "0.3", d: "-40%", x: 40, y: 160 },
@@ -1394,6 +1397,7 @@ return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(x.photo) + 
 }
 function hotSection() {
 var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint" style="color:#fff;opacity:.9">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>" + '<button class="btn" data-act="open" data-v="https://t.me/tripwise_deals" style="width:100%;margin-top:8px;background:#0B2340;color:#FFCC00">📣 Telegram: @tripwise_deals</button>';
+h += '<button class="btn ghost" data-act="tab" data-v="map">🗺 ' + esc(t("hotelsIn", { c: cityName() })) + '</button>';
 if (!S.hot) return h;
 var deals = hotDeals(), tours = hotTours();
 if (!deals.length && !tours.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
@@ -1594,18 +1598,53 @@ document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " +
 document.getElementById("langcode").textContent = "🌐 " + S.lang.toUpperCase();
 document.getElementById("langbtn").setAttribute("aria-label", t("language") + ": " + langName(S.lang, S.lang));
 var main = document.getElementById("main"), y = main.scrollTop;
-main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : screenProfile();
+main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : S.tab === "prices" ? screenPrices() : S.tab === "favs" ? screenFavs() : screenProfile();
 main.scrollTop = y;
 document.getElementById("nav").innerHTML = TABS.map(function (k) {
-return '<button class="' + (S.tab === k ? "on" : "") + '" data-act="tab" data-v="' + k + '">' + svg(ICON[k], 22) + "<span>" + esc(t("tab_" + k)) + "</span></button>";
+return '<button class="' + (S.tab === k ? "on" : "") + '" data-act="tab" data-v="' + k + '">' + svg(ICON[k === "coupons" ? "wheel" : k], 22) + "<span>" + esc(t("tab_" + k)) + "</span></button>";
 }).join("");
 }
 
+
+// ---------- Prices (tracking) and Saved trips ----------
+var FAVS = load("favs", []);
+function cheapestByDest() {
+var today = iso(new Date()), best = {};
+(PRICES && PRICES.origins && PRICES.origins[S.origin] || []).forEach(function (x) { if (x.dep > today && (!best[x.d] || x.p < best[x.d].p)) best[x.d] = x; });
+return best;
+}
+function priceCard(tr) {
+var pl = placeName(tr.d), fav = FAVS.indexOf(tr.d) >= 0; photoFor(pl.name, pl.iso);
+return '<div class="card" style="gap:10px"><div style="display:flex;align-items:center;gap:12px">' +
+'<div class="hotimg" data-photo="' + esc(pl.name) + '" style="flex:none;width:64px;height:64px;border-radius:14px;background-size:cover;background-position:center' + (PHOTO[pl.name] ? ";background-image:" + PHOTO[pl.name] : ";background-color:var(--sky)") + '"></div>' +
+'<div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:900">' + (pl.iso ? flagImg(pl.iso) + " " : "") + esc(pl.name) + '</div>' +
+'<div class="hint">' + esc(fmt(new Date(tr.dep + "T12:00:00"))) + " – " + esc(fmt(new Date(tr.ret + "T12:00:00"))) + " · " + esc(tr.tr ? t("stops") : t("direct")) + '</div></div>' +
+'<div style="text-align:right"><div style="font-size:20px;font-weight:900;color:var(--blue)">' + esc(money(tr.p)) + '</div>' +
+'<button class="chip' + (fav ? " on" : "") + '" style="padding:0 10px;margin-top:4px" data-act="fav" data-v="' + esc(tr.d) + '" aria-label="' + esc(t("tab_favs")) + '">' + (fav ? "♥" : "♡") + '</button></div></div>' +
+'<div class="grid2"><button class="btn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(t("c_flights")) + '</button>' +
+'<button class="btn ghost" data-act="watch" data-v="' + esc(alertLink(tr.d, tr.dep, tr.ret)) + '">🔔 ' + esc(t("watch")) + '</button></div></div>';
+}
+function screenPrices() {
+var best = cheapestByDest(), list = Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 12);
+var h = '<section class="card"><div class="h">' + esc(t("hotDealsText", { o: originName() })) + '</div><div class="hint">' + esc(t("pricesNote")) + (PRICES && PRICES.updated ? " · " + esc(String(PRICES.updated).slice(0, 10)) : "") + '</div></section>';
+if (!list.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + '</div></section>';
+return h + list.map(priceCard).join("");
+}
+function screenFavs() {
+var best = cheapestByDest(), h = '';
+if (!FAVS.length) return '<section class="card" style="text-align:center;gap:10px"><div style="font-size:40px">♡</div><div class="hint">' + esc(t("sub_favs")) + '</div><button class="btn" data-act="tab" data-v="prices">' + esc(t("tab_prices")) + '</button></section>';
+FAVS.forEach(function (code) {
+if (best[code]) h += priceCard(best[code]);
+else { var pl = placeName(code); h += '<div class="card"><div class="row"><div class="h">' + esc(pl.name) + '</div><button class="chip on" style="padding:0 10px" data-act="fav" data-v="' + esc(code) + '">♥</button></div><div class="hint">' + esc(t("noData")) + '</div></div>'; }
+});
+return h;
+}
 // ---------- Events ----------
 function act(el) {
 var a = el.getAttribute("data-act"), v = el.getAttribute("data-v");
 switch (a) {
 case "tab": S.tab = v; haptic(); document.getElementById("main").scrollTop = 0; break;
+case "fav": var fi = FAVS.indexOf(v); if (fi >= 0) FAVS.splice(fi, 1); else FAVS.push(v); save("favs", FAVS); haptic(); break;
 case "cat": S.cat = v; S.searched = false; haptic(); break;
 case "country": S.country = v; S.city = BY_ISO[v].cities[0][1]; S.searched = false; haptic(); break;
 case "when": S.when = v; S.searched = false; haptic(); break;
