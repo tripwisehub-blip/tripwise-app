@@ -146,6 +146,76 @@ def post_pending():
         print("Video post failed:", e)
 
 
+
+# ---------- background music: synthesized here, so it is 100% original and copyright-free ----------
+def make_music(path, seconds, seed):
+    """Upbeat lo-fi/pop loop: chords (soft pad), bass, plucked melody, kick and hi-hat. Key and tempo change by day."""
+    import array, math, random, wave
+    rnd = random.Random(seed)
+    sr = 44100
+    bpm = rnd.choice([96, 100, 104, 108, 112])
+    beat = 60.0 / bpm
+    root = rnd.choice([0, 2, 3, 5, 7, 8, 10])  # semitones above A2
+    progs = [[0, 7, 9, 5], [0, 5, 9, 7], [9, 5, 0, 7], [0, 9, 5, 7]]  # I-V-vi-IV and friends
+    prog = rnd.choice(progs)
+    major = {0: [0, 4, 7], 5: [0, 4, 7], 7: [0, 4, 7], 9: [0, 3, 7]}
+    scale = [0, 2, 4, 7, 9, 12, 14, 16]
+    n = int(sr * seconds)
+    buf = [0.0] * n
+    def f(semi):
+        return 110.0 * 2 ** ((semi + root) / 12.0)
+    def add(start, dur, freq, amp, kind="sine", decay=3.0):
+        a, b = int(start * sr), min(n, int((start + dur) * sr))
+        w = 2 * math.pi * freq / sr
+        att = int(0.01 * sr)
+        for i in range(a, b):
+            t = (i - a) / sr
+            env = math.exp(-decay * t) * min(1.0, (i - a) / att if att else 1.0)
+            ph = w * (i - a)
+            if kind == "pad":
+                v = math.sin(ph) + 0.3 * math.sin(2 * ph) + 0.15 * math.sin(3 * ph)
+            elif kind == "pluck":
+                v = math.sin(ph) + 0.5 * math.sin(2 * ph) * math.exp(-8 * t)
+            else:
+                v = math.sin(ph)
+            buf[i] += amp * env * v
+    bar = 4 * beat
+    t, k = 0.0, 0
+    while t < seconds:
+        ch = prog[k % 4]
+        for iv in major[ch]:
+            add(t, bar, f(ch + iv + 12), 0.05, "pad", 0.6)
+        for q in range(4):  # bass on every beat
+            add(t + q * beat, beat * 0.9, f(ch - 12 + (7 if q == 2 else 0)), 0.16, "sine", 2.5)
+        for q in range(8):  # melody on eighth notes, sparse
+            if rnd.random() < 0.55:
+                add(t + q * beat / 2, beat / 2, f(ch + 24 + rnd.choice(scale)), 0.07, "pluck", 6.0)
+        for q in range(4):  # kick on 1 and 3, hat on eighths
+            if q % 2 == 0:
+                a = int((t + q * beat) * sr)
+                for i in range(a, min(n, a + int(0.18 * sr))):
+                    tt = (i - a) / sr
+                    buf[i] += 0.5 * math.exp(-18 * tt) * math.sin(2 * math.pi * (50 + 90 * math.exp(-30 * tt)) * tt)
+            for h in range(2):
+                a = int((t + q * beat + h * beat / 2) * sr)
+                for i in range(a, min(n, a + int(0.03 * sr))):
+                    buf[i] += 0.04 * math.exp(-120 * (i - a) / sr) * (rnd.random() * 2 - 1)
+        t += bar
+        k += 1
+    fade = int(1.5 * sr)
+    peak = max(1e-6, max(abs(x) for x in buf))
+    out = array.array("h")
+    for i, x in enumerate(buf):
+        g = min(1.0, i / (0.3 * sr), (n - i) / fade)
+        v = int(26000 * g * x / peak)
+        out.append(v)
+        out.append(v)
+    with wave.open(path, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(out.tobytes())
+
 def main():
     post_pending()
     today = datetime.date.today()
@@ -220,7 +290,9 @@ def main():
             p = "%s/s%d.jpg" % (tmp, i)
             s.save(p, quality=92)
             cmd += ["-loop", "1", "-t", str(SLIDE_SEC), "-i", p]
-        cmd += ["-f", "lavfi", "-t", str(len(slides) * SLIDE_SEC), "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+        song = tmp + "/music.wav"
+        make_music(song, len(slides) * SLIDE_SEC, today.toordinal())
+        cmd += ["-i", song]
         parts, prev = [], None
         for i in range(len(slides)):
             # slow zoom-in on every slide
