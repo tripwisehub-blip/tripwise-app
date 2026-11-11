@@ -112,7 +112,8 @@ background: conic-gradient(#2678D8 0 60deg, #DCEBFB 60deg 120deg, #69A9E9 120deg
 .hub { position: absolute; left: 70px; top: 70px; width: 90px; height: 90px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .hub b { font-size: 22px; font-weight: 900; }
 input[type=range] { width: 100%; accent-color: var(--blue); }
-.hotbtn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 20px; background: linear-gradient(135deg, #FF6B35, #F7B32B); color: #fff; font-size: 18px; font-weight: 900; box-shadow: 0 6px 16px rgba(255,107,53,.3); }
+.hotbtn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 20px; background: #fff; color: var(--ink); font-size: 17px; font-weight: 900; box-shadow: 0 4px 18px rgba(38,55,74,.06); }
+main > * { flex-shrink: 0; }
 .hotlist { display: flex; flex-direction: column; gap: 12px; }
 .hotcard { background: #fff; border-radius: 20px; overflow: hidden; }
 .hotimg { position: relative; height: 170px; background: #2F80C8 linear-gradient(135deg, #2678D8, #5FB4F2) center/cover no-repeat; }
@@ -1405,7 +1406,7 @@ return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(x.photo) + 
 '<button class="btn" style="background:var(--coral)" data-act="open" data-v="' + esc(x.url) + '">' + esc(t("open")) + " · " + esc(x.name) + "</button></div></div>";
 }
 function hotSection() {
-var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint" style="color:#fff;opacity:.9">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>" + '<button class="btn" data-act="open" data-v="https://t.me/tripwise_deals" style="width:100%;margin-top:8px;background:#0B2340;color:#FFCC00">📣 Telegram: @tripwise_deals</button>';
+var h = '<button class="hotbtn" data-act="hot"><span>' + esc(t("hotDeals")) + '</span><span class="hint">' + esc(t("hotDealsText", { o: originName() })) + "</span></button>" + '<button class="btn" data-act="open" data-v="https://t.me/tripwise_deals" style="width:100%;background:var(--blue-soft);color:var(--blue)">📣 Telegram: @tripwise_deals</button>';
 h += '<button class="btn ghost" data-act="tab" data-v="map">🗺 ' + esc(t("hotelsIn", { c: cityName() })) + '</button>';
 if (!S.hot) return h;
 var deals = hotDeals(), tours = hotTours();
@@ -1424,7 +1425,7 @@ function screenSearch() {
 var c = BY_ISO[S.country];
 var hc = cityName(); photoFor(hc, S.country);
 var h = '<div class="hero" data-photo="' + esc(hc) + '"' + (PHOTO[hc] ? ' style="background-image:' + PHOTO[hc] + '"' : "") + '><h2>' + esc(t("sub_search")) + '</h2>' +
-'<button class="q" onclick="var f=document.getElementById(\'tw-form\');if(f)f.scrollIntoView({behavior:\'smooth\'})">' + svg(ICON.search, 20) + '<span>' + esc(t("sub_search")) + '</span></button></div>';
+'<button class="q" onclick="var f=document.getElementById(\'tw-form\');if(f)f.scrollIntoView({behavior:\'smooth\'})">' + svg(ICON.search, 20) + '<span>' + esc(t("to")) + '</span></button></div>';
 h += '<section class="card"><div class="tiles">' + CATS.map(function (x) {
 return '<button class="tile' + (S.cat === x ? " on" : "") + '" data-act="cat" data-v="' + x + '"><span class="ic">' + svg(ICON[x], 24) + "</span><span>" + esc(t("c_" + x)) + "</span></button>";
 }).join("") + "</div></section>";
