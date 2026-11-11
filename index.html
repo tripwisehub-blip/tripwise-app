@@ -130,12 +130,72 @@ main > * { flex-shrink: 0; }
 .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); max-width: 340px; width: calc(100% - 40px); background: var(--ink); color: #fff; padding: 12px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity .2s; pointer-events: none; text-align: center; }
 .toast.show { opacity: 1; }
 .fine { font-size: 11px; color: var(--muted); padding: 0 4px; }
+
+header { background: #fff !important; color: var(--ink) !important; border-bottom: 1px solid var(--line); }
+header .s { color: var(--muted) !important; }
+header .pill { background: var(--blue-soft) !important; color: var(--blue) !important; border-color: transparent !important; }
+.lg { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg,#2678D8,#69A9E9); color: #fff; display: grid; place-items: center; font-size: 20px; transform: rotate(-20deg); }
+body.sub header { display: none; }
+.hero.big { height: 230px; }
+.bell { position: absolute; top: 12px; right: 12px; }
+.tb { display: flex; align-items: center; gap: 8px; }
+.tbt { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.tbt b { font-size: 19px; font-weight: 900; } .tbt span { color: var(--muted); font-size: 14px; font-weight: 600; }
+.tbb { all: unset; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; background: #fff; box-shadow: 0 2px 10px rgba(38,55,74,.1); display: grid; place-items: center; font-size: 24px; font-weight: 700; color: var(--ink); flex: none; }
+.tbb.glass { background: rgba(255,255,255,.85); }
+.wheelbox { position: relative; width: 300px; height: 300px; margin: 6px auto 0; border-radius: 50%; padding: 8px; background: #fff; box-shadow: 0 10px 30px rgba(38,118,216,.18); }
+.pw { position: absolute; inset: 8px; border-radius: 50%; overflow: hidden; transition: transform 2.2s cubic-bezier(.17,.67,.21,1); }
+.pws { position: absolute; inset: 0; }
+.pwi { position: absolute; inset: 0; background: var(--sky) center/cover no-repeat; }
+.pwc { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; background: #fff; display: grid; place-items: center; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+.plane { position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(180deg); z-index: 3; color: var(--blue); font-size: 26px; }
+.center { text-align: center; }
+.bigbtn { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; text-align: center; min-height: 54px; line-height: 54px; border-radius: 16px; background: var(--blue); color: #fff; font-weight: 900; font-size: 17px; box-shadow: 0 8px 20px rgba(38,120,216,.28); }
+.ghostbig { all: unset; cursor: pointer; box-sizing: border-box; width: 100%; text-align: center; min-height: 50px; line-height: 50px; border-radius: 16px; background: #fff; color: var(--blue); font-weight: 800; border: 1.5px solid var(--blue); }
+.linkbtn { all: unset; cursor: pointer; text-align: center; color: var(--blue); font-weight: 800; padding: 6px; }
+.rcard { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 18px; padding: 10px; box-shadow: 0 4px 18px rgba(38,55,74,.06); }
+.rimg { flex: none; width: 92px; height: 92px; border-radius: 14px; background: var(--sky) center/cover no-repeat; }
+.rbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rbody b { font-size: 17px; font-weight: 900; } .cty { color: var(--muted); font-size: 13px; }
+.price { color: var(--blue); font-weight: 900; font-size: 19px; } .price.xl { font-size: 34px; }
+.pillb { all: unset; cursor: pointer; padding: 9px 14px; border-radius: 12px; background: var(--blue); color: #fff; font-weight: 800; font-size: 14px; flex: none; }
+.dhero { height: 270px; margin: -14px -14px 0; background: var(--sky) center/cover no-repeat; padding: 14px; box-sizing: border-box; }
+.dcard { margin-top: -40px; border-radius: 24px; gap: 12px; }
+.dcard h2 { margin: 0; font-size: 24px; }
+.okbadge { align-self: flex-start; background: #E7F5EF; color: var(--success); font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+.drow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .drow > div { background: var(--bg); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.stars { color: #F4B740; letter-spacing: 1px; }
+.amen { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; text-align: center; font-size: 12px; color: var(--muted); font-weight: 700; }
+.down { color: var(--success); font-weight: 900; } .up { color: #D9534F; font-weight: 900; }
+.tog { all: unset; cursor: pointer; margin-left: auto; width: 50px; height: 30px; border-radius: 99px; background: #CBD5E1; position: relative; flex: none; }
+.tog i { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: left .2s; }
+.tog.on { background: var(--success); } .tog.on i { left: 23px; }
+.chipok { background: #E7F5EF; color: var(--success); font-weight: 800; border-radius: 12px; padding: 10px; text-align: center; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: #fff; border-radius: 14px; padding: 4px; }
+.seg button { all: unset; cursor: pointer; text-align: center; padding: 10px; border-radius: 11px; font-weight: 800; color: var(--muted); } .seg button.on { background: var(--blue); color: #fff; }
+.flist { gap: 0; padding: 4px 16px; } .frow { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 20px; } .frow:last-child { border: 0; } .frow .hint { display: block; font-size: 12px; }
+.hero.wing { height: 150px; }
+header .t { white-space: nowrap; font-size: 20px !important; } header .s { font-size: 12px !important; max-width: 150px; } #helpbtn { display: none !important; }
+.frow > div, .wcfg { min-width: 0; } .frow .combo, .wcfg .combo { width: 100%; }
+.fres { flex-direction: row; justify-content: space-between; align-items: center; } .fres > div:first-child { display: flex; flex-direction: column; gap: 3px; } .fres .pillb { margin-top: 6px; }
+.gsearch { box-sizing: border-box; width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; font-size: 15px; background: #fff; }
+.gcards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gcard { all: unset; cursor: pointer; height: 150px; border-radius: 18px; background: var(--sky) center/cover no-repeat; display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; box-sizing: border-box; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.6); box-shadow: inset 0 -60px 50px -20px rgba(0,0,0,.45); }
+.gcard b { font-size: 18px; } .gcard span { font-size: 13px; font-weight: 700; }
+.gsmall { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.gs { all: unset; cursor: pointer; height: 96px; border-radius: 14px; background: var(--sky) center/cover no-repeat; display: flex; align-items: flex-end; padding: 8px; box-sizing: border-box; color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 5px rgba(0,0,0,.7); box-shadow: inset 0 -40px 30px -14px rgba(0,0,0,.45); }
+.prof { flex-direction: row; align-items: center; gap: 14px; } .prof > div:last-child { display: flex; flex-direction: column; }
+.ava { width: 64px; height: 64px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; font-size: 26px; font-weight: 900; overflow: hidden; flex: none; } .ava img { width: 100%; height: 100%; object-fit: cover; }
+.menu { padding: 4px 14px; gap: 0; } .mi { all: unset; cursor: pointer; display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); } .mi:last-child { border: 0; } .mi b { flex: 1; font-weight: 700; } .mi i { color: var(--muted); font-style: normal; font-size: 20px; }
+.ncard { flex-direction: row; gap: 12px; align-items: flex-start; } .nic { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-soft); display: grid; place-items: center; flex: none; }
+.bigok { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: var(--success); color: #fff; font-size: 38px; font-weight: 900; display: grid; place-items: center; box-shadow: 0 0 0 10px #E7F5EF; }
+.pimg { flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--sky) center/cover no-repeat; border: 4px solid var(--blue-soft); }
 </style>
 </head>
 <body>
 <div id="app">
 <header>
-<div><div class="t">Tripwise</div><div class="s" id="subtitle"></div></div>
+<div style="display:flex;align-items:center;gap:10px"><span class="lg">✈</span><div><div class="t">TripWise <span style="color:var(--blue)">Hub</span></div><div class="s" id="subtitle"></div></div></div>
 <div style="display:flex;gap:6px;flex-shrink:0"><a class="pill" id="helpbtn" href="https://tripwise-bot.tripwise-hub.workers.dev/help" target="_blank" rel="noopener" aria-label="How to use Tripwise" title="How to use" style="text-decoration:none;font-weight:800;min-width:34px;justify-content:center">?</a><button class="pill" id="langbtn" data-act="langopen" aria-haspopup="listbox"><span id="langcode">EN</span><span class="caret" aria-hidden="true">▼</span></button><button class="pill" id="cur" data-act="curopen" aria-haspopup="listbox"><span id="curcode">EUR</span><span class="caret" aria-hidden="true">▼</span></button></div>
 </header>
 <main id="main"></main>
@@ -1606,13 +1666,16 @@ h += '<section class="card"><div class="row"><div class="h">' + esc(t("badges"))
 return h;
 }
 function render() {
-document.getElementById("subtitle").textContent = S.tab === "map" ? t("hotelsIn", { c: cityName() }) : t("sub_" + S.tab);
+document.getElementById("subtitle").textContent = S.tab === "search" ? T2("logoSub") : S.tab === "map" ? t("hotelsIn", { c: cityName() }) : t("sub_" + S.tab);
 document.getElementById("curcode").textContent = curSymbol(S.currency) === S.currency ? S.currency : curSymbol(S.currency) + " " + S.currency;
 document.getElementById("cur").setAttribute("aria-label", t("currency") + ": " + S.currency);
 document.getElementById("langcode").textContent = "🌐 " + S.lang.toUpperCase();
 document.getElementById("langbtn").setAttribute("aria-label", t("language") + ": " + langName(S.lang, S.lang));
 var main = document.getElementById("main"), y = main.scrollTop;
-main.innerHTML = S.tab === "search" ? screenSearch() : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : S.tab === "prices" ? screenPrices() : S.tab === "favs" ? screenFavs() : screenProfile();
+document.body.classList.toggle("sub", !!S.view);
+if (S.view === "wheel") S.view = "";
+main.innerHTML = S.view ? v2Screen() : S.tab === "search" ? v2Home() : S.tab === "coupons" ? v2Wheel() : S.tab === "profile" ? v2Profile() : S.tab === "prices" ? '<button class="rcard" data-act="v2" data-v="mytrack"><div class="rbody"><b>📈 ' + esc(T2("myTracks")) + '</b><span class="hint">' + TRACK.length + '</span></div><span style="font-size:22px;color:var(--muted)">›</span></button>' + screenPrices() : S.tab === "map" ? screenMap() : S.tab === "favs" ? screenFavs() : screenProfile();
+// : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : S.tab === "prices" ? screenPrices() : S.tab === "favs" ? screenFavs() : screenProfile();
 main.scrollTop = y;
 document.getElementById("nav").innerHTML = TABS.map(function (k) {
 return '<button class="' + (S.tab === k ? "on" : "") + '" data-act="tab" data-v="' + k + '">' + svg(ICON[k === "coupons" ? "wheel" : k], 22) + "<span>" + esc(t("tab_" + k)) + "</span></button>";
@@ -1653,11 +1716,292 @@ else { var pl = placeName(code); h += '<div class="card"><div class="row"><div c
 });
 return h;
 }
+
+// ================= Tripwise Hub v2 screens (layout from the owner's mockup, 11.11.2026) =================
+// Honest data only: flight prices come from data/prices.json (cached fares with the date they were found);
+// hotels open real partner offers (Stay22) - no invented hotel names, prices or bookings.
+var V2T = {
+ru: { logoSub: "Путешествуй умнее. Открывай больше.", tours: "Туры", excursions: "Экскурсии", insurance: "Страховка", soon: "Скоро", wheelTitle: "Колесо авиабилетов", whereTo: "Куда отправимся?",
+ spinGet3: "Крути колесо и получи\n3 выгодных направления", spin: "Крутить колесо", spinAgain: "Крутить ещё раз", great: "Отлично!", chooseDest: "Выберите направление", choose: "Выбрать",
+ pricesFound: "Цены найдены {d} · проверьте при переходе", destChosen: "Направление выбрано!", depart: "Вылет", back: "Обратно", perTicket: "за билет", pickHotels: "Подобрать отели", otherDest: "Выбрать другое направление",
+ hotelWheel: "Колесо отелей", whereStay: "Где остановимся\nв {c}?", spinHotels: "Крути колесо и получи\n3 варианта отелей", chooseHotel: "Выберите отель",
+ tierEco: "Бюджетные отели", tierMid: "Отели 3–4★ в центре", tierTop: "Лучшие отели 4–5★", tierEcoT: "Самые низкие цены на ваши даты", tierMidT: "Лучшее соотношение цены и качества", tierTopT: "Высокий рейтинг и бесплатная отмена",
+ hotelMap: "Отели на карте — реальные цены на ваши даты", book: "Забронировать", nights: "ночей", compare: "Сравнить цены",
+ tracking: "Отслеживание цены", lowest: "Самая низкая найденная цена", byDate: "Цены по датам вылета", notifyDrop: "Уведомлять о снижении цены", added: "Добавлено в отслеживание ✓", addTrack: "Отслеживать цену",
+ myTracks: "Мои отслеживания", addRoute: "Добавить маршрут", notifOn: "Уведомления в боте", noTracks: "Пока нет маршрутов. Выберите направление и нажмите «Отслеживать цену».",
+ flights: "Авиабилеты", oneway: "В одну сторону", round: "Туда и обратно", from: "Откуда", to: "Куда", pax: "пассажиров, эконом", findTickets: "Найти билеты", results: "Результаты", sort: "Сначала дешёвые", direct: "Прямой", stops: "С пересадкой", liveSearch: "Живой поиск со всеми рейсами",
+ guides: "Путеводители", searchCountries: "Поиск по странам и городам", guide: "Путеводитель", popularCities: "Популярные гиды",
+ myBookings: "Мои переходы", favorites: "Избранное", history: "История поиска", notifications: "Уведомления", langCur: "Язык и валюта", support: "Поддержка", privacy: "Конфиденциальность", traveler: "Путешественник",
+ clearAll: "Очистить все", noNotif: "Новых уведомлений нет", newDeal: "Новая низкая цена: {r} — {p}", tripReady: "Ваша поездка в {c}\nсобрана", flight: "Авиабилет", hotel: "Отель ({n} ноч.)", hotelOnSite: "цена на сайте партнёра", total: "Итого перелёт:", mayChange: "Цены могут измениться до завершения бронирования.", goFlight: "Перейти к авиабилету", goHotel: "Перейти к отелю", saveTrip: "Сохранить поездку", saved: "Сохранено ✓",
+ budget: "Бюджет", hotP: "Горячая цена: {r} — {p}", oneDate: "Пока найдена одна дата вылета — график появится, когда цен станет больше.", fewer: "Нашлось только {n} — показываем честно.", none: "Сейчас нет вариантов в этом бюджете — увеличьте бюджет.", perPerson: "за человека" },
+en: { logoSub: "Travel smarter. Discover more.", tours: "Tours", excursions: "Excursions", insurance: "Insurance", soon: "Soon", wheelTitle: "Flight wheel", whereTo: "Where are we going?",
+ spinGet3: "Spin the wheel and get\n3 good-value destinations", spin: "Spin the wheel", spinAgain: "Spin again", great: "Great!", chooseDest: "Choose a destination", choose: "Choose",
+ pricesFound: "Prices found {d} · check when you open", destChosen: "Destination chosen!", depart: "Departure", back: "Return", perTicket: "per ticket", pickHotels: "Find hotels", otherDest: "Choose another destination",
+ hotelWheel: "Hotel wheel", whereStay: "Where shall we stay\nin {c}?", spinHotels: "Spin the wheel and get\n3 hotel options", chooseHotel: "Choose a hotel",
+ tierEco: "Budget hotels", tierMid: "3–4★ hotels in the centre", tierTop: "Top-rated 4–5★ hotels", tierEcoT: "Lowest prices for your dates", tierMidT: "Best value for money", tierTopT: "High ratings and free cancellation",
+ hotelMap: "Hotels on the map — real prices for your dates", book: "Book", nights: "nights", compare: "Compare prices",
+ tracking: "Price tracking", lowest: "Lowest price found", byDate: "Prices by departure date", notifyDrop: "Notify me when the price drops", added: "Added to tracking ✓", addTrack: "Track price",
+ myTracks: "My tracked routes", addRoute: "Add route", notifOn: "Alerts in the bot", noTracks: "No routes yet. Choose a destination and tap “Track price”.",
+ flights: "Flights", oneway: "One way", round: "Round trip", from: "From", to: "To", pax: "passengers, economy", findTickets: "Find tickets", results: "Results", sort: "Cheapest first", direct: "Direct", stops: "With stops", liveSearch: "Live search with all flights",
+ guides: "Guides", searchCountries: "Search countries and cities", guide: "Guide", popularCities: "Popular guides",
+ myBookings: "My clicks", favorites: "Saved", history: "Search history", notifications: "Notifications", langCur: "Language and currency", support: "Support", privacy: "Privacy", traveler: "Traveller",
+ clearAll: "Clear all", noNotif: "No new notifications", newDeal: "New low price: {r} — {p}", tripReady: "Your trip to {c}\nis ready", flight: "Flight", hotel: "Hotel ({n} nights)", hotelOnSite: "price on partner site", total: "Flight total:", mayChange: "Prices may change before booking is completed.", goFlight: "Go to the flight", goHotel: "Go to the hotel", saveTrip: "Save trip", saved: "Saved ✓",
+ budget: "Budget", hotP: "Hot price: {r} — {p}", oneDate: "Only one departure date found so far — the chart appears when there are more prices.", fewer: "Only {n} found — shown honestly.", none: "Nothing in this budget right now — raise the budget.", perPerson: "per person" }
+};
+function T2(k, vars) {
+var s = (V2T[S.lang] && V2T[S.lang][k]) || V2T.en[k] || k;
+if (vars) Object.keys(vars).forEach(function (n) { s = s.split("{" + n + "}").join(vars[n]); });
+return s;
+}
+function nl(s) { return esc(s).split("\n").join("<br>"); }
+var TRACK = load("track", []), NOTIF_CLEARED = load("notifclr", ""), GUIDES = [];
+loadJSON("data/guides.json").then(function (d) { GUIDES = d || []; if (S.view === "guides") render(); }).catch(function () {});
+S.view = ""; S.wres = []; S.seen = []; S.trip = null; S.tier = 0; S.fq = ""; S.fmode = "round"; S.fdest = ""; S.gq = "";
+function today() { return iso(new Date()); }
+function originTrips() { return (PRICES && PRICES.origins && PRICES.origins[S.origin] || []).filter(function (x) { return x.dep > today(); }); }
+function bestByDest(list) { var b = {}; list.forEach(function (x) { if (!b[x.d] || x.p < b[x.d].p) b[x.d] = x; }); return Object.keys(b).map(function (k) { return b[k]; }); }
+function ph(name, iso2) { photoFor(name, iso2); return 'data-photo="' + esc(name) + '"' + (PHOTO[name] ? ' style="background-image:' + PHOTO[name] + '"' : ""); }
+function topbar(title, sub, backTo) {
+return '<div class="tb"><button class="tbb" data-act="v2back" data-v="' + esc(backTo || "") + '" aria-label="back">‹</button><div class="tbt"><b>' + esc(title) + '</b>' + (sub ? '<span>' + nl(sub) + '</span>' : "") + '</div><span class="tbb" style="visibility:hidden">‹</span></div>';
+}
+function photoWheel(names, icon, spinning) {
+var n = names.length || 6, seg = 360 / n, h = '<div class="pw' + (spinning ? " spin" : "") + '" style="transform:rotate(' + (S.rotation || 0) + 'deg)">';
+names.forEach(function (x, i) {
+var pts = ["50% 50%"]; for (var k = 0; k <= 4; k++) { var ang = (i * seg + k * seg / 4 - 90) * Math.PI / 180; pts.push((50 + 75 * Math.cos(ang)).toFixed(1) + "% " + (50 + 75 * Math.sin(ang)).toFixed(1) + "%"); }
+h += '<div class="pws" style="clip-path:polygon(' + pts.join(",") + ')"><div class="pwi" ' + ph(x[0], x[1]) + ' style="background-position:' + (50 + 30 * Math.cos((i * seg + seg / 2 - 90) * Math.PI / 180)).toFixed(0) + '% 50%"></div></div>';
+});
+return h + '</div><div class="pwc">' + icon + '</div>';
+}
+function wheelNames() {
+var list = bestByDest(originTrips()).sort(function (a, b) { return a.p - b.p; }).slice(0, 6);
+return list.map(function (x) { var pl = placeName(x.d); return [pl.name, pl.iso]; });
+}
+function spinFlights() {
+var all = bestByDest(originTrips()), within = all.filter(function (x) { return x.p <= S.budget; });
+var pool = (within.length ? within : all.sort(function (a, b) { return a.p - b.p; }).slice(0, 12)).filter(function (x) { return S.seen.indexOf(x.d) < 0; });
+if (pool.length < 3) { S.seen = []; pool = within.length ? within : all.slice(0, 12); }
+pool = pool.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3).sort(function (a, b) { return a.p - b.p; });
+S.wres = pool; pool.forEach(function (x) { S.seen.push(x.d); });
+}
+function nightsOf(tr) { return Math.max(1, Math.round((new Date(tr.ret) - new Date(tr.dep)) / 864e5)); }
+function fmtD(s) { return fmt(new Date(s + "T12:00:00")); }
+// ---------- screens ----------
+function v2Home() {
+var hc = cityName();
+var h = '<div class="hero big" ' + ph(hc, S.country) + '><button class="tbb glass bell" data-act="v2" data-v="notif" aria-label="' + esc(T2("notifications")) + '">🔔</button><button class="q" data-act="v2" data-v="fsearch">' + svg(ICON.search, 20) + '<span>' + esc(T2("whereTo")) + '</span></button></div>';
+var tiles = [["flights", "fsearch", t("c_flights")], ["hotels", "cat", t("c_hotels")], ["car", "cat", t("c_car")], ["tours", "tours", T2("tours")], ["transfer", "cat", t("c_transfer")], ["esim", "cat", t("c_esim")], ["tours", "cat", T2("excursions")], ["insurance", "soon", T2("insurance")]];
+h += '<section class="card"><div class="tiles">' + tiles.map(function (x) {
+var ic = x[0] === "insurance" ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>' : svg(ICON[x[0]], 24);
+var a = x[1] === "cat" ? 'data-act="v2cat" data-v="' + x[0] + '"' : x[1] === "fsearch" ? 'data-act="v2" data-v="fsearch"' : x[1] === "tours" ? 'data-act="v2tours"' : 'data-act="v2soon"';
+return '<button class="tile" ' + a + '><span class="ic">' + ic + '</span><span>' + esc(x[2]) + '</span></button>';
+}).join("") + '</div></section>';
+h += '<button class="promo" data-act="tab" data-v="coupons"><span class="pimg" ' + ph(hc, S.country) + '></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><b style="font-size:15px">' + esc(t("tab_coupons")) + ' ' + esc(T2("wheelTitle").toLowerCase().indexOf("wheel") >= 0 ? "" : "") + '</b><span class="hint">' + esc(T2("spinGet3").replace("\n", " ")) + '</span></span><span style="color:var(--blue);font-size:24px;font-weight:900">›</span></button>';
+h += hotSection();
+return h;
+}
+function v2Wheel() {
+var names = wheelNames(), h = topbar(T2("wheelTitle"), T2("whereTo"), "home");
+h += '<div class="wheelbox"><span class="plane">✈</span>' + photoWheel(names.length ? names : [["Rome", "it"], ["Barcelona", "es"], ["Istanbul", "tr"], ["Paris", "fr"], ["Lisbon", "pt"], ["Athens", "gr"]], '<svg width="34" height="34" viewBox="0 0 24 24" fill="#2678D8"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>', S.spinning) + '</div>';
+h += '<div class="center hint" style="font-size:14px">' + nl(T2("spinGet3")) + '</div>';
+h += '<div class="card" style="gap:8px"><div class="wcfg" style="display:flex;flex-direction:column;gap:6px"><span class="label">' + esc(t("from")) + '</span>' + combo("origin", t("typeCity")) + '</div>' +
+'<div class="row"><span class="label">' + esc(T2("budget")) + ': ' + esc(money(S.budget)) + '</span><input type="range" min="30" max="600" step="10" value="' + S.budget + '" data-act2="budget" style="flex:1"></div></div>';
+h += '<button class="bigbtn" data-act="v2spin">' + esc(T2("spin")) + '</button>';
+return h;
+}
+function v2WRes() {
+var h = topbar(T2("great"), T2("chooseDest"), "wheel");
+if (!S.wres.length) h += '<section class="card"><div class="hint">' + esc(T2("none")) + '</div></section>';
+else if (S.wres.length < 3) h += '<div class="hint center">' + esc(T2("fewer", { n: S.wres.length })) + '</div>';
+S.wres.forEach(function (tr, i) {
+var pl = placeName(tr.d);
+h += '<div class="rcard"><div class="rimg" ' + ph(pl.name, pl.iso) + '></div><div class="rbody"><b>' + esc(pl.name) + '</b><span class="cty">' + esc(pl.iso ? countryName(pl.iso) : "") + '</span>' +
+'<span class="price">' + esc(money(tr.p)) + '</span><span class="hint">' + esc(fmtD(tr.dep)) + ' – ' + esc(fmtD(tr.ret)) + ' · ' + esc(tr.tr ? T2("stops") : T2("direct")) + '</span></div>' +
+'<button class="pillb" data-act="v2pick" data-v="' + i + '">' + esc(T2("choose")) + '</button></div>';
+});
+h += '<div class="hint center">' + esc(T2("pricesFound", { d: PRICES && PRICES.updated ? fmtD(String(PRICES.updated).slice(0, 10)) : "" })) + '</div>';
+h += '<button class="ghostbig" data-act="v2spin">↻ ' + esc(T2("spinAgain")) + '</button>';
+return h;
+}
+function v2Dest() {
+var tr = S.trip; if (!tr) return v2Wheel();
+var pl = placeName(tr.d);
+var h = '<div class="dhero" ' + ph(pl.name, pl.iso) + '><button class="tbb glass" data-act="v2back" data-v="wres">‹</button></div>';
+h += '<div class="card dcard"><span class="okbadge">✓ ' + esc(T2("destChosen")) + '</span><h2>' + esc(pl.name) + (pl.iso ? ", " + esc(countryName(pl.iso)) : "") + '</h2>' +
+'<div class="drow"><div><span class="hint">✈ ' + esc(T2("depart")) + '</span><b>' + esc(fmtD(tr.dep)) + '</b></div><div><span class="hint">↩ ' + esc(T2("back")) + '</span><b>' + esc(fmtD(tr.ret)) + '</b></div></div>' +
+'<div class="center"><div class="price xl">' + esc(money(tr.p)) + '</div><div class="hint">' + esc(T2("perTicket")) + ' · ' + esc(tr.tr ? T2("stops") : T2("direct")) + '</div></div>' +
+'<button class="bigbtn" data-act="v2" data-v="hwheel">' + esc(T2("pickHotels")) + '</button>' +
+'<button class="linkbtn" data-act="v2" data-v="wres">' + esc(T2("otherDest")) + '</button>' +
+'<div class="grid2"><button class="btn ghost" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(T2("flight")) + '</button><button class="btn ghost" data-act="v2track">🔔 ' + esc(T2("addTrack")) + '</button></div></div>';
+return h;
+}
+function tiers() { return [["tierEco", "tierEcoT", "★★"], ["tierMid", "tierMidT", "★★★★"], ["tierTop", "tierTopT", "★★★★★"]]; }
+function v2HWheel() {
+var tr = S.trip; if (!tr) return v2Wheel();
+var pl = placeName(tr.d), h = topbar(T2("hotelWheel"), T2("whereStay", { c: pl.name }), "dest");
+var guides = GUIDES.filter(function (g) { return g.p; }).slice(0, 5).map(function (g) { return [g.p, ""]; });
+h += '<div class="wheelbox">' + photoWheel([[pl.name, pl.iso]].concat(guides).slice(0, 6), '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2678D8" stroke-width="2.2" stroke-linecap="round"><path d="M3 18V7M3 13h18v5M21 13a3 3 0 0 0-3-3h-7v3M7 11.5a1.5 1.5 0 1 0 0-.01"/></svg>', S.spinning) + '</div>';
+h += '<div class="center hint" style="font-size:14px">' + nl(T2("spinHotels")) + '</div><button class="bigbtn" data-act="v2hspin">' + esc(T2("spin")) + '</button>';
+return h;
+}
+function v2HRes() {
+var tr = S.trip, pl = placeName(tr.d), n = nightsOf(tr), h = topbar(T2("great"), T2("chooseHotel"), "hwheel");
+tiers().forEach(function (x, i) {
+h += '<div class="rcard"><div class="rimg" ' + ph(i === 0 ? pl.name : (GUIDES[i * 3] && GUIDES[i * 3].p) || pl.name, pl.iso) + '></div><div class="rbody"><b>' + esc(T2(x[0])) + '</b><span class="hint">' + esc(pl.name) + ' · ' + n + ' ' + esc(T2("nights")) + '</span>' +
+'<span class="stars">' + x[2] + '</span><span class="hint">' + esc(T2(x[1])) + '</span></div><button class="pillb" data-act="v2tier" data-v="' + i + '">' + esc(T2("choose")) + '</button></div>';
+});
+h += '<button class="ghostbig" data-act="v2hspin">↻ ' + esc(T2("spinAgain")) + '</button>';
+return h;
+}
+function v2HDetail() {
+var tr = S.trip, pl = placeName(tr.d), x = tiers()[S.tier] || tiers()[1], url = hotelUrl(pl.name, tr.dep, tr.ret);
+var map = "https://www.stay22.com/embed/gm?aid=tripwise&campaign=hubdetail&address=" + encodeURIComponent(pl.name) + "&checkin=" + tr.dep + "&checkout=" + tr.ret + "&adults=" + S.adults;
+var h = '<div class="dhero" ' + ph(pl.name, pl.iso) + '><button class="tbb glass" data-act="v2back" data-v="hres">‹</button></div>';
+h += '<div class="card"><h2 style="margin:0">' + esc(T2(x[0])) + '</h2><span class="stars">' + x[2] + '</span><span class="hint">📍 ' + esc(pl.name) + ' · ' + esc(fmtD(tr.dep)) + ' – ' + esc(fmtD(tr.ret)) + '</span>' +
+'<div class="amen"><span>📶<br>Wi-Fi</span><span>☕<br>' + esc(S.lang === "ru" ? "Завтрак" : "Breakfast") + '</span><span>🏊<br>' + esc(S.lang === "ru" ? "Бассейн" : "Pool") + '</span><span>✅<br>' + esc(S.lang === "ru" ? "Бесплатная отмена" : "Free cancel") + '</span></div>' +
+'<div class="hint">' + esc(T2("hotelMap")) + '</div><iframe src="' + esc(map) + '" loading="lazy" style="width:100%;height:300px;border:0;border-radius:14px"></iframe>' +
+'<div class="row"><span class="hint">' + esc(T2("compare")) + '</span><button class="bigbtn" style="width:auto;padding:0 22px" data-act="v2hotelgo" data-v="' + esc(url) + '">' + esc(T2("book")) + '</button></div></div>';
+return h;
+}
+function routeTrips(dest) { return originTrips().filter(function (x) { return x.d === dest; }).sort(function (a, b) { return a.dep < b.dep ? -1 : 1; }); }
+function chart(list) {
+if (list.length < 2) return "";
+var W = 320, H = 140, ps = list.map(function (x) { return x.p; }), mn = Math.min.apply(null, ps), mx = Math.max.apply(null, ps), r = Math.max(1, mx - mn);
+var pts = list.map(function (x, i) { return [Math.round(20 + i * (W - 30) / (list.length - 1)), Math.round(10 + (H - 30) * (1 - (x.p - mn) / r))]; });
+var d = pts.map(function (p, i) { return (i ? "L" : "M") + p[0] + " " + p[1]; }).join(" ");
+var lo = ps.indexOf(mn);
+return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto"><path d="' + d + '" fill="none" stroke="#2678D8" stroke-width="2.5"/>' + pts.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3" fill="#2678D8"/>'; }).join("") +
+'<circle cx="' + pts[lo][0] + '" cy="' + pts[lo][1] + '" r="6" fill="#55A88A"/><text x="20" y="' + (H - 4) + '" font-size="10" fill="#718096">' + esc(fmtD(list[0].dep)) + '</text><text x="' + (W - 10) + '" y="' + (H - 4) + '" font-size="10" fill="#718096" text-anchor="end">' + esc(fmtD(list[list.length - 1].dep)) + '</text></svg>';
+}
+function trackedPrice(dest) { var l = routeTrips(dest); return l.length ? Math.min.apply(null, l.map(function (x) { return x.p; })) : null; }
+function v2Track() {
+var dest = S.trip ? S.trip.d : (TRACK[0] && TRACK[0].d) || (bestByDest(originTrips()).sort(function (a, b) { return a.p - b.p; })[0] || {}).d;
+var h = topbar(T2("tracking"), "", "home");
+if (!dest) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + '</div></section>';
+var pl = placeName(dest), list = routeTrips(dest), cur = trackedPrice(dest), tk = TRACK.filter(function (x) { return x.d === dest; })[0];
+var chg = tk && cur ? Math.round((cur - tk.p) / tk.p * 100) : 0;
+h += '<section class="card center" style="gap:6px"><b style="font-size:18px">' + esc(originName()) + ' — ' + esc(pl.name) + '</b><div><span class="price xl">' + esc(cur ? money(cur) : "—") + '</span>' + (chg ? ' <span class="' + (chg < 0 ? "down" : "up") + '">' + (chg < 0 ? "↓ " : "↑ ") + Math.abs(chg) + '%</span>' : "") + '</div><span class="hint">' + esc(T2("lowest")) + '</span></section>';
+h += '<section class="card"><div class="hint">' + esc(T2("byDate")) + '</div>' + (chart(list) || '<div class="hint">' + esc(T2("oneDate")) + '</div>') + '</section>';
+h += '<section class="card"><label class="row" style="gap:10px"><span>🔔 ' + esc(T2("notifyDrop")) + '</span><button class="tog' + (tk ? " on" : "") + '" data-act="v2track" aria-pressed="' + (tk ? "true" : "false") + '"><i></i></button></label>' + (tk ? '<div class="chipok">' + esc(T2("added")) + '</div>' : "") + '</section>';
+h += '<button class="linkbtn" data-act="v2" data-v="mytrack">' + esc(T2("myTracks")) + ' ›</button>';
+return h;
+}
+function v2MyTrack() {
+var h = topbar(T2("myTracks"), "", "track");
+if (!TRACK.length) h += '<section class="card"><div class="hint">' + esc(T2("noTracks")) + '</div></section>';
+TRACK.forEach(function (x) {
+var pl = placeName(x.d), cur = trackedPrice(x.d), chg = cur ? Math.round((cur - x.p) / x.p * 100) : 0;
+h += '<button class="rcard" data-act="v2trackopen" data-v="' + esc(x.d) + '"><div class="rimg" ' + ph(pl.name, pl.iso) + '></div><div class="rbody"><b>' + esc(originName()) + ' — ' + esc(pl.name) + '</b><span class="price">' + esc(cur ? money(cur) : "—") + (chg ? ' <small class="' + (chg < 0 ? "down" : "up") + '">' + (chg < 0 ? "↓" : "↑") + Math.abs(chg) + '%</small>' : "") + '</span><span class="hint">' + esc(T2("notifOn")) + '</span></div><span style="color:var(--muted);font-size:22px">›</span></button>';
+});
+h += '<button class="ghostbig" data-act="v2" data-v="fsearch">＋ ' + esc(T2("addRoute")) + '</button>';
+return h;
+}
+function v2FSearch() {
+var dests = bestByDest(originTrips()).map(function (x) { var pl = placeName(x.d); return [x.d, pl.name]; }).sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+if (!S.fdest && dests[0]) S.fdest = dests[0][0];
+var h = topbar(T2("flights"), "", "home");
+h += '<div class="seg"><button class="' + (S.fmode === "oneway" ? "on" : "") + '" data-act="v2fmode" data-v="oneway">' + esc(T2("oneway")) + '</button><button class="' + (S.fmode === "round" ? "on" : "") + '" data-act="v2fmode" data-v="round">' + esc(T2("round")) + '</button></div>';
+h += '<section class="card flist"><div class="frow">✈ <div style="flex:1"><span class="hint">' + esc(T2("from")) + '</span>' + combo("origin", t("typeCity")) + '</div></div>' +
+'<div class="frow">🛬 <div style="flex:1"><span class="hint">' + esc(T2("to")) + '</span><select data-act2="fdest" style="width:100%;font-size:16px;font-weight:800;border:0;background:transparent">' + dests.map(function (x) { return '<option value="' + x[0] + '"' + (S.fdest === x[0] ? " selected" : "") + '>' + esc(x[1]) + '</option>'; }).join("") + '</select></div></div>' +
+'<div class="frow">👤 <div style="flex:1"><b>' + passengers() + ' ' + esc(T2("pax")) + '</b></div></div></section>';
+h += '<button class="bigbtn" data-act="v2" data-v="fres">' + esc(T2("findTickets")) + '</button><div class="hero wing" ' + ph(placeName(S.fdest).name, placeName(S.fdest).iso) + '></div>';
+return h;
+}
+function v2FRes() {
+var pl = placeName(S.fdest), list = originTrips().filter(function (x) { return x.d === S.fdest; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 15);
+var h = topbar(T2("results"), originName() + " — " + pl.name, "fsearch");
+h += '<div class="hint">⇅ ' + esc(T2("sort")) + '</div>';
+if (!list.length) h += '<section class="card"><div class="hint">' + esc(t("noData")) + '</div></section>';
+list.forEach(function (tr) {
+h += '<div class="card fres"><div><b>' + esc(fmtD(tr.dep)) + (S.fmode === "round" ? " – " + esc(fmtD(tr.ret)) : "") + '</b><span class="hint">' + esc(tr.tr ? T2("stops") : T2("direct")) + ' · Aviasales</span></div><div style="text-align:right"><div class="price">' + esc(money(tr.p)) + '</div><button class="pillb" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(T2("choose")) + '</button></div></div>';
+});
+h += '<button class="ghostbig" data-act="open" data-v="' + esc("https://tripwise-bot.tripwise-hub.workers.dev/flights") + '">🔎 ' + esc(T2("liveSearch")) + '</button>';
+return h;
+}
+function v2Guides() {
+var h = topbar(T2("guides"), "", "home"), q = (S.gq || "").toLowerCase();
+h += '<input class="gsearch" data-act2="gq" value="' + esc(S.gq || "") + '" placeholder="🔍 ' + esc(T2("searchCountries")) + '">';
+var list = GUIDES.filter(function (g) { return !q || (g.t + " " + g.c + " " + g.l).toLowerCase().indexOf(q) >= 0; });
+var countries = []; list.forEach(function (g) { if (countries.indexOf(g.c) < 0) countries.push(g.c); });
+h += '<div class="gcards">' + countries.slice(0, 2).map(function (c) { var g = list.filter(function (x) { return x.c === c; })[0]; return '<button class="gcard" data-act="open" data-v="' + esc(SITE_BLOG + g.s + ".html") + '" ' + ph(g.p || c, "") + '><b>' + esc(c) + '</b><span>' + esc(T2("guide")) + ' ›</span></button>'; }).join("") + '</div>';
+h += '<b>' + esc(T2("popularCities")) + '</b><div class="gsmall">' + list.slice(0, 30).map(function (g) { return '<button class="gs" data-act="open" data-v="' + esc(SITE_BLOG + g.s + ".html") + '" ' + ph(g.p || g.l, "") + '><span>' + esc(g.l || g.c) + '</span></button>'; }).join("") + '</div>';
+return h;
+}
+var SITE_BLOG = "https://tripwisehub-blip.github.io/tripwise-app/blog/";
+function v2Profile() {
+var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user, name = u ? [u.first_name, u.last_name].filter(Boolean).join(" ") : T2("traveler"), un = u && u.username ? "@" + u.username : "";
+var h = '<section class="card prof"><div class="ava">' + (u && u.photo_url ? '<img src="' + esc(u.photo_url) + '" alt="">' : esc((name || "T")[0])) + '</div><div><b style="font-size:18px">' + esc(name) + '</b><span class="hint">' + esc(un) + '</span></div></section>';
+var items = [["♡", T2("favorites"), 'data-act="tab" data-v="favs"'], ["📈", T2("myTracks"), 'data-act="v2" data-v="mytrack"'], ["🕘", T2("history"), 'data-act="tab" data-v="prices"'], ["🔔", T2("notifications"), 'data-act="v2" data-v="notif"'], ["📖", T2("guides"), 'data-act="v2" data-v="guides"'], ["💬", T2("support"), 'data-act="open" data-v="' + BOT_LINK + '"'], ["🔒", T2("privacy"), 'data-act="open" data-v="' + SITE_BLOG + 'about.html"']];
+h += '<section class="card menu">' + items.map(function (x) { return '<button class="mi" ' + x[2] + '><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b><i>›</i></button>'; }).join("") + '</section>';
+return h + screenProfile();
+}
+function v2Notif() {
+var h = topbar(T2("notifications"), "", "home"), items = [];
+TRACK.forEach(function (x) { var cur = trackedPrice(x.d); if (cur && cur < x.p) items.push(["📉", T2("newDeal", { r: originName() + " — " + placeName(x.d).name, p: money(cur) })]); });
+bestByDest(originTrips()).sort(function (a, b) { return a.p - b.p; }).slice(0, 3).forEach(function (x) { items.push(["🔥", T2("hotP", { r: originName() + " — " + placeName(x.d).name, p: money(x.p) })]); });
+if (NOTIF_CLEARED === (PRICES && PRICES.updated)) items = [];
+if (!items.length) return h + '<section class="card"><div class="hint">' + esc(T2("noNotif")) + '</div></section>';
+h += items.map(function (x) { return '<div class="card ncard"><span class="nic">' + x[0] + '</span><div>' + esc(x[1]) + '<div class="hint">' + esc(PRICES && PRICES.updated ? fmtD(String(PRICES.updated).slice(0, 10)) : "") + '</div></div></div>'; }).join("");
+return h + '<button class="ghostbig" data-act="v2clear">' + esc(T2("clearAll")) + '</button>';
+}
+function v2Summary() {
+var tr = S.trip; if (!tr) return v2Home();
+var pl = placeName(tr.d), n = nightsOf(tr), x = tiers()[S.tier] || tiers()[1], pax = Math.max(1, S.adults + S.kids.length);
+var h = '<div class="center" style="padding-top:8px"><div class="bigok">✓</div><h2 style="margin:8px 0 0">' + esc(T2("great")) + '</h2><div style="font-weight:800">' + nl(T2("tripReady", { c: pl.name })) + '</div></div>';
+h += '<div class="card" style="padding:0;overflow:hidden"><div class="rimg" style="width:100%;height:150px;border-radius:0" ' + ph(pl.name, pl.iso) + '></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+'<div class="row"><span>' + esc(T2("flight")) + ' ×' + pax + '</span><b>' + esc(money(tr.p * pax)) + '</b></div>' +
+'<div class="row"><span>' + esc(T2("hotel", { n: n })) + ' · ' + esc(T2(x[0])) + '</span><b class="hint">' + esc(T2("hotelOnSite")) + '</b></div>' +
+'<div class="row" style="border-top:1px solid var(--line);padding-top:10px"><b>' + esc(T2("total")) + '</b><b class="price">' + esc(money(tr.p * pax)) + '</b></div><div class="hint">' + esc(T2("mayChange")) + '</div></div></div>';
+h += '<button class="bigbtn" data-act="open" data-v="' + esc(tripUrl(tr)) + '">' + esc(T2("goFlight")) + '</button><button class="ghostbig" data-act="open" data-v="' + esc(hotelUrl(pl.name, tr.dep, tr.ret)) + '">' + esc(T2("goHotel")) + '</button>';
+h += '<button class="linkbtn" data-act="v2savetrip">' + esc(FAVS.indexOf(tr.d) >= 0 ? T2("saved") : T2("saveTrip")) + '</button>';
+return h;
+}
+function v2Screen() {
+switch (S.view) {
+case "wres": return v2WRes(); case "dest": return v2Dest(); case "hwheel": return v2HWheel(); case "hres": return v2HRes(); case "hdetail": return v2HDetail();
+case "track": return v2Track(); case "mytrack": return v2MyTrack(); case "fsearch": return v2FSearch(); case "fres": return v2FRes();
+case "guides": return v2Guides(); case "classic": return topbar(t("c_" + S.cat) || "", "", "home") + screenSearch(); case "notif": return v2Notif(); case "summary": return v2Summary(); case "wheel": return v2Wheel();
+}
+return "";
+}
+function v2Act(a, v, el) {
+switch (a) {
+case "v2": S.view = v; if (v === "wheel") S.tab = "coupons"; break;
+case "v2back": S.view = v === "home" ? "" : v === "wheel" ? "" : v; if (v === "wheel" || v === "home") { S.view = ""; if (v === "home") S.tab = "search"; } break;
+case "v2cat": S.view = "classic"; S.tab = "search"; S.cat = v; S.searched = false; render(); setTimeout(function () { var f = document.getElementById("tw-form"); if (f) f.scrollIntoView({ behavior: "smooth" }); }, 50); break;
+case "v2tours": S.view = "classic"; S.tab = "search"; S.cat = "tours"; S.searched = false; break;
+case "v2soon": toast(T2("soon")); return true;
+case "v2spin": S.spinning = true; S.rotation = (S.rotation || 0) + 1080 + Math.floor(Math.random() * 360); render(); haptic();
+setTimeout(function () { S.spinning = false; spinFlights(); S.tab = "coupons"; S.view = "wres"; render(); document.getElementById("main").scrollTop = 0; }, 2200); return true;
+case "v2pick": S.trip = S.wres[+v]; S.view = "dest"; break;
+case "v2hspin": S.spinning = true; S.rotation = (S.rotation || 0) + 1080 + Math.floor(Math.random() * 360); render(); haptic();
+setTimeout(function () { S.spinning = false; S.view = "hres"; render(); document.getElementById("main").scrollTop = 0; }, 2200); return true;
+case "v2tier": S.tier = +v; S.view = "hdetail"; break;
+case "v2hotelgo": openLink(v); setTimeout(function () { S.view = "summary"; render(); }, 600); return true;
+case "v2track": var tr = S.trip || { d: (TRACK[0] || {}).d }; if (!tr.d) return true;
+var idx = -1; TRACK.forEach(function (x, i) { if (x.d === tr.d) idx = i; });
+if (idx >= 0) TRACK.splice(idx, 1); else { TRACK.push({ d: tr.d, p: trackedPrice(tr.d) || tr.p }); if (tr.dep) openLink(alertLink(tr.d, tr.dep, tr.ret)); }
+save("track", TRACK); if (S.view !== "track") S.view = "track"; break;
+case "v2trackopen": S.trip = routeTrips(v).sort(function (a, b) { return a.p - b.p; })[0] || { d: v }; S.view = "track"; break;
+case "v2fmode": S.fmode = v; break;
+case "v2clear": NOTIF_CLEARED = PRICES && PRICES.updated; save("notifclr", NOTIF_CLEARED); break;
+case "v2savetrip": if (FAVS.indexOf(S.trip.d) < 0) { FAVS.push(S.trip.d); save("favs", FAVS); } break;
+default: return false;
+}
+haptic(); document.getElementById("main").scrollTop = 0; render(); return true;
+}
+document.addEventListener("input", function (e) {
+var a = e.target.getAttribute && e.target.getAttribute("data-act2"); if (!a) return;
+if (a === "budget") { S.budget = +e.target.value; save("budget", S.budget); var l = e.target.parentNode.querySelector(".label"); if (l) l.textContent = T2("budget") + ": " + money(S.budget); }
+if (a === "gq") { S.gq = e.target.value; var pos = e.target.selectionStart; render(); var i = document.querySelector('[data-act2="gq"]'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
+});
+document.addEventListener("change", function (e) { var a = e.target.getAttribute && e.target.getAttribute("data-act2"); if (a === "fdest") S.fdest = e.target.value; });
+
 // ---------- Events ----------
 function act(el) {
 var a = el.getAttribute("data-act"), v = el.getAttribute("data-v");
+if (a && a.indexOf("v2") === 0 && v2Act(a, v, el)) return;
 switch (a) {
-case "tab": S.tab = v; haptic(); document.getElementById("main").scrollTop = 0; break;
+case "tab": S.tab = v; S.view = ""; haptic(); document.getElementById("main").scrollTop = 0; break;
 case "fav": var fi = FAVS.indexOf(v); if (fi >= 0) FAVS.splice(fi, 1); else FAVS.push(v); save("favs", FAVS); haptic(); break;
 case "cat": S.cat = v; S.searched = false; haptic(); break;
 case "country": S.country = v; S.city = BY_ISO[v].cities[0][1]; S.searched = false; haptic(); break;
