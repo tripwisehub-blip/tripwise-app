@@ -97,6 +97,7 @@ META = {
     "istanbul-guide": ("Türkiye", "Istanbul", "Istanbul"),
     "dubai-on-a-budget": ("United Arab Emirates", "Dubai", "Dubai"),
     "bangkok-guide": ("Thailand", "Bangkok", "Bangkok"),
+    "phuket-first-time": ("Thailand", "Phuket", "Kata Beach"),
     "tenerife-winter-sun": ("Spain", "Tenerife", "Teide National Park"),
     "antalya-guide": ("Türkiye", "Antalya", "Antalya"),
     "hurghada-guide": ("Egypt", "Hurghada", "Hurghada"),
