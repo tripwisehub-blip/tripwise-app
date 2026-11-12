@@ -1,0 +1,8 @@
+name = "go"
+main = "index.js"
+compatibility_date = "2026-06-01"
+workers_dev = true
+
+[[services]]
+binding = "MAIN"
+service = "tripwise-bot"
