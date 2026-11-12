@@ -446,9 +446,9 @@ async function store(req, env, url) {
   return Response.json({ ok: true });
 }
 
-// ---------- Short pretty links: tripwise-bot.tripwise-hub.workers.dev/<name>[?c=City] ----------
+// ---------- Short pretty links: go.tripwise-hub.workers.dev/<name>[?c=City] (old host tripwise-bot.tripwise-hub.workers.dev works too) ----------
 const SITE = "https://tripwisehub-blip.github.io/tripwise-app/";
-function goLink(path, c) {
+function goLink(path, c, s) {
   const q = encodeURIComponent(c || "");
   const m = {
     car: "https://www.discovercars.com/?a_aid=tripwisehub",
@@ -462,14 +462,154 @@ function goLink(path, c) {
     bot: "https://t.me/tripwise_hub_bot", deals: "https://t.me/tripwise_deals",
   };
   if (m[path]) return m[path];
+  // /f/TLL-BCN or /f/TLL-BCN-2511-0212 → Aviasales search via Travelpayouts (subid from ?s=ig|fb|yt…)
+  const f = path.match(/^f\/([a-z]{3})-([a-z]{3})(?:-(\d{4})-(\d{4}))?$/);
+  if (f) {
+    const [, o, d, a, b] = f;
+    const sp = a ? "/search/" + o.toUpperCase() + a + d.toUpperCase() + (b || "") + "1" : "/?origin=" + o.toUpperCase() + "&destination=" + d.toUpperCase();
+    const sub = /^[a-z]{1,12}$/.test(s || "") ? s : "go";
+    return "https://tp.media/r?campaign_id=100&p=4114&trs=588570&marker=793212." + sub + "&u=" + encodeURIComponent("https://www.aviasales.com" + sp);
+  }
   if (path.startsWith("b/") && /^[a-z0-9-]+$/.test(path.slice(2))) return SITE + "blog/" + path.slice(2) + ".html";
   return null;
+}
+
+// ---------- Pre-publish check ("post checker agent") for scripts → Make → Facebook / Instagram / YouTube / Pinterest ----------
+// POST /check  (header X-Key = sha256 of the bot token), body {message, link, photo, video, cover, title, source, feed}
+// → {ok, message, ig, link, problems[], checked[]}. message: long links replaced with short ones and verified;
+// ig: Instagram caption without URLs (they are not clickable there) pointing to the link in bio (/ig page).
+const SHORT = "https://go.tripwise-hub.workers.dev";
+const URL_RE = /https?:\/\/[^\s<>()"']+[^\s<>()"'.,!?;:]/g;
+
+function shorten(u, src) {
+  try {
+    const x = new URL(u);
+    const host = x.hostname.replace(/^www\./, "");
+    if (host === "go.tripwise-hub.workers.dev" || host === "tripwise-bot.tripwise-hub.workers.dev") return SHORT + x.pathname + x.search;
+    if (host === "tp.media") {
+      const t = new URL(x.searchParams.get("u") || "https://x/");
+      const m = t.pathname.match(/^\/search\/([A-Z]{3})(\d{4})([A-Z]{3})(\d{4})?\d$/);
+      if (/aviasales/.test(t.hostname) && m) return SHORT + "/f/" + m[1].toLowerCase() + "-" + m[3].toLowerCase() + "-" + m[2] + (m[4] ? "-" + m[4] : "") + "?s=" + src;
+      return u;
+    }
+    if (host === "tripwisehub-blip.github.io" && x.pathname.startsWith("/tripwise-app/")) {
+      const p = x.pathname.slice("/tripwise-app/".length);
+      if (p === "" || p === "index.html") return SHORT + "/app";
+      if (p === "blog/" || p === "blog/index.html") return SHORT + "/blog";
+      const b = p.match(/^blog\/([a-z0-9-]+)\.html$/);
+      if (b) return SHORT + "/b/" + b[1];
+      return u;
+    }
+    if (host === "t.me" && /^\/tripwise_hub_bot\/?$/.test(x.pathname)) return SHORT + "/bot";
+    if (host === "t.me" && /^\/tripwise_deals\/?$/.test(x.pathname)) return SHORT + "/deals";
+    if (host === "discovercars.com" && x.searchParams.get("a_aid") === "tripwisehub" && x.pathname === "/") return SHORT + "/car";
+  } catch (e) { /* not a URL */ }
+  return u;
+}
+
+async function probe(u, kind) {
+  // our own short links are resolved locally, then the target is checked
+  let target = u;
+  try {
+    const x = new URL(u);
+    if (/tripwise-hub\.workers\.dev$/.test(x.hostname)) {
+      const p = x.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+      if (p === "ig" || p === "links") return { url: u, status: 200 };
+      target = goLink(p, x.searchParams.get("c"), x.searchParams.get("s"));
+      if (!target) return { url: u, status: 404, bad: true, why: "unknown short link" };
+    }
+    const r = await fetch(target, { method: kind ? "HEAD" : "GET", redirect: target.includes("tp.media") ? "manual" : "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (TripwiseLinkCheck)" }, cf: { cacheTtl: 300 } });
+    const ct = r.headers.get("content-type") || "";
+    const out = { url: u, status: r.status };
+    if (r.status === 404 || r.status === 410 || r.status >= 500) Object.assign(out, { bad: true, why: "HTTP " + r.status });
+    if (kind && r.ok && !ct.startsWith(kind)) Object.assign(out, { bad: true, why: "not " + kind + " (" + ct + ")" });
+    if (r.body) r.body.cancel();
+    return out;
+  } catch (e) {
+    return { url: u, status: 0, bad: true, why: String(e).slice(0, 80) };
+  }
+}
+
+function igCaption(text, title) {
+  let t = text.replace(URL_RE, "").split("\n").map((l) => l.replace(/[ \t]+$/, "").replace(/[:：]\s*$/, ": 🔗 link in bio")).join("\n");
+  t = t.replace(/(?:🔗 link in bio[^\n]*\n?){2,}/g, "🔗 link in bio\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (!/link in bio/i.test(t)) t += "\n\n🔗 Links: tap the link in bio";
+  const lines = t.split("\n");
+  const tags = /^\s*#/.test(lines[lines.length - 1]) ? lines.pop() : "";
+  t = lines.join("\n").trim() + "\n👉 More deals: @tripwise.deals" + (tags ? "\n\n" + tags : "");
+  // Instagram limits: 2,200 characters, 30 hashtags
+  let n = 0;
+  t = t.replace(/#[\p{L}\p{N}_]+/gu, (h) => (++n > 30 ? "" : h));
+  return t.length > 2200 ? t.slice(0, 2190).replace(/\s+\S*$/, "") + "…" : t;
+}
+
+async function precheck(req, env) {
+  if (req.headers.get("X-Key") !== await sha(env.TG_BOT_TOKEN)) return new Response("forbidden", { status: 403 });
+  const b = await req.json();
+  const src = /^[a-z]{1,12}$/.test(b.source || "") ? b.source : "social";
+  const problems = [];
+  let msg = String(b.message || "");
+  const urls = [...new Set(msg.match(URL_RE) || [])];
+  const map = {};
+  for (const u of urls) map[u] = shorten(u, src);
+  const link = b.link ? shorten(b.link, src) : "";
+  const all = [...new Set([...Object.values(map), link].filter(Boolean))].slice(0, 25);
+  const checked = await Promise.all(all.map((u) => probe(u)));
+  const bad = new Set(checked.filter((c) => c.bad).map((c) => c.url));
+  for (const c of checked) if (c.bad) problems.push("broken link " + c.url + " — " + c.why + " → replaced with " + SHORT + "/blog");
+  for (const [u, s] of Object.entries(map)) msg = msg.split(u).join(bad.has(s) ? SHORT + "/blog" : s);
+  const media = {};
+  for (const [k, kind] of [["photo", "image"], ["cover", "image"], ["video", "video"]]) {
+    if (!b[k]) continue;
+    const c = await probe(b[k], kind);
+    checked.push(c);
+    if (c.bad) problems.push(k + " not reachable: " + b[k] + " — " + c.why + " (dropped)"); else media[k] = b[k];
+  }
+  if (!msg.trim()) problems.push("empty text");
+  const ig = igCaption(msg, b.title);
+  const out = { ok: !problems.length, message: msg, ig, link: bad.has(link) ? SHORT + "/blog" : link, ...media, problems, checked };
+  // newest posts are listed on the link-in-bio page /ig
+  if (b.feed !== false && msg.trim()) {
+    const first = (msg.match(URL_RE) || []).find((u) => !/\/(bot|deals)$/.test(u)) || out.link || SHORT + "/blog";
+    const head = (b.title || msg.split("\n").find((l) => l.trim()) || "Tripwise").replace(/<[^>]+>/g, "").trim().slice(0, 90);
+    const feed = JSON.parse((await env.BOT.get("igfeed")) || "[]").filter((i) => i.t !== head);
+    feed.unshift({ t: head, u: first, img: media.photo || media.cover || "", d: new Date().toISOString().slice(0, 10) });
+    await env.BOT.put("igfeed", JSON.stringify(feed.slice(0, 12)));
+  }
+  return Response.json(out);
+}
+
+async function igPage(env) {
+  const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const feed = JSON.parse((await env.BOT.get("igfeed")) || "[]");
+  const tiles = [["✈️", "Cheap flights", "/flights"], ["🤖", "Travel bot", "/bot"], ["📣", "Daily deals", "/deals"], ["🏨", "Hotels", "/hotels"],
+    ["🚗", "Rent a car", "/car"], ["🎟️", "Tours", "/tours"], ["📶", "eSIM", "/esim"], ["🚕", "Transfers", "/transfer"], ["📖", "Travel guides", "/blog"]];
+  const cards = feed.map((i) => `<a class="card" href="${esc(i.u)}">${i.img ? `<img src="${esc(i.img)}" alt="" loading="lazy">` : ""}<span><b>${esc(i.t)}</b><small>${esc(i.d)} · Open →</small></span></a>`).join("");
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripwise — links</title>
+<meta name="description" content="Cheap flights, hotels, car rental and travel guides from Tripwise."><style>
+:root{--bg:#F4F7FB;--card:#fff;--ink:#14213D;--mut:#5B6B86;--acc:#1E5EFF;--acc2:#FF7A59}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1525;--card:#18223A;--ink:#EEF2FA;--mut:#9AA8C2}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:520px;margin:0 auto;padding:28px 16px 40px}.logo{width:72px;height:72px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;font-size:36px;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+h1{text-align:center;font-size:22px;margin:0}.sub{text-align:center;color:var(--mut);margin:4px 0 20px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}.grid a{background:var(--card);border-radius:14px;padding:12px 6px;text-align:center;text-decoration:none;color:var(--ink);font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.grid a i{display:block;font-style:normal;font-size:24px;margin-bottom:4px}h2{font-size:16px;margin:0 0 10px}
+.card{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:10px;margin-bottom:10px;text-decoration:none;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}.card b{display:block;font-size:15px}.card small{color:var(--acc);font-weight:600}
+.cta{display:block;text-align:center;background:var(--acc);color:#fff;text-decoration:none;padding:14px;border-radius:14px;font-weight:700;margin-top:18px}
+</style></head><body><main><div class="logo">✈️</div><h1>Tripwise</h1><p class="sub">Cheap flights & travel deals every day</p>
+<div class="grid">${tiles.map(([e, t, p]) => `<a href="${p}"><i>${e}</i>${t}</a>`).join("")}</div>
+${cards ? `<h2>🔥 From our latest posts</h2>${cards}` : ""}<a class="cta" href="/bot">🤖 Ask the Tripwise bot</a></main></body></html>`;
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=120" } });
 }
 
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
-    const go = goLink(url.pathname.replace(/^\/+|\/+$/g, "").toLowerCase(), url.searchParams.get("c"));
+    const go = goLink(url.pathname.replace(/^\/+|\/+$/g, "").toLowerCase(), url.searchParams.get("c"), url.searchParams.get("s"));
+    if (url.pathname === "/ig" || url.pathname === "/links") return igPage(env);
+    if (url.pathname === "/check" && req.method === "POST") return precheck(req, env);
     if (go) return Response.redirect(go, 302);
     if (url.pathname === "/store") return store(req, env, url);
     if (url.pathname === "/help") {
