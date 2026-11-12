@@ -68,6 +68,12 @@ def main():
             done.add(key)
             continue
         body = {"pin": "1", "photo": img, "title": title[:99], "message": desc + "\n\n#travel #cheapflights #budgettravel #europetravel", "link": link + "?utm_source=pinterest"}
+        from precheck import prepare
+        body = prepare(body, "pinterest", feed=False)
+        if "photo" not in body:
+            print("pin skipped, photo broken:", key)
+            done.add(key)
+            continue
         try:
             urllib.request.urlopen(urllib.request.Request(HOOK, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}), timeout=30)
             print("Pinned", key)

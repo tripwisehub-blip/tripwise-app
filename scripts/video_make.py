@@ -136,6 +136,8 @@ def post_pending():
         print("Video not live yet:", e)
         return
     body = {"video": url, "cover": SITE + meta.get("cover", ""), "title": meta["title"], "message": meta["caption"], "link": SITE}
+    from precheck import prepare
+    body = prepare(body, "video")
     try:
         urllib.request.urlopen(urllib.request.Request(hook, data=json.dumps(body).encode(),
                                                       headers={"Content-Type": "application/json"}), timeout=30)

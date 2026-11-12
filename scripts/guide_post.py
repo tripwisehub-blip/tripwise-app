@@ -107,6 +107,8 @@ if FB_HOOK:
         pics = photo_for(photo_title)
         if pics:
             body["photo"] = pics[0]
+        from precheck import prepare
+        body = prepare(body, "social")
         urllib.request.urlopen(urllib.request.Request(FB_HOOK, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}), timeout=30)
         print("Facebook mirror sent")
     except Exception as e:
