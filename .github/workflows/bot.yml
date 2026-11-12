@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["worker/**", ".github/workflows/bot.yml"]
+    paths: ["worker/**", "worker-go/**", ".github/workflows/bot.yml"]
 
 permissions:
   contents: write
@@ -57,6 +57,13 @@ jobs:
           npx --yes wrangler@3.114.0 deploy | tee deploy.log
           printf '%s' "$TG_BOT_TOKEN" | npx --yes wrangler@3.114.0 secret put TG_BOT_TOKEN
           printf '%s' "$TP_TOKEN" | npx --yes wrangler@3.114.0 secret put TP_TOKEN
+      - name: Deploy short-link host go.<subdomain>.workers.dev
+        working-directory: worker-go
+        continue-on-error: true
+        run: |
+          npx --yes wrangler@3.114.0 deploy
+          curl -s -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d '{"enabled":true}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/go/subdomain" > /dev/null
       - name: Point Telegram webhook to the worker
         working-directory: worker
         run: |
