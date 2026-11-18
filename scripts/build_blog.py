@@ -105,6 +105,7 @@ META = {
     "krakow-weekend": ("Poland", "Kraków", "Kraków"),
     "paris-first-time": ("France", "Paris", "Paris"),
     "christmas-markets-europe": ("Travel tips", "Christmas markets", "Christmas market"),
+    "new-years-eve-europe-budget": ("Travel tips", "New Year's Eve", "Old Town Square"),
     "vienna-guide": ("Austria", "Vienna", "Vienna"),
     "amsterdam-on-a-budget": ("Netherlands", "Amsterdam", "Amsterdam"),
     "london-on-a-budget": ("United Kingdom", "London", "London"),
