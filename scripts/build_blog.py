@@ -530,6 +530,14 @@ def route_pages():
         lg = ORIGIN_LANG.get(key.split("-")[0])
         return ["en", "ru"] + ([lg] if lg and lg not in ("en", "ru") else [])
 
+    # Search engines index only routes from our 10 deal cities in English and Russian (real demand, enriched pages).
+    # All other route pages stay live for people and the bot but carry noindex and stay out of the sitemap,
+    # so thousands of near-identical template pages don't count against the site (Google "scaled content abuse").
+    INDEX_ORIGINS = {c for c, _ in DEAL_CITIES}
+
+    def indexable(key, lg):
+        return key.split("-")[0] in INDEX_ORIGINS and lg in ("en", "ru")
+
     def fname(key, lg="en"):
         o, d = key.split("-")
         base = "flights-" + slugify(nm(o)) + "-to-" + slugify(nm(d)) + ".html"
@@ -543,7 +551,8 @@ def route_pages():
         best = fares[0]["p"] if fares else r.get("low")
         search = tp("https://www.aviasales.com/search/%s%s1" % (o, d), "route")
         versions = langs(key)
-        alt = "".join(f'<link rel="alternate" hreflang="{lg}" href="{BASE}{fname(key, lg)}">' for lg in versions)
+        idx_versions = [lg for lg in versions if indexable(key, lg)]
+        alt = "".join(f'<link rel="alternate" hreflang="{lg}" href="{BASE}{fname(key, lg)}">' for lg in idx_versions) if len(idx_versions) > 1 else ""
         g = guide_for.get(nm(d).lower())
         for lg in versions:
             T = RT[lg]
@@ -579,8 +588,11 @@ def route_pages():
             ld = json.dumps({"@context": "https://schema.org", "@type": "Product", "name": f"{of} – {dn}",
                              "offers": {"@type": "AggregateOffer", "priceCurrency": "EUR", "lowPrice": best, "offerCount": max(len(fares), 1)}}, ensure_ascii=False) if best else ""
             title = T["h1"].format(o=of, d=dn) + (f" · €{best}" if best else "") + " | Tripwise"
-            page(fname(key, lg), title, intro, body, alt + (f'<script type="application/ld+json">{ld}</script>' if ld else ""), lg)
-            made.append(fname(key, lg))
+            if indexable(key, lg):
+                page(fname(key, lg), title, intro, body, alt + (f'<script type="application/ld+json">{ld}</script>' if ld else ""), lg)
+                made.append(fname(key, lg))
+            else:
+                page(fname(key, lg), title, intro, body, '<meta name="robots" content="noindex,follow">', lg)
     groups = ""
     for o in sorted(by_origin, key=lambda c: nm(c)):
         ks = sorted([k for k in by_origin[o] if reg[k].get("low")], key=lambda k: reg[k]["low"])
@@ -589,6 +601,14 @@ def route_pages():
     page("flight-routes.html", "Cheap flight routes from 20 European cities | Tripwise",
          "All cheap flight routes we track: lowest return fares from Tallinn, Riga, Vilnius, Helsinki, Stockholm, London, Berlin, Paris and more.",
          f'<div class="wrap"><div class="page"><h1>Cheap flight routes</h1><p>The lowest return fares we have seen on each route, in English, Russian and the language of the departure city. Prices update several times a day.</p>{groups}</div></div>')
+    # Older route pages from earlier builds that are no longer regenerated: keep them for visitors, hide them from search
+    keep = set(made)
+    for fn in os.listdir(OUT):
+        if fn.endswith(".html") and "flights-" in fn and not fn.startswith("cheap-flights-from-") and fn not in keep:
+            fp = os.path.join(OUT, fn)
+            doc = open(fp, encoding="utf-8").read()
+            if 'name="robots"' not in doc:
+                open(fp, "w", encoding="utf-8").write(doc.replace("<head>", '<head><meta name="robots" content="noindex,follow">', 1))
     return made + ["flight-routes.html"]
 
 
