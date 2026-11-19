@@ -1,0 +1,22 @@
+name: Bot profile (name and descriptions)
+
+# Sets the Telegram bot's name, short description and description in several languages
+# from data/bot_profile.json. Secret: TG_BOT_TOKEN.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["data/bot_profile.json", "scripts/bot_profile.py", ".github/workflows/bot_profile.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    env:
+      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply bot profile
+        run: python3 scripts/bot_profile.py

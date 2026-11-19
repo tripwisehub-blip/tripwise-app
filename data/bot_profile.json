@@ -1,0 +1,38 @@
+{
+ "_note": "Bot name / short description / description shown in Telegram (search, profile, empty chat). Applied by .github/workflows/bot_profile.yml when this file changes. Limits: name 64, short 120, description 512 chars. Key \"\" = default for all other languages.",
+ "": {
+  "name": "Tripwise – Cheap Flights & Travel Deals",
+  "short": "Cheap flights from your city, price alerts, hotels, car rental and tours. Free travel bot ✈️",
+  "description": "✈️ Cheap flights from your city in seconds\n🔔 Price alerts when fares drop\n🎡 Budget trip wheel: 3 cheap destinations for your budget\n🏨 Hotels, 🚗 car rental, 🎟 tours and 📶 eSIM in one place\n\nJust write where and when you want to go, in any language. Free."
+ },
+ "ru": {
+  "name": "Tripwise – дешёвые авиабилеты и путешествия",
+  "short": "Дешёвые авиабилеты из вашего города, уведомления о ценах, отели, авто и экскурсии. Бесплатный бот ✈️",
+  "description": "✈️ Дешёвые авиабилеты из вашего города за секунды\n🔔 Уведомления, когда цена падает\n🎡 Колесо поездок: 3 недорогих направления под ваш бюджет\n🏨 Отели, 🚗 аренда авто, 🎟 экскурсии и 📶 eSIM в одном месте\n\nПросто напишите, куда и когда хотите поехать. Бесплатно."
+ },
+ "et": {
+  "name": "Tripwise – odavad lennupiletid",
+  "short": "Odavad lennupiletid sinu linnast, hinnateavitused, hotellid, autorent ja ekskursioonid. Tasuta reisibot ✈️",
+  "description": "✈️ Odavad lennupiletid sinu linnast mõne sekundiga\n🔔 Teavitus, kui hind langeb\n🎡 Reisiratas: 3 soodsat sihtkohta sinu eelarvele\n🏨 Hotellid, 🚗 autorent, 🎟 ekskursioonid ja 📶 eSIM ühes kohas\n\nKirjuta lihtsalt, kuhu ja millal soovid minna. Tasuta."
+ },
+ "lv": {
+  "name": "Tripwise – lētas aviobiļetes",
+  "short": "Lētas aviobiļetes no tavas pilsētas, cenu paziņojumi, viesnīcas, auto noma un ekskursijas. Bezmaksas bots ✈️",
+  "description": "✈️ Lētas aviobiļetes no tavas pilsētas dažās sekundēs\n🔔 Paziņojums, kad cena krītas\n🎡 Ceļojumu rats: 3 lēti galamērķi tavam budžetam\n🏨 Viesnīcas, 🚗 auto noma, 🎟 ekskursijas un 📶 eSIM vienuviet\n\nVienkārši uzraksti, kurp un kad vēlies doties. Bez maksas."
+ },
+ "lt": {
+  "name": "Tripwise – pigūs lėktuvų bilietai",
+  "short": "Pigūs lėktuvų bilietai iš tavo miesto, kainų pranešimai, viešbučiai, automobilių nuoma ir ekskursijos ✈️",
+  "description": "✈️ Pigūs lėktuvų bilietai iš tavo miesto per kelias sekundes\n🔔 Pranešimas, kai kaina krenta\n🎡 Kelionių ratas: 3 pigios kryptys tavo biudžetui\n🏨 Viešbučiai, 🚗 automobilių nuoma, 🎟 ekskursijos ir 📶 eSIM vienoje vietoje\n\nTiesiog parašyk, kur ir kada nori keliauti. Nemokamai."
+ },
+ "fi": {
+  "name": "Tripwise – halvat lennot",
+  "short": "Halvat lennot kaupungistasi, hintahälytykset, hotellit, autonvuokraus ja retket. Ilmainen matkabotti ✈️",
+  "description": "✈️ Halvat lennot kaupungistasi sekunneissa\n🔔 Hälytys, kun hinta laskee\n🎡 Matkapyörä: 3 edullista kohdetta budjettisi mukaan\n🏨 Hotellit, 🚗 autonvuokraus, 🎟 retket ja 📶 eSIM yhdessä paikassa\n\nKirjoita vain, minne ja milloin haluat matkustaa. Ilmainen."
+ },
+ "de": {
+  "name": "Tripwise – günstige Flüge & Reiseangebote",
+  "short": "Günstige Flüge ab deiner Stadt, Preisalarme, Hotels, Mietwagen und Touren. Kostenloser Reise-Bot ✈️",
+  "description": "✈️ Günstige Flüge ab deiner Stadt in Sekunden\n🔔 Preisalarm, wenn der Preis fällt\n🎡 Reiserad: 3 günstige Ziele für dein Budget\n🏨 Hotels, 🚗 Mietwagen, 🎟 Touren und 📶 eSIM an einem Ort\n\nSchreib einfach, wohin und wann du reisen möchtest. Kostenlos."
+ }
+}
