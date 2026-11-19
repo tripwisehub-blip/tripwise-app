@@ -1492,9 +1492,7 @@ var c = BY_ISO[S.country];
 var hc = cityName(); photoFor(hc, S.country);
 var h = '<div class="hero" data-photo="' + esc(hc) + '"' + (PHOTO[hc] ? ' style="background-image:' + PHOTO[hc] + '"' : "") + '><h2>' + esc(t("sub_search")) + '</h2>' +
 '<button class="q" onclick="var f=document.getElementById(\'tw-form\');if(f)f.scrollIntoView({behavior:\'smooth\'})">' + svg(ICON.search, 20) + '<span>' + esc(t("to")) + '</span></button></div>';
-h += '<section class="card"><div class="tiles">' + CATS.map(function (x) {
-return '<button class="tile' + (S.cat === x ? " on" : "") + '" data-act="cat" data-v="' + x + '"><span class="ic">' + svg(ICON[x], 24) + "</span><span>" + esc(t("c_" + x)) + "</span></button>";
-}).join("") + "</div></section>";
+h += catTiles(S.cat);
 h += '<button class="promo" data-act="tab" data-v="coupons"><span class="wh"></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><b style="font-size:16px">' + esc(t("tab_coupons")) + '</b><span class="hint">' + esc(t("sub_coupons")) + '</span></span><span style="color:var(--blue);font-size:22px;font-weight:900">›</span></button>';
 h += hotSection() + '<section class="card" id="tw-form">';
 if (S.cat === "flights") {
@@ -1682,6 +1680,9 @@ document.body.classList.toggle("sub", !!S.view);
 if (S.view === "wheel") S.view = "";
 main.innerHTML = S.view ? v2Screen() : S.tab === "search" ? v2Home() : S.tab === "coupons" ? v2Wheel() : S.tab === "profile" ? v2Profile() : S.tab === "prices" ? '<button class="rcard" data-act="v2" data-v="mytrack"><div class="rbody"><b>📈 ' + esc(T2("myTracks")) + '</b><span class="hint">' + TRACK.length + '</span></div><span style="font-size:22px;color:var(--muted)">›</span></button>' + screenPrices() : S.tab === "map" ? screenMap() : S.tab === "favs" ? screenFavs() : screenProfile();
 // : S.tab === "coupons" ? screenCoupons() : S.tab === "map" ? screenMap() : S.tab === "prices" ? screenPrices() : S.tab === "favs" ? screenFavs() : screenProfile();
+// The static guide links (#sitelinks, for search engines) live at the end of the scroll area, so the page itself never scrolls
+if (!window.__sitelinks) { var sl0 = document.getElementById("sitelinks"); if (sl0) { window.__sitelinks = sl0.outerHTML; sl0.parentNode.removeChild(sl0); } }
+if (window.__sitelinks) main.insertAdjacentHTML("beforeend", window.__sitelinks);
 main.scrollTop = y;
 document.getElementById("nav").innerHTML = TABS.map(function (k) {
 return '<button class="' + (S.tab === k ? "on" : "") + '" data-act="tab" data-v="' + k + '">' + svg(ICON[k === "coupons" ? "wheel" : k], 22) + "<span>" + esc(t("tab_" + k)) + "</span></button>";
@@ -1792,15 +1793,20 @@ S.wres = pool; pool.forEach(function (x) { S.seen.push(x.d); });
 function nightsOf(tr) { return Math.max(1, Math.round((new Date(tr.ret) - new Date(tr.dep)) / 864e5)); }
 function fmtD(s) { return fmt(new Date(s + "T12:00:00")); }
 // ---------- screens ----------
+// One tile grid (8 tiles) for the home screen and every category screen; active = S.cat on category screens
+function catTiles(active) {
+var tiles = [["flights", "fsearch", t("c_flights")], ["hotels", "cat", t("c_hotels")], ["car", "cat", t("c_car")], ["tours", "tours", T2("tours")], ["transfer", "cat", t("c_transfer")], ["esim", "cat", t("c_esim")], ["tours", "cat", T2("excursions")], ["insurance", "soon", T2("insurance")]];
+return '<section class="card"><div class="tiles">' + tiles.map(function (x) {
+var ic = x[0] === "insurance" ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>' : svg(ICON[x[0]], 24);
+var a = x[1] === "cat" ? 'data-act="v2cat" data-v="' + x[0] + '"' : x[1] === "fsearch" ? 'data-act="v2" data-v="fsearch"' : x[1] === "tours" ? 'data-act="v2tours"' : 'data-act="v2soon"';
+var on = active && x[0] === active && (x[1] === "cat" || (active === "flights" && x[1] === "fsearch"));
+return '<button class="tile' + (on ? " on" : "") + '" ' + a + '><span class="ic">' + ic + '</span><span>' + esc(x[2]) + '</span></button>';
+}).join("") + '</div></section>';
+}
 function v2Home() {
 var hc = cityName();
 var h = '<div class="hero big" ' + ph(hc, S.country) + '><button class="tbb glass bell" data-act="v2" data-v="notif" aria-label="' + esc(T2("notifications")) + '">🔔</button><button class="q" data-act="v2" data-v="fsearch">' + svg(ICON.search, 20) + '<span>' + esc(T2("whereTo")) + '</span></button></div>';
-var tiles = [["flights", "fsearch", t("c_flights")], ["hotels", "cat", t("c_hotels")], ["car", "cat", t("c_car")], ["tours", "tours", T2("tours")], ["transfer", "cat", t("c_transfer")], ["esim", "cat", t("c_esim")], ["tours", "cat", T2("excursions")], ["insurance", "soon", T2("insurance")]];
-h += '<section class="card"><div class="tiles">' + tiles.map(function (x) {
-var ic = x[0] === "insurance" ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>' : svg(ICON[x[0]], 24);
-var a = x[1] === "cat" ? 'data-act="v2cat" data-v="' + x[0] + '"' : x[1] === "fsearch" ? 'data-act="v2" data-v="fsearch"' : x[1] === "tours" ? 'data-act="v2tours"' : 'data-act="v2soon"';
-return '<button class="tile" ' + a + '><span class="ic">' + ic + '</span><span>' + esc(x[2]) + '</span></button>';
-}).join("") + '</div></section>';
+h += catTiles(null);
 h += '<button class="promo" data-act="tab" data-v="coupons"><span class="pimg" ' + ph(hc, S.country) + '></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><b style="font-size:15px">' + esc(t("tab_coupons")) + ' ' + esc(T2("wheelTitle").toLowerCase().indexOf("wheel") >= 0 ? "" : "") + '</b><span class="hint">' + esc(T2("spinGet3").replace("\n", " ")) + '</span></span><span style="color:var(--blue);font-size:24px;font-weight:900">›</span></button>';
 h += hotSection();
 return h;
