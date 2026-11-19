@@ -266,6 +266,48 @@ def deal_versions(code, city):
     return out
 
 
+def deal_faq(lang, city, deals, names, today):
+    """Short answer + FAQ built from today's real fares (EN and RU only). Returns (answer, [(q, a), ...]) or None."""
+    if lang not in ("en", "ru") or not deals:
+        return None
+    def nm(t):
+        n = names.get(t["d"]) or [t["d"]]
+        return n[0] or t["d"]
+    def dt(x):
+        d = datetime.date.fromisoformat(x)
+        return d.strftime("%d %b") if lang == "en" else d.strftime("%d.%m")
+    top = deals[0]
+    direct = [t for t in deals if not t.get("tr")][:3]
+    under = [t for t in deals if t["p"] <= 50]
+    if lang == "en":
+        answer = (f"Short answer: the cheapest return flight from {city} we found today is {nm(top)} for €{round(top['p'])} "
+                  f"({dt(top['dep'])} – {dt(top['ret'])}). Prices checked on {today}.")
+        qa = [(f"What is the cheapest flight from {city} right now?",
+               f"{nm(top)} at €{round(top['p'])} return, departing {dt(top['dep'])} and returning {dt(top['ret'])} (checked {today}). Fares change several times a day.")]
+        if direct:
+            qa.append((f"Which cheap destinations have direct flights from {city}?",
+                       "Cheapest direct routes today: " + ", ".join(f"{nm(t)} (€{round(t['p'])})" for t in direct) + "."))
+        qa.append((f"How many destinations from {city} cost under €50 return?",
+                   f"{len(under)} of the {len(deals)} cheapest destinations we track from {city} are under €50 return today." if under
+                   else f"None today: the cheapest is €{round(top['p'])}. Low fares appear and disappear quickly, so check again or set a price alert in our Telegram bot."))
+        qa.append(("How do I get the best price?",
+                   "Be flexible by a few days, compare nearby airports, book 4–8 weeks ahead for short trips in Europe, and set a free price alert in the Tripwise Telegram bot."))
+    else:
+        answer = (f"Коротко: самый дешёвый перелёт туда-обратно из {city}, который мы нашли сегодня, — {nm(top)} за €{round(top['p'])} "
+                  f"({dt(top['dep'])} – {dt(top['ret'])}). Цены проверены {today}.")
+        qa = [(f"Куда сейчас дешевле всего улететь из {city}?",
+               f"{nm(top)} за €{round(top['p'])} туда-обратно, вылет {dt(top['dep'])}, обратно {dt(top['ret'])} (проверено {today}). Цены меняются несколько раз в день.")]
+        if direct:
+            qa.append((f"Куда из {city} есть дешёвые прямые рейсы?",
+                       "Самые дешёвые прямые рейсы сегодня: " + ", ".join(f"{nm(t)} (€{round(t['p'])})" for t in direct) + "."))
+        qa.append((f"Сколько направлений из {city} дешевле €50 туда-обратно?",
+                   f"Сегодня {len(under)} из {len(deals)} самых дешёвых направлений из {city} стоят до €50 туда-обратно." if under
+                   else f"Сегодня таких нет: самый дешёвый вариант — €{round(top['p'])}. Дешёвые билеты появляются и исчезают быстро — проверьте позже или включите уведомление о цене в нашем Telegram-боте."))
+        qa.append(("Как купить дешевле?",
+                   "Будьте гибкими в датах на несколько дней, сравнивайте соседние аэропорты, для коротких поездок по Европе покупайте за 4–8 недель и включите бесплатное уведомление о цене в Telegram-боте Tripwise."))
+    return answer, qa
+
+
 def deal_pages():
     try:
         prices = json.load(open(PRICES_FILE, encoding="utf-8"))
@@ -306,7 +348,21 @@ def deal_pages():
                     f'<div class="wrap"><div class="page"><p class="meta">{html.escape(T[8])} {today}. {langs}</p><p>{html.escape(T[9])}</p>'
                     f'<p>{html.escape(T[10])}: <a href="https://t.me/tripwise_deals">@tripwise_deals</a> · <a href="{A}">Tripwise app</a></p>'
                     f'<h2>{html.escape(T[11])}</h2><p>{others}</p>' + CTA + '</div></div>')
-            page(fname, h1 + " | Tripwise", h1 + ": " + T[0], body, alt, lang)
+            extra = alt
+            faq = deal_faq(lang, city if lang == "en" else RU_FROM.get(code, [city])[0], deals, names, today)
+            if faq:
+                answer, qa = faq
+                body = body.replace('<div class="wrap"><div class="page">',
+                                    '<div class="wrap"><div class="page"><p class="lead"><b>' + html.escape(answer) + '</b></p>', 1)
+                faq_html = "".join(f"<h3>{html.escape(q)}</h3><p>{html.escape(a)}</p>" for q, a in qa)
+                body = body.replace(CTA + '</div></div>', f'<h2>{"FAQ" if lang == "en" else "Частые вопросы"}</h2>{faq_html}' + CTA + '</div></div>', 1)
+                ld = [{"@context": "https://schema.org", "@type": "FAQPage",
+                       "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in qa]},
+                      {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+                          {"@type": "ListItem", "position": 1, "name": "Tripwise Guides", "item": BASE},
+                          {"@type": "ListItem", "position": 2, "name": h1, "item": BASE + fname}]}]
+                extra += "".join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' for x in ld)
+            page(fname, h1 + " | Tripwise", h1 + ": " + T[0], body, extra, lang)
             made.append((code, city, lang, fname))
     return made
 
