@@ -531,6 +531,56 @@ KIWI_TXT = {"en": "Also compare this route on Kiwi.com — it combines low-cost 
             "nl": "Vergelijk deze route ook op Kiwi.com — het combineert prijsvechters:"}
 
 
+HIST_TXT = {
+    "en": {"h": "Price history {o} – {d}", "since": "We have checked this route on {n} days since {s}.",
+           "low": "Lowest return fare seen: €{v} ({w}).", "avg": "Typical daily lowest: €{v}.",
+           "now": "Today: €{v} — {verdict}.", "good": "below the usual price, a good moment to book",
+           "same": "about the usual price", "high": "above the usual price, it may be worth waiting a few days",
+           "trend": "Change over the last 7 days: {v}.", "wd": "Cheapest departure day in our data: {v}.",
+           "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]},
+    "ru": {"h": "История цен {o} – {d}", "since": "Мы проверяли этот маршрут {n} дн. с {s}.",
+           "low": "Самая низкая цена туда-обратно: €{v} ({w}).", "avg": "Обычная минимальная цена за день: €{v}.",
+           "now": "Сегодня: €{v} — {verdict}.", "good": "ниже обычного, хороший момент для покупки",
+           "same": "примерно как обычно", "high": "выше обычного, можно подождать несколько дней",
+           "trend": "Изменение за 7 дней: {v}.", "wd": "Самый дешёвый день вылета по нашим данным: {v}.",
+           "days": ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]},
+}
+
+
+def hist_block(lg, r, of, dn, today):
+    """Real price history for a route (only from fares we actually saw), shown on indexable pages."""
+    T = HIST_TXT.get(lg)
+    h = r.get("hist") or {}
+    if not T or len(h) < 3:
+        return ""
+    days = sorted(h)
+    vals = [h[d] for d in days]
+    lo = min(vals)
+    when = days[vals.index(lo)]
+    avg = round(sum(vals) / len(vals))
+    fmt = lambda d: datetime.date.fromisoformat(d).strftime("%d.%m.%Y")
+    lines = [T["since"].format(n=len(days), s=fmt(days[0])), T["low"].format(v=lo, w=fmt(when)), T["avg"].format(v=avg)]
+    if today in h:
+        v = h[today]
+        verdict = T["good"] if v <= avg * 0.93 else T["high"] if v >= avg * 1.07 else T["same"]
+        lines.append(T["now"].format(v=v, verdict=verdict))
+        wk = (datetime.date.fromisoformat(today) - datetime.timedelta(days=7)).isoformat()
+        old = [d for d in days if d <= wk]
+        if old:
+            dv = v - h[old[-1]]
+            lines.append(T["trend"].format(v=("+€%d" % dv) if dv > 0 else ("−€%d" % -dv) if dv < 0 else "0"))
+    fares = r.get("fares") or []
+    if len(fares) >= 3:
+        f = min(fares, key=lambda x: x["p"])
+        lines.append(T["wd"].format(v=T["days"][datetime.date.fromisoformat(f["dep"]).weekday()]))
+    last = days[-14:]
+    top = max(h[d] for d in last) or 1
+    bars = "".join(f'<span title="{fmt(d)}: €{h[d]}" style="display:inline-block;width:6%;margin-right:1%;vertical-align:bottom;'
+                   f'height:{max(8, round(60 * h[d] / top))}px;background:#2b7de9;border-radius:3px 3px 0 0"></span>' for d in last)
+    return (f'<h2>{html.escape(T["h"].format(o=of, d=dn))}</h2><div aria-hidden="true" style="height:64px;margin:6px 0 10px">{bars}</div>'
+            "<ul>" + "".join(f"<li>{html.escape(x)}</li>" for x in lines) + "</ul>")
+
+
 def route_pages():
     try:
         prices = json.load(open(PRICES_FILE, encoding="utf-8"))
@@ -566,8 +616,14 @@ def route_pages():
             r["fares"] = sorted(fares, key=lambda f: f["p"])[:6]
             r["low"] = min([x for x in [r.get("low"), round(t["p"])] if x is not None])
             r["seen"] = today
+            # Daily lowest fare we saw on this route: real price history for the indexable route pages
+            h = r.setdefault("hist", {})
+            h[today] = min(round(t["p"]), h.get(today, 10 ** 6))
+    cut = (datetime.date.today() - datetime.timedelta(days=120)).isoformat()
     for r in reg.values():
         r["fares"] = [f for f in r["fares"] if f["dep"] > today]
+        if r.get("hist"):
+            r["hist"] = {d: v for d, v in r["hist"].items() if d >= cut}
     json.dump(reg, open(reg_path, "w", encoding="utf-8"), ensure_ascii=False)
 
     guide_for = {}
@@ -636,6 +692,7 @@ def route_pages():
             body = (f'<section class="board"><div class="wrap"><h1>{html.escape(h1)}</h1><p class="sub">{html.escape(intro)}</p>'
                     f'<div class="rows deals"><div class="hd">' + "".join(f'<span{c}>{x}</span>' for x, c in zip(T["cols"], ("", ' class="k"', ' class="t"', ""))) + f'</div>{rows}</div></div></section>'
                     f'<div class="wrap"><div class="page">{kiwi}<p class="meta">{html.escape(T["note"])} {r.get("seen", today)}. {other} · <a href="flight-routes.html">{T["all"]}</a></p>'
+                    + (hist_block(lg, r, of, dn, today) if indexable(key, lg) else "") +
                     f'<h2>{html.escape(T["tipsh"].format(o=of, d=dn))}</h2><ul>{tips}<li>{html.escape(T["chan"])}: <a href="https://t.me/tripwise_deals">@tripwise_deals</a></li></ul>'
                     + (f'<p>{html.escape(T["guide"])}: <a href="{g["slug"]}.html">{html.escape(g["title"])}</a>.</p>' if g else "")
                     + (f'<h2>{html.escape(T["more_o"].format(o=of))}</h2><p>{more_o}</p>' if more_o else "")
