@@ -2146,13 +2146,14 @@ var TZ = { "Europe/Tallinn": "TLL", "Europe/Helsinki": "HEL", "Europe/Riga": "RI
 function setO(code) { if (!code || !CITY[code] || load("origin", null)) return; S.origin = code; S.wheel = null; S.searched = false; save("origin_auto", code); render(); }
 var tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
 var auto = load("origin_auto", null); if (auto && CITY[auto]) { S.origin = auto; render(); }
-var done = false, timer = setTimeout(function () { if (!done) { done = true; setO(TZ[tz]); } }, 2500);
+// Time zone gives a quick first guess (only if nothing was guessed before); the geo answer, even if it comes late, is more precise and replaces it.
+var timer = setTimeout(function () { if (!auto) setO(TZ[tz]); }, 2500);
 fetch("https://tripwise-bot.tripwise-hub.workers.dev/geo").then(function (r) { return r.json(); }).then(function (g) {
-if (done) return; done = true; clearTimeout(timer);
+clearTimeout(timer);
 var lat = +g.lat, lon = +g.lon, best = "", bd = 1e9;
 if (isFinite(lat) && isFinite(lon) && (lat || lon)) Object.keys(LL).forEach(function (k) { var dy = LL[k][0] - lat, dx = (LL[k][1] - lon) * Math.cos(lat * Math.PI / 180), d = dx * dx + dy * dy; if (d < bd) { bd = d; best = k; } });
-setO(best || TZ[tz]);
-}).catch(function () { if (!done) { done = true; clearTimeout(timer); setO(TZ[tz]); } });
+if (best && best !== S.origin) setO(best); else if (!best && !auto) setO(TZ[tz]);
+}).catch(function () { clearTimeout(timer); if (!auto) setO(TZ[tz]); });
 })();
 loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
 loadJSON("data/hot_tours.json").then(function (d) { HOTT = d || []; if (S.hot) render(); }).catch(function () {});
