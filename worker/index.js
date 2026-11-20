@@ -607,6 +607,10 @@ ${cards ? `<h2>🔥 From our latest posts</h2>${cards}` : ""}<a class="cta" href
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    if (url.pathname === "/geo") { // approximate location of the visitor (from Cloudflare) so the Mini App can preselect the nearest departure city; nothing is stored
+      const cf = req.cf || {};
+      return Response.json({ lat: cf.latitude || null, lon: cf.longitude || null, country: cf.country || null, city: cf.city || null }, { headers: { "access-control-allow-origin": "*", "cache-control": "no-store" } });
+    }
     const go = goLink(url.pathname.replace(/^\/+|\/+$/g, "").toLowerCase(), url.searchParams.get("c"), url.searchParams.get("s"));
     if (url.pathname === "/ig" || url.pathname === "/links") return igPage(env);
     if (url.pathname === "/check" && req.method === "POST") return precheck(req, env);

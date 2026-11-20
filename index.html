@@ -1478,8 +1478,8 @@ if (!S.hot) return h;
 return h + hotList();
 }
 function hotList() {
-var h = "", deals = hotDeals(), tours = hotTours();
-if (!deals.length && !tours.length) return '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
+var h = '<section class="card" style="display:flex;flex-direction:column;gap:6px"><div class="label">' + esc(t("from")) + "</div>" + combo("origin", t("typeCity")) + "</section>", deals = hotDeals(), tours = hotTours();
+if (!deals.length && !tours.length) return h + '<section class="card"><div class="hint">' + esc(t("noData")) + "</div></section>";
 h += '<div class="hotlist">' + tours.map(tourCard).join("") + deals.map(function (tr) {
 var pl = placeName(tr.d); photoFor(pl.name, pl.iso);
 return '<div class="hotcard"><div class="hotimg" data-photo="' + esc(pl.name) + '"' + (PHOTO[pl.name] ? ' style="background-image:' + PHOTO[pl.name] + '"' : "") + '><div class="hotname">' + (pl.iso ? flagImg(pl.iso) : "") + "<b>" + esc(pl.name) + '</b></div><div class="hotprice">' + esc(money(tr.p)) + "</div></div>" +
@@ -2138,6 +2138,22 @@ render();
 function loadJSON(path) { return fetch(path + "?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
 loadJSON("data/rates.json").then(function (d) { window.__tripwise.setData(null, d.rates); }).catch(function () {});
 loadJSON("data/prices.json").then(function (d) { PRICES = d; }).catch(function () {});
+// First visit: guess the nearest departure city with prices (Cloudflare geo of the request, then time zone). A city the user picked always wins.
+(function autoOrigin() {
+if (load("origin", null)) return;
+var LL = { TLL: [59.44, 24.75], HEL: [60.17, 24.94], RIX: [56.95, 24.11], VNO: [54.69, 25.28], STO: [59.33, 18.07], OSL: [59.91, 10.75], CPH: [55.68, 12.57], WAW: [52.23, 21.01], BER: [52.52, 13.40], MUC: [48.14, 11.58], FRA: [50.11, 8.68], AMS: [52.37, 4.90], LON: [51.51, -0.13], PAR: [48.86, 2.35], VIE: [48.21, 16.37], PRG: [50.08, 14.44], BCN: [41.39, 2.17], MAD: [40.42, -3.70], ROM: [41.90, 12.50], MIL: [45.46, 9.19] };
+var TZ = { "Europe/Tallinn": "TLL", "Europe/Helsinki": "HEL", "Europe/Riga": "RIX", "Europe/Vilnius": "VNO", "Europe/Stockholm": "STO", "Europe/Oslo": "OSL", "Europe/Copenhagen": "CPH", "Europe/Warsaw": "WAW", "Europe/Berlin": "BER", "Europe/Amsterdam": "AMS", "Europe/London": "LON", "Europe/Dublin": "LON", "Europe/Paris": "PAR", "Europe/Brussels": "PAR", "Europe/Vienna": "VIE", "Europe/Prague": "PRG", "Europe/Madrid": "MAD", "Europe/Lisbon": "MAD", "Europe/Rome": "ROM", "Europe/Zurich": "MIL" };
+function setO(code) { if (!code || !CITY[code] || load("origin", null)) return; S.origin = code; S.wheel = null; S.searched = false; save("origin_auto", code); render(); }
+var tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+var auto = load("origin_auto", null); if (auto && CITY[auto]) { S.origin = auto; render(); }
+var done = false, timer = setTimeout(function () { if (!done) { done = true; setO(TZ[tz]); } }, 2500);
+fetch("https://tripwise-bot.tripwise-hub.workers.dev/geo").then(function (r) { return r.json(); }).then(function (g) {
+if (done) return; done = true; clearTimeout(timer);
+var lat = +g.lat, lon = +g.lon, best = "", bd = 1e9;
+if (isFinite(lat) && isFinite(lon) && (lat || lon)) Object.keys(LL).forEach(function (k) { var dy = LL[k][0] - lat, dx = (LL[k][1] - lon) * Math.cos(lat * Math.PI / 180), d = dx * dx + dy * dy; if (d < bd) { bd = d; best = k; } });
+setO(best || TZ[tz]);
+}).catch(function () { if (!done) { done = true; clearTimeout(timer); setO(TZ[tz]); } });
+})();
 loadJSON("data/tours.json").then(function (d) { TOURS = d || {}; }).catch(function () {});
 loadJSON("data/hot_tours.json").then(function (d) { HOTT = d || []; if (S.hot) render(); }).catch(function () {});
 loadToursLang();
