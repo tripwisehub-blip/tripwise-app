@@ -22,6 +22,15 @@ def _worker():
         return "https://tripwise-bot.tripwise-hub.workers.dev"
 
 
+TG_HANDLE_RE = re.compile(r"(?:Telegram\s*[:：]?\s*)?@(tripwise_\w+)", re.I)
+
+
+def _ig_handles(text):
+    """Instagram turns @name into a link to an Instagram profile. Our @tripwise_deals / @tripwise_hub_bot are
+    Telegram handles (the Instagram account is @tripwise.deals), so write them without "@"."""
+    return TG_HANDLE_RE.sub(lambda m: "Telegram: " + m.group(1), text or "")
+
+
 def _local_ig(text):
     t = "\n".join(re.sub(r"[:：]\s*$", ": 🔗 link in bio", URL_RE.sub("", l).rstrip()) for l in text.split("\n"))
     t = re.sub(r"\n{3,}", "\n\n", t).strip()
@@ -43,10 +52,10 @@ def prepare(body, source="social", feed=True):
     except Exception as e:
         print("precheck: worker unavailable (%s), local fallback" % e)
         out = dict(body)
-        out["ig"] = _local_ig(body.get("message", ""))
+        out["ig"] = _ig_handles(_local_ig(body.get("message", "")))
         return out
     out = dict(body)
-    out["ig"] = res["ig"]
+    out["ig"] = _ig_handles(res["ig"])
     if source != "pinterest":  # Pinterest dislikes redirect links: keep the original, only check it
         out["message"] = res["message"]
         if body.get("link"):
